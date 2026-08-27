@@ -30,9 +30,9 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <div className="min-h-screen flex flex-col bg-[#F5F0E8]">
+        <div className="min-h-screen flex flex-col bg-[#FBF5EC]">
           <Header />
-          <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
+          <main className="flex-1 w-full">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/explore" element={<Explore />} />

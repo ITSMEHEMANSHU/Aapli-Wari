@@ -1,89 +1,123 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { FaSearch, FaUser, FaSignOutAlt, FaPlus, FaFlag, FaChevronDown } from 'react-icons/fa';
+import { FaChevronDown, FaBars, FaTimes } from 'react-icons/fa';
+import { IMAGES, cloudinaryUrl } from '../../utils/cloudinary';
 
+/**
+ * Header — matches the Aapli Wari design:
+ * Logo | Explore Stories Palkhis Saints Map Channels Contribute | मराठी ▾ | Join Aapli Wari
+ */
 export const Header = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-    }
-  };
+  const navLinks = [
+    { label: 'Explore',    to: '/explore' },
+    { label: 'Map',        to: '/explore?type=map' },
+    { label: 'Channels',   to: '/channels' },
+    { label: 'Contribute', to: '/contribute' },
+  ];
 
   return (
     <header className="bg-[#FBF5EC]/95 backdrop-blur-sm border-b border-[#E8D9C3] sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center gap-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
 
-        <Link to="/" className="flex items-center gap-2">
-          <FaFlag className="text-[#DD6B35] text-2xl" />
+        {/* ── Logo ── */}
+        <Link to="/" className="flex items-center gap-2.5 shrink-0">
+          <img
+            src={cloudinaryUrl(IMAGES.logo, { width: 40, height: 40, crop: 'fit', quality: 'auto' })}
+            alt="Aapli Wari Logo"
+            className="w-10 h-10 object-contain"
+          />
           <div className="leading-tight">
-            <div className="text-xl font-serif font-bold text-[#2B1B12]">Aapli Wari</div>
-            <div className="text-[10px] text-[#DD6B35] font-medium tracking-wide">Aapla Theva</div>
+            <div className="text-lg font-serif font-bold text-[#2B1B12] leading-none">Aapli Wari</div>
+            <div className="text-[10px] text-[#DD6B35] font-medium tracking-wider">Aapla Theva</div>
           </div>
         </Link>
 
-        <nav className="hidden md:flex gap-6 text-sm font-medium text-[#4A392E]">
-          <Link to="/explore" className="hover:text-[#DD6B35] transition">Explore</Link>
-          <Link to="/channels" className="hover:text-[#DD6B35] transition">Channels</Link>
-          <Link to="/ai-assistant" className="hover:text-[#DD6B35] transition">AI Help</Link>
-          <Link to="/shorts" className="hover:text-[#DD6B35] transition">Shorts</Link>
+        {/* ── Desktop Nav ── */}
+        <nav className="hidden lg:flex items-center gap-5 text-sm font-medium text-[#4A392E] ml-4">
+          {navLinks.map((link) => (
+            <Link
+              key={link.label}
+              to={link.to}
+              className="hover:text-[#DD6B35] transition-colors duration-150 whitespace-nowrap"
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
 
-        <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-xs ml-auto">
-          <div className="flex w-full">
-            <input
-              type="text"
-              placeholder="Search Wari..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 px-3 py-2 rounded-l-lg border border-[#E8D9C3] bg-white text-[#2B1B12] text-sm placeholder-[#4A392E]/50 focus:outline-none focus:ring-2 focus:ring-[#DD6B35]/40"
-            />
-            <button type="submit" className="bg-[#F5EADA] border border-l-0 border-[#E8D9C3] px-3 rounded-r-lg hover:bg-[#EDE0CB] transition text-[#DD6B35]">
-              <FaSearch size={14} />
-            </button>
-          </div>
-        </form>
+        {/* ── Right side ── */}
+        <div className="flex items-center gap-2 ml-auto shrink-0">
 
-        <button className="hidden md:flex items-center gap-1 text-sm text-[#4A392E] border border-[#E8D9C3] rounded-lg px-3 py-2 hover:bg-[#F5EADA] transition">
-          मराठी <FaChevronDown size={10} />
-        </button>
+          {/* Language toggle */}
+          <button className="hidden md:flex items-center gap-1 text-sm text-[#4A392E] border border-[#E8D9C3] rounded-lg px-3 py-1.5 hover:bg-[#F5EADA] transition-colors">
+            मराठी <FaChevronDown size={9} className="mt-px" />
+          </button>
 
-        <div className="flex items-center gap-3">
           {user ? (
             <>
               <Link to="/contribute">
-                <button className="bg-[#DD6B35] hover:bg-[#C85A28] text-white px-3 py-2 rounded-lg transition text-sm flex items-center gap-1">
-                  <FaPlus size={12} /> Contribute
+                <button className="hidden sm:inline-flex bg-[#DD6B35] hover:bg-[#C85A28] text-white px-4 py-1.5 rounded-lg transition text-sm font-medium">
+                  Contribute
                 </button>
               </Link>
-              <Link to="/profile" className="w-9 h-9 bg-[#DD6B35] rounded-full flex items-center justify-center text-white font-bold hover:bg-[#C85A28] transition">
-                {user.name?.[0] || 'U'}
+              <Link
+                to="/profile"
+                className="w-8 h-8 bg-[#DD6B35] rounded-full flex items-center justify-center text-white font-bold text-sm hover:bg-[#C85A28] transition"
+              >
+                {user.name?.[0]?.toUpperCase() || 'U'}
               </Link>
-              <button onClick={logout} className="text-[#4A392E] hover:text-[#DD6B35] transition">
-                <FaSignOutAlt size={16} />
-              </button>
             </>
           ) : (
-            <>
-              <Link to="/login">
-                <button className="border border-[#2B1B12]/20 text-[#2B1B12] px-4 py-2 rounded-lg hover:bg-[#F5EADA] transition text-sm">
-                  Login
-                </button>
-              </Link>
-              <Link to="/register">
-                <button className="bg-[#DD6B35] hover:bg-[#C85A28] text-white px-4 py-2 rounded-lg transition text-sm font-medium">
+            <Link to="/register">
+              <button className="bg-[#DD6B35] hover:bg-[#C85A28] text-white px-4 py-2 rounded-lg transition text-sm font-semibold whitespace-nowrap shadow-sm">
+                Join Aapli Wari
+              </button>
+            </Link>
+          )}
+
+          {/* Mobile hamburger */}
+          <button
+            className="lg:hidden ml-1 p-2 rounded-lg text-[#4A392E] hover:bg-[#F5EADA] transition"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? <FaTimes size={18} /> : <FaBars size={18} />}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Mobile Menu ── */}
+      {mobileOpen && (
+        <div className="lg:hidden bg-[#FBF5EC] border-t border-[#E8D9C3] px-4 py-4 flex flex-col gap-3">
+          {navLinks.map((link) => (
+            <Link
+              key={link.label}
+              to={link.to}
+              onClick={() => setMobileOpen(false)}
+              className="text-sm font-medium text-[#4A392E] hover:text-[#DD6B35] transition py-1"
+            >
+              {link.label}
+            </Link>
+          ))}
+          <div className="pt-2 border-t border-[#E8D9C3] flex gap-3">
+            <button className="flex items-center gap-1 text-sm text-[#4A392E] border border-[#E8D9C3] rounded-lg px-3 py-1.5">
+              मराठी <FaChevronDown size={9} />
+            </button>
+            {!user && (
+              <Link to="/register" onClick={() => setMobileOpen(false)}>
+                <button className="bg-[#DD6B35] text-white px-4 py-1.5 rounded-lg text-sm font-semibold">
                   Join Aapli Wari
                 </button>
               </Link>
-            </>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </header>
   );
 };

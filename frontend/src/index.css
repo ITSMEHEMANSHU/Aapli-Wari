@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
 @layer base {
-  body {
-    @apply bg-[#F5F0E8] text-gray-800 antialiased;
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  html, body {
+    @apply bg-[#FBF5EC] text-gray-800 antialiased;
+    width: 100%;
+    overflow-x: hidden;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold;
