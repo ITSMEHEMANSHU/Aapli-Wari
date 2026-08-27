@@ -1,58 +1,558 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCheckCircle, FiUsers, FiBook, FiFlag } from 'react-icons/fi';
+import {
+  FiCheckCircle,
+  FiUsers,
+  FiBook,
+} from 'react-icons/fi';
+
 import { Button } from '../common/Button';
+import { api } from '../../services/api';
+import { AuthContext } from '../../context/AuthContext';
+
 
 export const ChannelList = () => {
   const navigate = useNavigate();
-  const channels = [
-    { id: 1, name: 'Sant Dnyaneshwar Palkhi', followers: 5234, posts: 120, verified: true },
-    { id: 2, name: 'Sant Tukaram Palkhi', followers: 4100, posts: 95, verified: true },
-    { id: 3, name: 'Wari Heritage Foundation', followers: 2500, posts: 60, verified: false },
-    { id: 4, name: 'Sant Eknath Palkhi', followers: 1800, posts: 45, verified: false },
-    { id: 5, name: 'Wari Sangeet', followers: 1500, posts: 35, verified: false },
-  ];
+  const { user } = React.useContext(AuthContext);
+
+  const [channels, setChannels] = useState([]);
+  const [membership, setMembership] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [requesting, setRequesting] = useState({});
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadChannels = async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        const data = await api.channels();
+
+        setChannels(data);
+
+        /*
+         * Find which channels the current user
+         * belongs to.
+         */
+        if (user?.role === 'contributor') {
+          const membershipResults = await Promise.all(
+            data.map(async (channel) => {
+              try {
+                const contributors =
+                  await api.channelContributors(
+                    channel.id
+                  );
+
+                const isMember = contributors.some(
+                  (contributor) =>
+                    contributor.id === user.id
+                );
+
+                return {
+                  channelId: channel.id,
+                  isMember,
+                };
+              } catch {
+                return {
+                  channelId: channel.id,
+                  isMember: false,
+                };
+              }
+            })
+          );
+
+          const membershipMap = {};
+
+          membershipResults.forEach((result) => {
+            membershipMap[result.channelId] =
+              result.isMember;
+          });
+
+          setMembership(membershipMap);
+        }
+      } catch (err) {
+        setError(
+          err.message ||
+            'Failed to load channels'
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      loadChannels();
+    }
+  }, [user]);
+
+  const sendJoinRequest = async (channelId) => {
+    try {
+      setRequesting((prev) => ({
+        ...prev,
+        [channelId]: true,
+      }));
+
+      setError('');
+
+      await api.joinChannel(channelId);
+
+      /*
+       * Mark request as pending locally.
+       * This prevents the button from being
+       * clicked repeatedly.
+       */
+      setMembership((prev) => ({
+        ...prev,
+        [channelId]: {
+          ...prev[channelId],
+          requestPending: true,
+        },
+      }));
+    } catch (err) {
+      setError(
+        err.message ||
+          'Failed to send join request'
+      );
+    } finally {
+      setRequesting((prev) => ({
+        ...prev,
+        [channelId]: false,
+      }));
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="py-10 text-center">
+        Loading channels...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-10 text-center text-red-600">
+        {error}
+      </div>
+    );
+  }
+
+  /*
+   * PALKHI PRAMUKH
+   */
+
+  if (user?.role === 'palkhi_pramukh') {
+    const myChannels = channels.filter(
+      (channel) =>
+        channel.created_by_user_id === user.id
+    );
+
+    const otherChannels = channels.filter(
+      (channel) =>
+        channel.created_by_user_id !== user.id
+    );
+
+    return (
+      <div>
+
+        <h1 className="text-2xl font-bold mb-2">
+          Palkhi Channels
+        </h1>
+
+        <p className="text-gray-600 mb-6">
+          Follow and explore Wari channels
+        </p>
+
+        {myChannels.length > 0 && (
+          <section className="mb-8">
+
+            <h2 className="text-lg font-bold mb-3">
+              Your Channel
+            </h2>
+
+            <div className="space-y-3">
+              {myChannels.map((channel) =>
+                renderChannel(
+                  channel,
+                  true,
+                  navigate
+                )
+              )}
+            </div>
+
+          </section>
+        )}
+
+        {myChannels.length === 0 && (
+          <div className="mb-6">
+            <Button
+              variant="primary"
+              onClick={() =>
+                navigate('/channel/create')
+              }
+            >
+              Create Channel
+            </Button>
+          </div>
+        )}
+
+        <section>
+
+          <h2 className="text-lg font-bold mb-3">
+            Other Channels
+          </h2>
+
+          {otherChannels.length === 0 ? (
+            <div className="text-center py-10">
+              No other channels available.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {otherChannels.map((channel) =>
+                renderChannel(
+                  channel,
+                  false,
+                  navigate
+                )
+              )}
+            </div>
+          )}
+
+        </section>
+
+      </div>
+    );
+  }
+
+  /*
+   * CONTRIBUTOR
+   */
+
+  if (user?.role === 'contributor') {
+    const myChannels = channels.filter(
+      (channel) =>
+        membership[channel.id]?.isMember === true
+    );
+
+    const otherChannels = channels.filter(
+      (channel) =>
+        membership[channel.id]?.isMember !== true
+    );
+
+    return (
+      <div>
+
+        <h1 className="text-2xl font-bold mb-2">
+          Palkhi Channels
+        </h1>
+
+        <p className="text-gray-600 mb-6">
+          Follow and explore Wari channels
+        </p>
+
+        {myChannels.length > 0 && (
+          <section className="mb-8">
+
+            <h2 className="text-lg font-bold mb-3">
+              Your Channels
+            </h2>
+
+            <div className="space-y-3">
+
+              {myChannels.map((channel) => (
+                <ChannelCard
+                  key={channel.id}
+                  channel={channel}
+                  navigate={navigate}
+                  isContributor={true}
+                />
+              ))}
+
+            </div>
+
+          </section>
+        )}
+
+        <section>
+
+          <h2 className="text-lg font-bold mb-3">
+            Other Channels
+          </h2>
+
+          {otherChannels.length === 0 ? (
+            <div className="text-center py-10">
+              No other channels available.
+            </div>
+          ) : (
+            <div className="space-y-3">
+
+              {otherChannels.map((channel) => (
+                <ChannelCard
+                  key={channel.id}
+                  channel={channel}
+                  navigate={navigate}
+                  isContributor={false}
+                  requestPending={
+                    membership[channel.id]
+                      ?.requestPending
+                  }
+                  requesting={
+                    requesting[channel.id]
+                  }
+                  onJoinRequest={() =>
+                    sendJoinRequest(channel.id)
+                  }
+                />
+              ))}
+
+            </div>
+          )}
+
+        </section>
+
+      </div>
+    );
+  }
+
+  /*
+   * NORMAL USER
+   */
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-2">Palkhi Channels</h1>
-      <p className="text-gray-600 mb-6">Follow and explore verified Wari channels</p>
 
-      <div className="space-y-3">
-        {channels.map(channel => (
-          <div key={channel.id} className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition">
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-              <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-                {channel.name[0]}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-bold">{channel.name}</h3>
-                  {channel.verified && <FiCheckCircle className="text-green-600" />}
-                </div>
-                <div className="flex gap-4 text-sm text-gray-600">
-                  <span className="flex items-center gap-1"><FiUsers /> {channel.followers} followers</span>
-                  <span className="flex items-center gap-1"><FiBook /> {channel.posts} posts</span>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button 
-                  variant="primary" 
-                  size="sm"
-                  onClick={() => navigate(`/channel/${channel.id}`)}
-                >
-                  View
-                </Button>
-                <Button variant="outline" size="sm">
-                  Follow
-                </Button>
-              </div>
-            </div>
+      <h1 className="text-2xl font-bold mb-2">
+        Palkhi Channels
+      </h1>
+
+      <p className="text-gray-600 mb-6">
+        Follow and explore Wari channels
+      </p>
+
+      {channels.length === 0 ? (
+        <div className="text-center py-10">
+          No active channels available.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {channels.map((channel) => (
+            <ChannelCard
+              key={channel.id}
+              channel={channel}
+              navigate={navigate}
+            />
+          ))}
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+
+/*
+ * CHANNEL CARD
+ */
+
+const ChannelCard = ({
+  channel,
+  navigate,
+  isContributor = false,
+  requestPending = false,
+  requesting = false,
+  onJoinRequest,
+}) => {
+  return (
+    <div
+      className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition"
+    >
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+
+        <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
+          {channel.name?.[0]?.toUpperCase() ||
+            'C'}
+        </div>
+
+        <div className="flex-1">
+
+          <div className="flex items-center gap-2 flex-wrap">
+
+            <h3 className="font-bold">
+              {channel.name}
+            </h3>
+
+            {channel.status === 'active' && (
+              <FiCheckCircle className="text-green-600" />
+            )}
+
+            {isContributor && (
+              <span className="text-xs font-semibold px-2 py-1 rounded bg-green-100 text-green-700">
+                You are a contributor
+              </span>
+            )}
+
           </div>
-        ))}
+
+          <p className="text-sm text-gray-600 mb-2">
+            {channel.description ||
+              'No description available.'}
+          </p>
+
+          <div className="flex gap-4 text-sm text-gray-600">
+
+            <span className="flex items-center gap-1">
+              <FiBook />
+              {channel.status}
+            </span>
+
+            <span className="flex items-center gap-1">
+              <FiUsers />
+              Channel
+            </span>
+
+          </div>
+
+        </div>
+
+        <div className="flex gap-2 flex-wrap">
+
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() =>
+              navigate(
+                `/channel/${channel.id}`
+              )
+            }
+          >
+            View
+          </Button>
+
+          {isContributor ? (
+            <span className="text-sm text-green-600 font-medium self-center">
+              Member
+            </span>
+          ) : requestPending ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled
+            >
+              Request Pending
+            </Button>
+          ) : onJoinRequest ? (
+            <Button
+              variant="outline"
+              size="sm"
+              loading={requesting}
+              onClick={onJoinRequest}
+            >
+              Send Join Request
+            </Button>
+          ) : null}
+
+        </div>
+
       </div>
     </div>
   );
 };
+
+
+/*
+ * PALKHI PRAMUKH CHANNEL CARD
+ */
+
+const renderChannel = (
+  channel,
+  isOwnChannel,
+  navigate
+) => (
+  <div
+    key={channel.id}
+    className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition"
+  >
+    <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+
+      <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
+        {channel.name?.[0]?.toUpperCase() ||
+          'C'}
+      </div>
+
+      <div className="flex-1">
+
+        <div className="flex items-center gap-2 flex-wrap">
+
+          <h3 className="font-bold">
+            {channel.name}
+          </h3>
+
+          {channel.status === 'active' && (
+            <FiCheckCircle className="text-green-600" />
+          )}
+
+          {isOwnChannel && (
+            <span className="text-xs font-semibold px-2 py-1 rounded bg-primary text-white">
+              Your Channel
+            </span>
+          )}
+
+        </div>
+
+        <p className="text-sm text-gray-600 mb-2">
+          {channel.description ||
+            'No description available.'}
+        </p>
+
+        <div className="flex gap-4 text-sm text-gray-600">
+
+          <span className="flex items-center gap-1">
+            <FiBook />
+            {channel.status}
+          </span>
+
+          <span className="flex items-center gap-1">
+            <FiUsers />
+            Channel
+          </span>
+
+        </div>
+
+      </div>
+
+      <div className="flex gap-2">
+
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() =>
+            navigate(
+              `/channel/${channel.id}`
+            )
+          }
+        >
+          View
+        </Button>
+
+        {isOwnChannel && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              navigate(
+                `/channel/${channel.id}/manage`
+              )
+            }
+          >
+            Manage
+          </Button>
+        )}
+
+      </div>
+
+    </div>
+  </div>
+);
 
 export default ChannelList;

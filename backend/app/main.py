@@ -6,6 +6,7 @@ from backend.app.api import rbac_test
 from backend.app.api import users
 from backend.app.core.security import authorize_request
 from fastapi.middleware.cors import CORSMiddleware
+from backend.app.api import channels
 
 app = FastAPI(
     title="Aapli Wari API",
@@ -32,6 +33,7 @@ app.include_router(
     dependencies=[Depends(authorize_request)],
 )
 
+app.include_router(channels.router)
 
 @app.get("/")
 def root():

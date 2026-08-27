@@ -15,6 +15,7 @@ import ContentDetail from './pages/ContentDetail';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import Contribute from './pages/Contribute';
+import CreateChannel from './components/channel-management/CreateChannel';
 
 // Auth
 import Login from './components/auth/Login';
@@ -26,6 +27,8 @@ import Search from './components/public/Search';
 import AIAssistant from './components/public/AIAssistant';
 import AaplaTheva from './components/public/AaplaTheva';
 import ChannelList from './components/public/ChannelList';
+import ManageChannel from './components/channel-management/ManageChannel';
+import ContributorManagement from './components/channel-management/ContributorManagement';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -49,6 +52,24 @@ function App() {
               <Route path="/explore" element={<Explore />} />
               <Route path="/search" element={<Search />} />
               <Route path="/channels" element={<ChannelList />} />
+              <Route  path="/channel/create"  element={<ProtectedRoute><CreateChannel /></ProtectedRoute> }/>
+<Route
+  path="/channel/:id/manage"
+  element={
+    <ProtectedRoute>
+      <ManageChannel />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/channel/:id/contributors"
+  element={
+    <ProtectedRoute>
+      <ContributorManagement />
+    </ProtectedRoute>
+  }
+/>
               <Route path="/channel/:id" element={<ChannelPage />} />
               <Route path="/content/:id" element={<ContentDetail />} />
               <Route path="/ai-assistant" element={<AIAssistant />} />

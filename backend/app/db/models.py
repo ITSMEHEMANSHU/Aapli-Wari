@@ -15,3 +15,5 @@ from backend.app.models.contributor_profile import ContributorProfile
 from backend.app.models.palkhi_pramukh_profile import (
     PalkhiPramukhProfile,
 )
+from backend.app.models.palkhi import Palkhi
+from backend.app.models.channel import Channel
