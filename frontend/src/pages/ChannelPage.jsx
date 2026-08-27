@@ -1,109 +1,227 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { FaCheckCircle, FaUsers, FaBook, FaCalendarAlt } from 'react-icons/fa';
+import {
+  FaCheckCircle,
+  FaUsers,
+  FaCalendarAlt,
+} from 'react-icons/fa';
+
 import Loader from '../components/common/Loader';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Avatar from '../components/common/Avatar';
 
-import { PostCard } from '../components/community/PostCard';
-import { FollowButton } from '../components/community/FollowButton';
+import { api } from '../services/api';
 
 export const ChannelPage = () => {
   const { id } = useParams();
+
   const [channel, setChannel] = useState(null);
+  const [contributors, setContributors] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('posts');
+  const [contributorsLoading, setContributorsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('about');
 
   useEffect(() => {
-    const mockChannels = {
-      1: {
-        id: 1,
-        name: 'Sant Dnyaneshwar Palkhi',
-        description: 'Preserving the legacy of Sant Dnyaneshwar through authentic content.',
-        followers: 5234,
-        posts: 120,
-        verified: true,
-        created: '2024-01-01',
-        posts: [
-          { id: 1, title: 'Palkhi Procession 2024', text: 'Beautiful moments from this year\'s procession.', channelName: 'Sant Dnyaneshwar Palkhi', likes: 120, comments: 15, time: '2 hours ago' },
-          { id: 2, title: 'Sant Dnyaneshwar Teachings', text: 'Wisdom from the great saint.', channelName: 'Sant Dnyaneshwar Palkhi', likes: 89, comments: 8, time: '5 hours ago' },
-        ]
-      },
-      2: {
-        id: 2,
-        name: 'Sant Tukaram Palkhi',
-        description: 'Following the footsteps of Sant Tukaram.',
-        followers: 4100,
-        posts: 95,
-        verified: true,
-        created: '2024-02-15',
-        posts: [
-          { id: 3, title: 'Tukaram Abhangs', text: 'Collection of spiritual songs.', channelName: 'Sant Tukaram Palkhi', likes: 78, comments: 12, time: '3 hours ago' },
-        ]
+    const loadChannel = async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        const data = await api.channel(id);
+
+        setChannel(data);
+      } catch (err) {
+        setError(err.message || 'Failed to load channel');
+      } finally {
+        setLoading(false);
       }
     };
 
-    setTimeout(() => {
-      setChannel(mockChannels[id] || mockChannels[1]);
-      setLoading(false);
-    }, 300);
+    if (id) {
+      loadChannel();
+    }
   }, [id]);
 
-  if (loading) return <Loader />;
-  if (!channel) return <div className="text-center py-10">Channel not found</div>;
+  useEffect(() => {
+    const loadContributors = async () => {
+      try {
+        setContributorsLoading(true);
+
+        const data = await api.channelContributors(id);
+
+        setContributors(data);
+      } catch {
+        setContributors([]);
+      } finally {
+        setContributorsLoading(false);
+      }
+    };
+
+    if (id) {
+      loadContributors();
+    }
+  }, [id]);
+
+  if (loading) {
+    return <Loader />;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-10 text-red-600">
+        {error}
+      </div>
+    );
+  }
+
+  if (!channel) {
+    return (
+      <div className="text-center py-10">
+        Channel not found
+      </div>
+    );
+  }
 
   return (
     <div>
       <Card className="flex flex-col md:flex-row gap-6 items-start md:items-center mb-6">
-        <Avatar size="xl" fallback={channel.name[0]} />
+
+        <Avatar
+          size="xl"
+          fallback={channel.name?.[0] || 'C'}
+        />
+
         <div className="flex-1">
+
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold">{channel.name}</h1>
-            {channel.verified && <FaCheckCircle className="text-green-600" />}
+            <h1 className="text-2xl font-bold">
+              {channel.name}
+            </h1>
+
+            {channel.status === 'active' && (
+              <FaCheckCircle className="text-green-600" />
+            )}
           </div>
-          <p className="text-gray-600 mb-2">{channel.description}</p>
+
+          <p className="text-gray-600 mb-2">
+            {channel.description || 'No description available.'}
+          </p>
+
           <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-            <span className="flex items-center gap-1"><FaUsers /> {channel.followers} followers</span>
-            <span className="flex items-center gap-1"><FaBook /> {channel.posts} posts</span>
-            <span className="flex items-center gap-1"><FaCalendarAlt /> Since {new Date(channel.created).getFullYear()}</span>
+
+            <span className="flex items-center gap-1">
+              <FaUsers />
+              {contributors.length} contributors
+            </span>
+
+            <span className="flex items-center gap-1">
+              <FaCalendarAlt />
+              Since{' '}
+              {new Date(channel.created_at).getFullYear()}
+            </span>
+
           </div>
+
         </div>
-        <FollowButton channelId={channel.id} />
+
       </Card>
 
       <div className="flex gap-2 mb-6">
-        <Button 
-          variant={activeTab === 'posts' ? 'primary' : 'ghost'}
-          onClick={() => setActiveTab('posts')}
-        >
-          Posts
-        </Button>
-        <Button 
+
+        <Button
           variant={activeTab === 'about' ? 'primary' : 'ghost'}
           onClick={() => setActiveTab('about')}
         >
           About
         </Button>
+
+        <Button
+          variant={
+            activeTab === 'contributors'
+              ? 'primary'
+              : 'ghost'
+          }
+          onClick={() => setActiveTab('contributors')}
+        >
+          Contributors
+        </Button>
+
       </div>
 
-      {activeTab === 'posts' && (
-        <div className="space-y-4">
-          {channel.posts?.map(post => <PostCard key={post.id} post={post} />)}
-          {!channel.posts?.length && <Card className="text-center">No posts yet</Card>}
-        </div>
-      )}
       {activeTab === 'about' && (
         <Card>
-          <h3 className="font-bold text-lg mb-3">About {channel.name}</h3>
-          <p>{channel.description}</p>
+          <h3 className="font-bold text-lg mb-3">
+            About {channel.name}
+          </h3>
+
+          <p>
+            {channel.description ||
+              'No description available.'}
+          </p>
+
           <hr className="my-4" />
-          <p><strong>Created:</strong> {new Date(channel.created).toLocaleDateString()}</p>
-          <p><strong>Total Posts:</strong> {channel.posts}</p>
-          <p><strong>Followers:</strong> {channel.followers}</p>
+
+          <p>
+            <strong>Status:</strong>{' '}
+            {channel.status}
+          </p>
+
+          <p>
+            <strong>Created:</strong>{' '}
+            {new Date(
+              channel.created_at
+            ).toLocaleDateString()}
+          </p>
+        </Card>
+      )}
+
+      {activeTab === 'contributors' && (
+        <Card>
+          <h3 className="font-bold text-lg mb-3">
+            Contributors
+          </h3>
+
+          {contributorsLoading ? (
+            <p>Loading contributors...</p>
+          ) : contributors.length === 0 ? (
+            <p>No contributors assigned.</p>
+          ) : (
+            <div className="space-y-3">
+              {contributors.map((contributor) => (
+                <div
+                  key={contributor.id}
+                  className="flex items-center gap-3"
+                >
+                  <Avatar
+                    size="sm"
+                    fallback={
+                      contributor.full_name?.[0] ||
+                      contributor.username?.[0] ||
+                      'U'
+                    }
+                  />
+
+                  <div>
+                    <p className="font-medium">
+                      {contributor.full_name ||
+                        contributor.username ||
+                        'Unnamed contributor'}
+                    </p>
+
+                    <p className="text-sm text-gray-500">
+                      {contributor.email}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
       )}
     </div>
   );
 };
+
 export default ChannelPage;

@@ -7,6 +7,7 @@ export const ROUTES = {
   CHANNELS: '/channels',
   CHANNEL_DETAIL: '/channel/:id',
   CONTENT_DETAIL: '/content/:id',
+  CREATE_CHANNEL: '/channel/create',
   AI_ASSISTANT: '/ai-assistant',
   SHORTS: '/shorts',
   LOGIN: '/login',

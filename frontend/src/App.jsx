@@ -1,6 +1,7 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './hooks/useAuth';
 
 // Layout
 import Header from './components/layout/Header';
@@ -14,6 +15,7 @@ import ContentDetail from './pages/ContentDetail';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import Contribute from './pages/Contribute';
+import CreateChannel from './components/channel-management/CreateChannel';
 
 // Auth
 import Login from './components/auth/Login';
@@ -25,6 +27,18 @@ import Search from './components/public/Search';
 import AIAssistant from './components/public/AIAssistant';
 import AaplaTheva from './components/public/AaplaTheva';
 import ChannelList from './components/public/ChannelList';
+import ManageChannel from './components/channel-management/ManageChannel';
+import ContributorManagement from './components/channel-management/ContributorManagement';
+
+function ProtectedRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <div className="p-8 text-center">Verifying session...</div>;
+  }
+
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+}
 
 function App() {
   return (
@@ -38,6 +52,24 @@ function App() {
               <Route path="/explore" element={<Explore />} />
               <Route path="/search" element={<Search />} />
               <Route path="/channels" element={<ChannelList />} />
+              <Route  path="/channel/create"  element={<ProtectedRoute><CreateChannel /></ProtectedRoute> }/>
+<Route
+  path="/channel/:id/manage"
+  element={
+    <ProtectedRoute>
+      <ManageChannel />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/channel/:id/contributors"
+  element={
+    <ProtectedRoute>
+      <ContributorManagement />
+    </ProtectedRoute>
+  }
+/>
               <Route path="/channel/:id" element={<ChannelPage />} />
               <Route path="/content/:id" element={<ContentDetail />} />
               <Route path="/ai-assistant" element={<AIAssistant />} />
@@ -45,10 +77,10 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/verify-otp" element={<OTPVerification />} />
-              <Route path="/profile" element={<Profile />} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/profile/:id" element={<Profile />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/contribute" element={<Contribute />} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/contribute" element={<ProtectedRoute><Contribute /></ProtectedRoute>} />
             </Routes>
           </main>
           <Footer />

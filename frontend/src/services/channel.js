@@ -1,36 +1,29 @@
-import api from './api';
+import { api } from './api';
 
-export const getChannels = async (filters = {}) => {
-  const response = await api.get('/channels', { params: filters });
-  return response.data;
+export const getChannels = async () => {
+  return api.channels();
 };
 
 export const getChannel = async (id) => {
-  const response = await api.get(`/channels/${id}`);
-  return response.data;
+  return api.channel(id);
 };
 
 export const createChannel = async (channelData) => {
-  const response = await api.post('/channels', channelData);
-  return response.data;
+  return api.createChannel(channelData);
 };
 
 export const updateChannel = async (id, channelData) => {
-  const response = await api.put(`/channels/${id}`, channelData);
-  return response.data;
+  return api.updateChannel(id, channelData);
 };
 
-export const deleteChannel = async (id) => {
-  const response = await api.delete(`/channels/${id}`);
-  return response.data;
+export const getChannelContributors = async (id) => {
+  return api.channelContributors(id);
 };
 
-export const followChannel = async (id) => {
-  const response = await api.post(`/channels/${id}/follow`);
-  return response.data;
+export const addChannelContributor = async (id, userId) => {
+  return api.addChannelContributor(id, userId);
 };
 
-export const unfollowChannel = async (id) => {
-  const response = await api.delete(`/channels/${id}/follow`);
-  return response.data;
+export const removeChannelContributor = async (channelId, userId) => {
+  return api.removeChannelContributor(channelId, userId);
 };

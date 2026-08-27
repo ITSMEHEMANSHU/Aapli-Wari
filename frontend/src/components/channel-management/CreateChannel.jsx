@@ -1,50 +1,117 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
-import { useAuth } from '../../hooks/useAuth';
+import { api } from '../../services/api';
 
 export const CreateChannel = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+
+  const [palkhi, setPalkhi] = useState(null);
+  const [loadingPalkhi, setLoadingPalkhi] = useState(true);
+  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    palkhiName: '',
-    location: '',
-    year: ''
   });
-  const [loading, setLoading] = useState(false);
+
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadPalkhi = async () => {
+      try {
+        setLoadingPalkhi(true);
+        setError('');
+
+        const data = await api.myPalkhi();
+
+        setPalkhi(data);
+      } catch (err) {
+        setError(
+          err.message || 'Unable to load your Palkhi'
+        );
+      } finally {
+        setLoadingPalkhi(false);
+      }
+    };
+
+    loadPalkhi();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    // API call to create channel
-    setTimeout(() => {
+
+    if (!palkhi) {
+      setError('Your Palkhi could not be found.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const channel = await api.createChannel({
+        name: formData.name,
+        description: formData.description,
+        palkhi_id: palkhi.id,
+      });
+
+      navigate(`/channel/${channel.id}`);
+    } catch (err) {
+      setError(
+        err.message || 'Failed to create channel'
+      );
+    } finally {
       setLoading(false);
-      navigate('/my-channels');
-    }, 1500);
+    }
   };
+
+  if (loadingPalkhi) {
+    return (
+      <div className="py-10 text-center">
+        Loading your Palkhi...
+      </div>
+    );
+  }
 
   return (
     <div className="create-channel-page">
-      <h1>🚩 Create Palkhi Channel</h1>
-      <p>Establish your Palkhi channel on Aapli Wari</p>
 
-      <form onSubmit={handleSubmit} className="create-channel-form">
+      <h1>Create Palkhi Channel</h1>
+
+      <p>
+        Create the channel for your Palkhi.
+      </p>
+
+      {error && (
+        <div className="text-red-600 mb-4">
+          {error}
+        </div>
+      )}
+
+      {palkhi && (
+        <div className="mb-6">
+          <strong>Palkhi:</strong> {palkhi.name}
+        </div>
+      )}
+
+      <form
+        onSubmit={handleSubmit}
+        className="create-channel-form"
+      >
+
         <Input
           label="Channel Name"
-          placeholder="e.g., Sant Dnyaneshwar Palkhi"
+          placeholder="Enter channel name"
           value={formData.name}
-          onChange={(e) => setFormData({...formData, name: e.target.value})}
-          required
-        />
-
-        <Input
-          label="Palkhi Name"
-          placeholder="Name of the Palkhi"
-          value={formData.palkhiName}
-          onChange={(e) => setFormData({...formData, palkhiName: e.target.value})}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              name: e.target.value,
+            })
+          }
           required
         />
 
@@ -53,34 +120,38 @@ export const CreateChannel = () => {
           label="Description"
           placeholder="Describe your Palkhi channel"
           value={formData.description}
-          onChange={(e) => setFormData({...formData, description: e.target.value})}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              description: e.target.value,
+            })
+          }
           rows={4}
         />
 
-        <div className="form-row">
-          <Input
-            label="Location"
-            placeholder="City/State"
-            value={formData.location}
-            onChange={(e) => setFormData({...formData, location: e.target.value})}
-          />
-          <Input
-            label="Established Year"
-            placeholder="e.g., 2024"
-            value={formData.year}
-            onChange={(e) => setFormData({...formData, year: e.target.value})}
-          />
-        </div>
-
         <div className="form-actions">
-          <Button variant="outline" onClick={() => navigate(-1)} type="button">
+
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => navigate(-1)}
+          >
             Cancel
           </Button>
-          <Button type="submit" loading={loading}>
+
+          <Button
+            type="submit"
+            loading={loading}
+            disabled={!palkhi}
+          >
             Create Channel
           </Button>
+
         </div>
+
       </form>
     </div>
   );
 };
+
+export default CreateChannel;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FiBook, FiUsers, FiUserPlus, FiCheckCircle, FiClock } from 'react-icons/fi';
+import { useAuth } from '../hooks/useAuth';
 
 import Badge from '../components/common/Badge';
 import Card from '../components/common/Card';
@@ -7,13 +8,14 @@ import Button from '../components/common/Button';
 import Avatar from '../components/common/Avatar';
 
 export const Profile = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('contributions');
   
   const profile = {
-    name: 'John Doe',
-    email: 'john@email.com',
-    role: 'contributor',
-    joined: '2026-01-15',
+    name: user?.name || user?.username || 'User',
+    email: user?.email || '',
+    role: user?.role || 'Assigned role',
+    joined: user?.created_at || new Date().toISOString(),
     contributions: 15,
     followers: 120,
     following: 45,

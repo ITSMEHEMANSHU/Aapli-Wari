@@ -1,25 +1,34 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { api } from '../../services/api';
 import { FaUser, FaEnvelope, FaLock } from 'react-icons/fa';
 
 export const Register = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: '',
+    full_name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    role: ''
   });
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    api.roles()
+      .then(setRoles)
+      .catch((requestError) => setError(requestError.message));
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -30,11 +39,19 @@ export const Register = () => {
       return;
     }
 
-    setTimeout(() => {
-      register(formData);
+    try {
+      await register({
+        full_name: formData.full_name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      });
       navigate('/verify-otp');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   return (
@@ -52,9 +69,9 @@ export const Register = () => {
               <FaUser className="absolute left-3 top-3 text-gray-400" />
               <input
                 type="text"
-                name="name"
+                name="full_name"
                 placeholder="Enter your name"
-                value={formData.name}
+                value={formData.full_name}
                 onChange={handleChange}
                 className="w-full pl-10 pr-4 py-2 border rounded focus:outline-none focus:border-primary"
                 required
@@ -108,6 +125,22 @@ export const Register = () => {
                 required
               />
             </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium mb-1">Account type</label>
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:border-primary"
+              required
+            >
+              <option value="">Select account type</option>
+              {roles.map((role) => (
+                <option key={role.id} value={role.name}>{role.name}</option>
+              ))}
+            </select>
           </div>
 
           <button
