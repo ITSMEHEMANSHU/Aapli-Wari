@@ -7,6 +7,8 @@ from backend.app.api import users
 from backend.app.core.security import authorize_request
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.api import channels
+from backend.app.api import  content  # Add content
+
 
 app = FastAPI(
     title="Aapli Wari API",
@@ -34,6 +36,7 @@ app.include_router(
 )
 
 app.include_router(channels.router)
+app.include_router(content.router)  # Add this
 
 @app.get("/")
 def root():

@@ -49,7 +49,7 @@ class User(Base):
     role_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("roles.id"),
-        nullable=False,
+        nullable=True,
     )
 
     palkhi_affiliation: Mapped[str | None] = mapped_column(

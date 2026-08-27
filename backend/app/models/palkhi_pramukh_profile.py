@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import DateTime, String, Text
+from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -14,6 +14,7 @@ class PalkhiPramukhProfile(Base):
 
     user_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
         primary_key=True,
     )
 

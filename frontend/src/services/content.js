@@ -10,9 +10,18 @@ export const getContentList = async (filters = {}) => {
   return response.data;
 };
 
-export const uploadContent = async (formData) => {
+// ✅ UPDATED: Added onProgress callback support
+export const uploadContent = async (formData, onProgress) => {
   const response = await api.post('/content/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress: (progressEvent) => {
+      if (onProgress && progressEvent.total) {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        onProgress(percentCompleted);
+      }
+    }
   });
   return response.data;
 };

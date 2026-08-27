@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from backend.app.core.security import authorize_request
 from backend.app.db.database import get_db
 from backend.app.models.user import User
-
 from backend.app.schemas.channel import (
     ChannelCreate,
     ChannelResponse,
@@ -18,7 +17,6 @@ from backend.app.schemas.channel import (
     ChannelJoinRequestDetailResponse,
     JoinRequestDecision,
 )
-
 from backend.app.services.channels.channel_service import (
     assign_contributor,
     create_channel,
@@ -29,6 +27,7 @@ from backend.app.services.channels.channel_service import (
     get_channel_contributors,
     get_channel_join_requests,
     get_my_join_request,
+    get_my_join_requests,
     get_my_palkhi,
     get_my_channel_memberships,
     list_channels,
@@ -110,12 +109,13 @@ def list_all(
 
 
 # =========================================================
-# GET SINGLE CHANNEL
+# CURRENT USER'S CHANNEL MEMBERSHIPS
+# IMPORTANT: BEFORE /{channel_id}
 # =========================================================
 
 @router.get(
     "/my-memberships",
-    response_model=list[UUID],
+    response_model=list[ChannelResponse],
 )
 def my_channel_memberships(
     current_user: User = Depends(authorize_request),
@@ -126,6 +126,25 @@ def my_channel_memberships(
         user=current_user,
     )
 
+
+@router.get(
+    "/my-join-requests",
+    response_model=list[ChannelJoinRequestResponse],
+)
+def my_join_requests(
+    current_user: User = Depends(authorize_request),
+    db: Session = Depends(get_db),
+):
+    return get_my_join_requests(
+        db=db,
+        requester=current_user,
+    )
+
+
+# =========================================================
+# GET SINGLE CHANNEL
+# =========================================================
+
 @router.get(
     "/{channel_id}",
     response_model=ChannelResponse,
@@ -135,10 +154,18 @@ def get(
     _: User = Depends(authorize_request),
     db: Session = Depends(get_db),
 ):
-    return get_channel(
+    channel = get_channel(
         db=db,
         channel_id=channel_id,
     )
+
+    if channel.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Channel not found",
+        )
+
+    return channel
 
 
 # =========================================================
@@ -255,7 +282,6 @@ def list_join_requests(
     result = []
 
     for request in requests:
-
         user = db.get(User, request.user_id)
 
         if user is None:
@@ -301,8 +327,6 @@ def decide_join_request(
         channel_id=channel_id,
     )
 
-    # Only the respective Palkhi Pramukh
-    # can approve/reject requests.
     if channel.created_by_user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -431,13 +455,19 @@ def delete_contributor(
 def change_status(
     channel_id: UUID,
     new_status: str,
-    _: User = Depends(authorize_request),
+    current_user: User = Depends(authorize_request),
     db: Session = Depends(get_db),
 ):
     channel = get_channel(
         db=db,
         channel_id=channel_id,
     )
+
+    if channel.created_by_user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the channel owner can change channel status",
+        )
 
     return set_channel_status(
         db=db,

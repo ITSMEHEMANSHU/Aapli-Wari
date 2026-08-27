@@ -22,37 +22,90 @@ export const ChannelList = () => {
   const [error, setError] = useState('');
 
 
+  /*
+   * =========================================
+   * LOAD CHANNELS
+   * =========================================
+   */
+
   useEffect(() => {
     const loadChannels = async () => {
       try {
         setLoading(true);
         setError('');
 
+        /*
+         * Get all active channels.
+         */
         const data = await api.channels();
 
         setChannels(data);
 
-        /*
-         * CONTRIBUTOR
-         *
-         * Get ONLY the channels that belong
-         * to the currently authenticated user.
-         */
-        if (user?.role === 'contributor') {
 
-          const myChannelIds =
+        /*
+         * =========================================
+         * CONTRIBUTOR MEMBERSHIPS
+         * =========================================
+         *
+         * Do NOT call:
+         *
+         * /channels/{channel_id}/contributors
+         *
+         * for every channel.
+         *
+         * We now use the dedicated backend endpoint:
+         *
+         * /channels/my-memberships
+         *
+         * which returns the channel IDs where the
+         * current contributor is already assigned.
+         */
+
+        if (user?.role === 'contributor') {
+          const myMemberships =
             await api.myChannelMemberships();
+
+          const myChannelIds = new Set(
+            myMemberships.map((channel) =>
+              String(channel.id || channel)
+            )
+          );
+
+          /*
+           * Convert the returned channel IDs into:
+           *
+           * {
+           *   channelId: {
+           *     isMember: true,
+           *     requestPending: false
+           *   }
+           * }
+           */
 
           const membershipMap = {};
 
+          const myJoinRequests = await api.myJoinRequests();
+          const pendingChannelIds = new Set(
+            myJoinRequests
+              .filter((request) => request.status === 'pending')
+              .map((request) => String(request.channel_id))
+          );
+
           data.forEach((channel) => {
+
             membershipMap[channel.id] = {
-              isMember: myChannelIds.includes(channel.id),
-              requestPending: false,
+              isMember: myChannelIds.has(String(channel.id)),
+              requestPending: pendingChannelIds.has(String(channel.id)),
             };
           });
 
           setMembership(membershipMap);
+        } else {
+          /*
+           * Clear contributor membership state
+           * for non-contributor users.
+           */
+          setMembership({});
         }
 
       } catch (err) {
@@ -65,11 +118,20 @@ export const ChannelList = () => {
       }
     };
 
+
     if (user) {
       loadChannels();
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
+
+  /*
+   * =========================================
+   * SEND JOIN REQUEST
+   * =========================================
+   */
 
   const sendJoinRequest = async (channelId) => {
     try {
@@ -82,6 +144,11 @@ export const ChannelList = () => {
 
       await api.joinChannel(channelId);
 
+      /*
+       * The user is NOT a member yet.
+       *
+       * They have only submitted a request.
+       */
       setMembership((prev) => ({
         ...prev,
         [channelId]: {
@@ -105,6 +172,12 @@ export const ChannelList = () => {
   };
 
 
+  /*
+   * =========================================
+   * LOADING
+   * =========================================
+   */
+
   if (loading) {
     return (
       <div className="py-10 text-center">
@@ -114,10 +187,24 @@ export const ChannelList = () => {
   }
 
 
+  /*
+   * =========================================
+   * ERROR
+   * =========================================
+   */
+
   if (error) {
     return (
       <div className="py-10 text-center text-red-600">
         {error}
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="py-10 text-center">
+        Sign in to view channels.
       </div>
     );
   }
@@ -130,7 +217,6 @@ export const ChannelList = () => {
    */
 
   if (user?.role === 'palkhi_pramukh') {
-
     const myChannels = channels.filter(
       (channel) =>
         channel.created_by_user_id === user.id
@@ -140,6 +226,7 @@ export const ChannelList = () => {
       (channel) =>
         channel.created_by_user_id !== user.id
     );
+
 
     return (
       <div>
@@ -152,6 +239,10 @@ export const ChannelList = () => {
           Follow and explore Wari channels
         </p>
 
+
+        {/* =========================================
+            YOUR CHANNEL
+        ========================================= */}
 
         {myChannels.length > 0 && (
           <section className="mb-8">
@@ -176,6 +267,10 @@ export const ChannelList = () => {
         )}
 
 
+        {/* =========================================
+            CREATE CHANNEL
+        ========================================= */}
+
         {myChannels.length === 0 && (
           <div className="mb-6">
 
@@ -192,11 +287,16 @@ export const ChannelList = () => {
         )}
 
 
+        {/* =========================================
+            OTHER CHANNELS
+        ========================================= */}
+
         <section>
 
           <h2 className="text-lg font-bold mb-3">
             Other Channels
           </h2>
+
 
           {otherChannels.length === 0 ? (
 
@@ -235,11 +335,20 @@ export const ChannelList = () => {
 
   if (user?.role === 'contributor') {
 
+    /*
+     * Channels where the current contributor
+     * is actually assigned.
+     */
     const myChannels = channels.filter(
       (channel) =>
         membership[channel.id]?.isMember === true
     );
 
+
+    /*
+     * Channels where the current contributor
+     * is NOT assigned.
+     */
     const otherChannels = channels.filter(
       (channel) =>
         membership[channel.id]?.isMember !== true
@@ -258,9 +367,9 @@ export const ChannelList = () => {
         </p>
 
 
-        {/* ==============================
+        {/* =========================================
             YOUR CHANNELS
-        ============================== */}
+        ========================================= */}
 
         {myChannels.length > 0 && (
 
@@ -286,12 +395,13 @@ export const ChannelList = () => {
             </div>
 
           </section>
+
         )}
 
 
-        {/* ==============================
+        {/* =========================================
             OTHER CHANNELS
-        ============================== */}
+        ========================================= */}
 
         <section>
 
@@ -317,13 +427,16 @@ export const ChannelList = () => {
                   channel={channel}
                   navigate={navigate}
                   isContributor={false}
+
                   requestPending={
                     membership[channel.id]
                       ?.requestPending
                   }
+
                   requesting={
                     requesting[channel.id]
                   }
+
                   onJoinRequest={() =>
                     sendJoinRequest(channel.id)
                   }
@@ -411,12 +524,20 @@ const ChannelCard = ({
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
 
 
+        {/* =========================================
+            CHANNEL ICON
+        ========================================= */}
+
         <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
 
           {channel.name?.[0]?.toUpperCase() || 'C'}
 
         </div>
 
+
+        {/* =========================================
+            CHANNEL INFORMATION
+        ========================================= */}
 
         <div className="flex-1">
 
@@ -456,6 +577,7 @@ const ChannelCard = ({
               {channel.status}
             </span>
 
+
             <span className="flex items-center gap-1">
               <FiUsers />
               Channel
@@ -465,6 +587,10 @@ const ChannelCard = ({
 
         </div>
 
+
+        {/* =========================================
+            ACTIONS
+        ========================================= */}
 
         <div className="flex gap-2 flex-wrap">
 
@@ -480,6 +606,10 @@ const ChannelCard = ({
             View
           </Button>
 
+
+          {/* =========================================
+              CONTRIBUTOR
+          ========================================= */}
 
           {isContributor ? (
 
@@ -539,12 +669,20 @@ const renderChannel = (
     <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
 
 
+      {/* =========================================
+          CHANNEL ICON
+      ========================================= */}
+
       <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
 
         {channel.name?.[0]?.toUpperCase() || 'C'}
 
       </div>
 
+
+      {/* =========================================
+          CHANNEL INFORMATION
+      ========================================= */}
 
       <div className="flex-1">
 
@@ -586,6 +724,7 @@ const renderChannel = (
             {channel.status}
           </span>
 
+
           <span className="flex items-center gap-1">
             <FiUsers />
             Channel
@@ -595,6 +734,10 @@ const renderChannel = (
 
       </div>
 
+
+      {/* =========================================
+          ACTIONS
+      ========================================= */}
 
       <div className="flex gap-2">
 

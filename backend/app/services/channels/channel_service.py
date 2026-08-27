@@ -247,6 +247,19 @@ def get_my_join_request(
         )
     )
 
+
+def get_my_join_requests(
+    db: Session,
+    requester: User,
+) -> list[ChannelJoinRequest]:
+    return list(
+        db.scalars(
+            select(ChannelJoinRequest).where(
+                ChannelJoinRequest.user_id == requester.id
+            )
+        ).all()
+    )
+
 def decide_join_request(
     db: Session,
     channel: Channel,
@@ -335,19 +348,18 @@ def get_channel_join_requests(
 def get_my_channel_memberships(
     db: Session,
     user: User,
-) -> list[UUID]:
+) -> list[Channel]:
+
     return list(
         db.scalars(
-            select(Channel.id)
+            select(Channel)
             .join(
                 channel_contributors,
                 channel_contributors.c.channel_id == Channel.id,
             )
             .where(
-                channel_contributors.c.user_id == user.id,
-                Channel.status == "active",
+                channel_contributors.c.user_id == user.id
             )
-            .order_by(Channel.created_at.desc())
         ).all()
     )
 

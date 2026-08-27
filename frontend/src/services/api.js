@@ -87,11 +87,14 @@ export const api = {
   channels: () =>
     request('/channels'),
 
-  channel: (id) =>
-    request(`/channels/${id}`),
-
   myChannelMemberships: () =>
   request('/channels/my-memberships'),
+
+  myJoinRequests: () =>
+  request('/channels/my-join-requests'),
+
+  channel: (id) =>
+    request(`/channels/${id}`),
 
   createChannel: (data) =>
     request('/channels', {
