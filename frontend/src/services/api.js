@@ -90,6 +90,9 @@ export const api = {
   channel: (id) =>
     request(`/channels/${id}`),
 
+  myChannelMemberships: () =>
+  request('/channels/my-memberships'),
+
   createChannel: (data) =>
     request('/channels', {
       method: 'POST',
@@ -127,7 +130,7 @@ decideJoinRequest: (channelId, requestId, action) =>
       }),
     }
   ),
-  
+
   channelContributors: (channelId) =>
     request(`/channels/${channelId}/contributors`),
 
@@ -139,6 +142,8 @@ decideJoinRequest: (channelId, requestId, action) =>
       }),
     }),
 
+    
+
   removeChannelContributor: (channelId, userId) =>
     request(
       `/channels/${channelId}/contributors/${userId}`,
@@ -147,4 +152,6 @@ decideJoinRequest: (channelId, requestId, action) =>
       }
     ),
 };
+
+
 

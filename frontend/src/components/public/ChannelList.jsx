@@ -21,6 +21,7 @@ export const ChannelList = () => {
   const [requesting, setRequesting] = useState({});
   const [error, setError] = useState('');
 
+
   useEffect(() => {
     const loadChannels = async () => {
       try {
@@ -32,45 +33,28 @@ export const ChannelList = () => {
         setChannels(data);
 
         /*
-         * Find which channels the current user
-         * belongs to.
+         * CONTRIBUTOR
+         *
+         * Get ONLY the channels that belong
+         * to the currently authenticated user.
          */
         if (user?.role === 'contributor') {
-          const membershipResults = await Promise.all(
-            data.map(async (channel) => {
-              try {
-                const contributors =
-                  await api.channelContributors(
-                    channel.id
-                  );
 
-                const isMember = contributors.some(
-                  (contributor) =>
-                    contributor.id === user.id
-                );
-
-                return {
-                  channelId: channel.id,
-                  isMember,
-                };
-              } catch {
-                return {
-                  channelId: channel.id,
-                  isMember: false,
-                };
-              }
-            })
-          );
+          const myChannelIds =
+            await api.myChannelMemberships();
 
           const membershipMap = {};
 
-          membershipResults.forEach((result) => {
-            membershipMap[result.channelId] =
-              result.isMember;
+          data.forEach((channel) => {
+            membershipMap[channel.id] = {
+              isMember: myChannelIds.includes(channel.id),
+              requestPending: false,
+            };
           });
 
           setMembership(membershipMap);
         }
+
       } catch (err) {
         setError(
           err.message ||
@@ -86,6 +70,7 @@ export const ChannelList = () => {
     }
   }, [user]);
 
+
   const sendJoinRequest = async (channelId) => {
     try {
       setRequesting((prev) => ({
@@ -97,18 +82,15 @@ export const ChannelList = () => {
 
       await api.joinChannel(channelId);
 
-      /*
-       * Mark request as pending locally.
-       * This prevents the button from being
-       * clicked repeatedly.
-       */
       setMembership((prev) => ({
         ...prev,
         [channelId]: {
-          ...prev[channelId],
+          ...(prev[channelId] || {}),
+          isMember: false,
           requestPending: true,
         },
       }));
+
     } catch (err) {
       setError(
         err.message ||
@@ -122,6 +104,7 @@ export const ChannelList = () => {
     }
   };
 
+
   if (loading) {
     return (
       <div className="py-10 text-center">
@@ -129,6 +112,7 @@ export const ChannelList = () => {
       </div>
     );
   }
+
 
   if (error) {
     return (
@@ -138,11 +122,15 @@ export const ChannelList = () => {
     );
   }
 
+
   /*
+   * =========================================
    * PALKHI PRAMUKH
+   * =========================================
    */
 
   if (user?.role === 'palkhi_pramukh') {
+
     const myChannels = channels.filter(
       (channel) =>
         channel.created_by_user_id === user.id
@@ -164,6 +152,7 @@ export const ChannelList = () => {
           Follow and explore Wari channels
         </p>
 
+
         {myChannels.length > 0 && (
           <section className="mb-8">
 
@@ -172,6 +161,7 @@ export const ChannelList = () => {
             </h2>
 
             <div className="space-y-3">
+
               {myChannels.map((channel) =>
                 renderChannel(
                   channel,
@@ -179,13 +169,16 @@ export const ChannelList = () => {
                   navigate
                 )
               )}
+
             </div>
 
           </section>
         )}
 
+
         {myChannels.length === 0 && (
           <div className="mb-6">
+
             <Button
               variant="primary"
               onClick={() =>
@@ -194,8 +187,10 @@ export const ChannelList = () => {
             >
               Create Channel
             </Button>
+
           </div>
         )}
+
 
         <section>
 
@@ -204,11 +199,15 @@ export const ChannelList = () => {
           </h2>
 
           {otherChannels.length === 0 ? (
+
             <div className="text-center py-10">
               No other channels available.
             </div>
+
           ) : (
+
             <div className="space-y-3">
+
               {otherChannels.map((channel) =>
                 renderChannel(
                   channel,
@@ -216,7 +215,9 @@ export const ChannelList = () => {
                   navigate
                 )
               )}
+
             </div>
+
           )}
 
         </section>
@@ -225,11 +226,15 @@ export const ChannelList = () => {
     );
   }
 
+
   /*
+   * =========================================
    * CONTRIBUTOR
+   * =========================================
    */
 
   if (user?.role === 'contributor') {
+
     const myChannels = channels.filter(
       (channel) =>
         membership[channel.id]?.isMember === true
@@ -239,6 +244,7 @@ export const ChannelList = () => {
       (channel) =>
         membership[channel.id]?.isMember !== true
     );
+
 
     return (
       <div>
@@ -251,7 +257,13 @@ export const ChannelList = () => {
           Follow and explore Wari channels
         </p>
 
+
+        {/* ==============================
+            YOUR CHANNELS
+        ============================== */}
+
         {myChannels.length > 0 && (
+
           <section className="mb-8">
 
             <h2 className="text-lg font-bold mb-3">
@@ -261,12 +273,14 @@ export const ChannelList = () => {
             <div className="space-y-3">
 
               {myChannels.map((channel) => (
+
                 <ChannelCard
                   key={channel.id}
                   channel={channel}
                   navigate={navigate}
                   isContributor={true}
                 />
+
               ))}
 
             </div>
@@ -274,20 +288,30 @@ export const ChannelList = () => {
           </section>
         )}
 
+
+        {/* ==============================
+            OTHER CHANNELS
+        ============================== */}
+
         <section>
 
           <h2 className="text-lg font-bold mb-3">
             Other Channels
           </h2>
 
+
           {otherChannels.length === 0 ? (
+
             <div className="text-center py-10">
               No other channels available.
             </div>
+
           ) : (
+
             <div className="space-y-3">
 
               {otherChannels.map((channel) => (
+
                 <ChannelCard
                   key={channel.id}
                   channel={channel}
@@ -304,9 +328,11 @@ export const ChannelList = () => {
                     sendJoinRequest(channel.id)
                   }
                 />
+
               ))}
 
             </div>
+
           )}
 
         </section>
@@ -315,8 +341,11 @@ export const ChannelList = () => {
     );
   }
 
+
   /*
+   * =========================================
    * NORMAL USER
+   * =========================================
    */
 
   return (
@@ -330,20 +359,29 @@ export const ChannelList = () => {
         Follow and explore Wari channels
       </p>
 
+
       {channels.length === 0 ? (
+
         <div className="text-center py-10">
           No active channels available.
         </div>
+
       ) : (
+
         <div className="space-y-3">
+
           {channels.map((channel) => (
+
             <ChannelCard
               key={channel.id}
               channel={channel}
               navigate={navigate}
             />
+
           ))}
+
         </div>
+
       )}
 
     </div>
@@ -352,7 +390,9 @@ export const ChannelList = () => {
 
 
 /*
+ * =========================================
  * CHANNEL CARD
+ * =========================================
  */
 
 const ChannelCard = ({
@@ -363,16 +403,20 @@ const ChannelCard = ({
   requesting = false,
   onJoinRequest,
 }) => {
+
   return (
-    <div
-      className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition"
-    >
+
+    <div className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition">
+
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
 
+
         <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-          {channel.name?.[0]?.toUpperCase() ||
-            'C'}
+
+          {channel.name?.[0]?.toUpperCase() || 'C'}
+
         </div>
+
 
         <div className="flex-1">
 
@@ -382,9 +426,11 @@ const ChannelCard = ({
               {channel.name}
             </h3>
 
+
             {channel.status === 'active' && (
               <FiCheckCircle className="text-green-600" />
             )}
+
 
             {isContributor && (
               <span className="text-xs font-semibold px-2 py-1 rounded bg-green-100 text-green-700">
@@ -394,10 +440,14 @@ const ChannelCard = ({
 
           </div>
 
+
           <p className="text-sm text-gray-600 mb-2">
+
             {channel.description ||
               'No description available.'}
+
           </p>
+
 
           <div className="flex gap-4 text-sm text-gray-600">
 
@@ -415,6 +465,7 @@ const ChannelCard = ({
 
         </div>
 
+
         <div className="flex gap-2 flex-wrap">
 
           <Button
@@ -429,11 +480,15 @@ const ChannelCard = ({
             View
           </Button>
 
+
           {isContributor ? (
+
             <span className="text-sm text-green-600 font-medium self-center">
               Member
             </span>
+
           ) : requestPending ? (
+
             <Button
               variant="secondary"
               size="sm"
@@ -441,7 +496,9 @@ const ChannelCard = ({
             >
               Request Pending
             </Button>
+
           ) : onJoinRequest ? (
+
             <Button
               variant="outline"
               size="sm"
@@ -450,18 +507,22 @@ const ChannelCard = ({
             >
               Send Join Request
             </Button>
+
           ) : null}
 
         </div>
 
       </div>
+
     </div>
   );
 };
 
 
 /*
+ * =========================================
  * PALKHI PRAMUKH CHANNEL CARD
+ * =========================================
  */
 
 const renderChannel = (
@@ -469,16 +530,21 @@ const renderChannel = (
   isOwnChannel,
   navigate
 ) => (
+
   <div
     key={channel.id}
     className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition"
   >
+
     <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
 
+
       <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-        {channel.name?.[0]?.toUpperCase() ||
-          'C'}
+
+        {channel.name?.[0]?.toUpperCase() || 'C'}
+
       </div>
+
 
       <div className="flex-1">
 
@@ -488,22 +554,30 @@ const renderChannel = (
             {channel.name}
           </h3>
 
+
           {channel.status === 'active' && (
             <FiCheckCircle className="text-green-600" />
           )}
 
+
           {isOwnChannel && (
+
             <span className="text-xs font-semibold px-2 py-1 rounded bg-primary text-white">
               Your Channel
             </span>
+
           )}
 
         </div>
 
+
         <p className="text-sm text-gray-600 mb-2">
+
           {channel.description ||
             'No description available.'}
+
         </p>
+
 
         <div className="flex gap-4 text-sm text-gray-600">
 
@@ -521,6 +595,7 @@ const renderChannel = (
 
       </div>
 
+
       <div className="flex gap-2">
 
         <Button
@@ -535,7 +610,9 @@ const renderChannel = (
           View
         </Button>
 
+
         {isOwnChannel && (
+
           <Button
             variant="outline"
             size="sm"
@@ -547,12 +624,15 @@ const renderChannel = (
           >
             Manage
           </Button>
+
         )}
 
       </div>
 
     </div>
+
   </div>
 );
+
 
 export default ChannelList;

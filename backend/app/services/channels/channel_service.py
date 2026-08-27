@@ -15,6 +15,7 @@ from backend.app.schemas.channel import (
 )
 
 from backend.app.models.channel_join_request import ChannelJoinRequest
+from backend.app.models.channel import channel_contributors
 
 def create_palkhi(
     db: Session,
@@ -328,6 +329,25 @@ def get_channel_join_requests(
             ).order_by(
                 ChannelJoinRequest.created_at.asc()
             )
+        ).all()
+    )
+
+def get_my_channel_memberships(
+    db: Session,
+    user: User,
+) -> list[UUID]:
+    return list(
+        db.scalars(
+            select(Channel.id)
+            .join(
+                channel_contributors,
+                channel_contributors.c.channel_id == Channel.id,
+            )
+            .where(
+                channel_contributors.c.user_id == user.id,
+                Channel.status == "active",
+            )
+            .order_by(Channel.created_at.desc())
         ).all()
     )
 

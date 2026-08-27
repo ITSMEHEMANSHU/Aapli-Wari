@@ -30,6 +30,7 @@ from backend.app.services.channels.channel_service import (
     get_channel_join_requests,
     get_my_join_request,
     get_my_palkhi,
+    get_my_channel_memberships,
     list_channels,
     remove_contributor,
     set_channel_status,
@@ -111,6 +112,19 @@ def list_all(
 # =========================================================
 # GET SINGLE CHANNEL
 # =========================================================
+
+@router.get(
+    "/my-memberships",
+    response_model=list[UUID],
+)
+def my_channel_memberships(
+    current_user: User = Depends(authorize_request),
+    db: Session = Depends(get_db),
+):
+    return get_my_channel_memberships(
+        db=db,
+        user=current_user,
+    )
 
 @router.get(
     "/{channel_id}",
