@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -17,10 +17,10 @@ class User(Base):
         primary_key=True,
     )
 
-    username: Mapped[str] = mapped_column(
+    username: Mapped[str | None] = mapped_column(
         String(100),
         unique=True,
-        nullable=False,
+        nullable=True,
     )
 
     email: Mapped[str] = mapped_column(
@@ -29,10 +29,37 @@ class User(Base):
         nullable=False,
     )
 
+    full_name: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    role: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        default="user",
+    )
+
+    is_contributor: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+
     role_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("roles.id"),
         nullable=False,
+    )
+
+    palkhi_affiliation: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    bio: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
     )
 
     is_active: Mapped[bool] = mapped_column(

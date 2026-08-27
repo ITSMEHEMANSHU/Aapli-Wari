@@ -1,6 +1,7 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './hooks/useAuth';
 
 // Layout
 import Header from './components/layout/Header';
@@ -26,6 +27,16 @@ import AIAssistant from './components/public/AIAssistant';
 import AaplaTheva from './components/public/AaplaTheva';
 import ChannelList from './components/public/ChannelList';
 
+function ProtectedRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <div className="p-8 text-center">Verifying session...</div>;
+  }
+
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -45,10 +56,10 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/verify-otp" element={<OTPVerification />} />
-              <Route path="/profile" element={<Profile />} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/profile/:id" element={<Profile />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/contribute" element={<Contribute />} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/contribute" element={<ProtectedRoute><Contribute /></ProtectedRoute>} />
             </Routes>
           </main>
           <Footer />

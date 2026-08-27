@@ -86,6 +86,7 @@ def signup(
                 "options": {
                     "data": {
                         "username": data.username,
+                        "full_name": data.full_name,
                     }
                 },
             }
@@ -111,8 +112,10 @@ def signup(
             db=db,
             user_id=UUID(str(response.user.id)),
             username=data.username,
+            full_name=data.full_name,
             email=data.email,
             role_id=role.id,
+            role=role.name,
         )
 
     except Exception as e:

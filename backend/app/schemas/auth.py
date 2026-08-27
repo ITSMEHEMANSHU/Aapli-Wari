@@ -3,7 +3,9 @@ from pydantic import BaseModel, EmailStr
 
 class SignupRequest(BaseModel):
 
-    username: str
+    username: str | None = None
+
+    full_name: str
 
     email: EmailStr
 

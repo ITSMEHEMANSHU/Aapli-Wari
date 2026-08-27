@@ -39,6 +39,9 @@ def update_my_profile(
     if data.full_name is not None:
         current_user.full_name = data.full_name
 
+    if data.username is not None:
+        current_user.username = data.username
+
     if data.bio is not None:
         current_user.bio = data.bio
 

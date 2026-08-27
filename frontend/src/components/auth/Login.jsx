@@ -11,20 +11,19 @@ export const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    setTimeout(() => {
-      if (email && password) {
-        login(email, password);
-        navigate('/');
-      } else {
-        setError('Please fill in all fields');
-      }
+    try {
+      await login(email, password);
+      navigate('/');
+    } catch (error) {
+      setError(error.message);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   return (

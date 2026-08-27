@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FiSave, FiBell, FiMoon, FiGlobe } from 'react-icons/fi';
+import { useAuth } from '../hooks/useAuth';
 
 import Input from '../components/common/Input';
 import Card from '../components/common/Card';
@@ -7,9 +8,10 @@ import Button from '../components/common/Button';
 import Alert from '../components/common/Alert';
 
 export const Settings = () => {
+  const { user } = useAuth();
   const [settings, setSettings] = useState({
-    name: 'John Doe',
-    email: 'john@email.com',
+    name: user?.name || user?.username || '',
+    email: user?.email || '',
     language: 'en',
     notifications: true,
     darkMode: false

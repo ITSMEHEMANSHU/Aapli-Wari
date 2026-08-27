@@ -15,16 +15,20 @@ def get_user_by_id(
 def create_user(
     db: Session,
     user_id: UUID,
-    username: str,
+    username: str | None,
+    full_name: str,
     email: str,
     role_id: UUID,
+    role: str,
 ):
 
     user = User(
         id=user_id,
         username=username,
+        full_name=full_name,
         email=email,
         role_id=role_id,
+        role=role,
         is_active=True,
     )
 

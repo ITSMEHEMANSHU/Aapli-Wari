@@ -12,9 +12,11 @@ class UserResponse(BaseModel):
 
     id: UUID
 
-    username: str
+    username: str | None
 
     email: str
+
+    full_name: str | None
 
     role_id: UUID
 
@@ -28,6 +30,8 @@ class UserResponse(BaseModel):
 class UserProfileUpdate(BaseModel):
 
     username: str | None = None
+
+    full_name: str | None = None
 
     bio: str | None = None
 
