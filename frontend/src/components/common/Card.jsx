@@ -8,7 +8,7 @@ export const Card = ({
 }) => {
   return (
     <div 
-      className={`bg-white rounded-lg shadow-md p-6 ${hover ? 'hover:shadow-lg transition' : ''} ${className}`}
+      className={`bg-white ${hover ? 'hover:shadow-lg transition' : ''} ${className}`}
       onClick={onClick}
     >
       {children}
