@@ -184,20 +184,6 @@ def create_join_request(
             detail="Channel is inactive",
         )
 
-    role = db.get(Role, requester.role_id)
-
-    if role is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User role is not configured",
-        )
-
-    if role.name != "contributor":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only contributors can request to join a channel",
-        )
-
     if requester in channel.contributors:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
