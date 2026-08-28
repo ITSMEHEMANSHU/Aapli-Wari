@@ -36,3 +36,8 @@ export const saveContent = async (id) => {
 export const addComment = async (id, comment) => {
   return api.addComment(id, comment);
 };
+
+export const getComments = async (id, skip = 0, limit = 20) => api.getComments(id, skip, limit);
+export const deleteComment = async (commentId) => api.deleteComment(commentId);
+export const trackShare = async (id, platform = null) => api.trackShare(id, platform);
+export const trackDownload = async (id) => api.trackDownload(id);

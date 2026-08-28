@@ -21,17 +21,22 @@ import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 import Avatar from '../components/common/Avatar';
 import { Comments } from '../components/community/Comments';
-import { getContent } from '../services/content';
+import { useAuth } from '../hooks/useAuth';
+import { getContent, likeContent, trackDownload, trackShare } from '../services/content';
 
 export const ContentDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [liking, setLiking] = useState(false);
+  const [shareCount, setShareCount] = useState(0);
+  const [downloadCount, setDownloadCount] = useState(0);
 
   useEffect(() => {
     fetchContent();
@@ -43,7 +48,10 @@ export const ContentDetail = () => {
       setError(null);
       const data = await getContent(id);
       setContent(data);
-      setLikeCount(data.likes || 0);
+      setLiked(data.is_liked || false);
+      setLikeCount(data.likes_count || 0);
+      setShareCount(data.shares_count || 0);
+      setDownloadCount(data.downloads_count || 0);
     } catch (err) {
       setError(err.message || 'Failed to load content');
       console.error('Failed to fetch content:', err);
@@ -52,9 +60,70 @@ export const ContentDetail = () => {
     }
   };
 
-  const handleLike = () => {
-    setLiked(!liked);
-    setLikeCount(prev => liked ? prev - 1 : prev + 1);
+  const handleLike = async () => {
+    if (!user) {
+      setError('Please log in to like content.');
+      return;
+    }
+    if (liking) return;
+    const previousLiked = liked;
+    const previousCount = likeCount;
+    setLiked(!previousLiked);
+    setLikeCount((count) => previousLiked ? Math.max(0, count - 1) : count + 1);
+    setLiking(true);
+    try {
+      const result = await likeContent(id);
+      setLiked(result.is_liked);
+      setLikeCount(result.likes_count);
+    } catch (err) {
+      setLiked(previousLiked);
+      setLikeCount(previousCount);
+      setError(err.message || 'Unable to update like.');
+    } finally {
+      setLiking(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    let platform = 'copy';
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: content.title, text: `Check out ${content.title}`, url });
+        platform = 'web';
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+    if (platform === 'copy') {
+      try {
+        await navigator.clipboard.writeText(url);
+        window.alert('Link copied to clipboard.');
+      } catch {
+        window.prompt('Copy this link:', url);
+      }
+    }
+    try {
+      const result = await trackShare(id, platform);
+      setShareCount(result.shares_count);
+    } catch (err) {
+      setError(err.message || 'Unable to track share.');
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      const result = await trackDownload(id);
+      setDownloadCount(result.downloads_count);
+      const link = document.createElement('a');
+      link.href = result.file_url;
+      link.download = content.title || 'download';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      setError(err.message || 'Unable to download file.');
+    }
   };
 
   const getTypeIcon = (type) => {
@@ -193,7 +262,7 @@ export const ContentDetail = () => {
             </div>
             <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
               <span className="flex items-center gap-1">
-                <FiUser size={14} /> {content.user?.full_name || content.user?.username || 'Unknown'}
+                <FiUser size={14} /> {content.user?.full_name || content.user?.username || 'Unknown uploader'}
               </span>
               <span className="flex items-center gap-1">
                 <FiCalendar size={14} /> {formatDate(content.created_at)}
@@ -266,26 +335,24 @@ export const ContentDetail = () => {
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3 mb-6">
-        <Button onClick={handleLike} className="flex items-center gap-2">
+        <Button onClick={handleLike} disabled={liking} className="flex items-center gap-2">
           {liked ? <FiHeart className="fill-current" /> : <FiHeart />} Like ({likeCount})
         </Button>
         <Button variant="outline" onClick={() => setSaved(!saved)} className="flex items-center gap-2">
           <FiBookmark className={saved ? 'fill-current' : ''} /> Save
         </Button>
-        <Button variant="outline" className="flex items-center gap-2">
-          <FiShare /> Share
+        <Button variant="outline" onClick={handleShare} className="flex items-center gap-2">
+          <FiShare /> Share{shareCount > 0 ? ` (${shareCount})` : ''}
         </Button>
         {content.file_url && (
-          <a href={content.file_url} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" className="flex items-center gap-2">
-              <FiDownload /> Download
-            </Button>
-          </a>
+          <Button variant="outline" onClick={handleDownload} className="flex items-center gap-2">
+            <FiDownload /> Download{downloadCount > 0 ? ` (${downloadCount})` : ''}
+          </Button>
         )}
       </div>
 
       {/* Comments */}
-      <Comments postId={content.id} />
+      <Comments contentId={content.id} />
     </div>
   );
 };

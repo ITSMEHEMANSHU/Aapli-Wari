@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from datetime import datetime
@@ -27,6 +27,15 @@ class ContentUpdate(BaseModel):
     status: Optional[ContentStatus] = None
 
 
+class ContentAuthorResponse(BaseModel):
+    """Public uploader details displayed alongside a content item."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    username: Optional[str] = None
+    full_name: Optional[str] = None
+
+
 class ContentResponse(BaseModel):
     id: UUID
     title: str
@@ -43,10 +52,16 @@ class ContentResponse(BaseModel):
     translations: Dict[str, Any]
     verified: bool
     user_id: UUID
+    user: Optional[ContentAuthorResponse] = None
     channel_id: Optional[UUID]
     created_at: datetime
     updated_at: datetime
     embedding: Optional[List[float]] = None
+    likes_count: int = 0
+    comments_count: int = 0
+    shares_count: int = 0
+    downloads_count: int = 0
+    is_liked: bool = False
 
     class Config:
         from_attributes = True

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from uuid import UUID
 from typing import Optional, List
 from pydantic import BaseModel
@@ -9,6 +10,7 @@ from backend.app.core.security import authorize_request
 from backend.app.models.user import User
 from backend.app.models.content import ContentStatus, ContentType, Content
 from backend.app.models.channel import Channel
+from backend.app.models.engagement import Comment, Download, Like, Share
 from backend.app.services.channels.post_service import ensure_can_post
 from backend.app.schemas.content import (
     ContentCreate,
@@ -164,7 +166,19 @@ def get_content(
         if not current_user or (current_user.id != content.user_id and current_user.role != "admin"):
             raise HTTPException(status_code=403, detail="Content not available")
 
-    return content
+    likes_count = db.query(func.count()).select_from(Like).filter(Like.content_id == content_id).scalar()
+    comments_count = db.query(func.count()).select_from(Comment).filter(Comment.content_id == content_id).scalar()
+    shares_count = db.query(func.count()).select_from(Share).filter(Share.content_id == content_id).scalar()
+    downloads_count = db.query(func.count()).select_from(Download).filter(Download.content_id == content_id).scalar()
+    is_liked = bool(current_user and db.get(Like, (current_user.id, content_id)))
+    response = ContentResponse.model_validate(content)
+    return response.model_copy(update={
+        "likes_count": likes_count,
+        "comments_count": comments_count,
+        "shares_count": shares_count,
+        "downloads_count": downloads_count,
+        "is_liked": is_liked,
+    })
 
 
 @router.get("/", response_model=List[ContentResponse])

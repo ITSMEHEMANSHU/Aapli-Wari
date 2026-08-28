@@ -196,7 +196,7 @@ decideJoinRequest: (channelId, requestId, action) =>
       method: 'DELETE',
     }),
 
-    likeContent: (id) => request(`/content/${id}/like`, {
+    likeContent: (id) => request(`/engagement/content/${id}/like`, {
       method: 'POST',
     }),
 
@@ -204,10 +204,24 @@ decideJoinRequest: (channelId, requestId, action) =>
       method: 'POST',
     }),
 
-    addComment: (id, comment) => request(`/content/${id}/comments`, {
+    getComments: (id, skip = 0, limit = 20) =>
+      request(`/engagement/content/${id}/comments`, { params: { skip, limit } }),
+
+    addComment: (id, text, parentId = null) => request(`/engagement/content/${id}/comments`, {
       method: 'POST',
-      body: JSON.stringify({ comment }),
+      body: JSON.stringify({ text, parent_id: parentId }),
     }),
+
+    deleteComment: (commentId) => request(`/engagement/comment/${commentId}`, {
+      method: 'DELETE',
+    }),
+
+    trackShare: (id, platform = null) => request(`/engagement/content/${id}/share`, {
+      method: 'POST',
+      body: JSON.stringify({ platform }),
+    }),
+
+    trackDownload: (id) => request(`/engagement/content/${id}/download`),
 };
 
   export default api;

@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from uuid import UUID, uuid4
 from typing import Optional, List
@@ -76,7 +76,12 @@ class ContentService:
 
     @staticmethod
     def get_content(db: Session, content_id: UUID) -> Optional[Content]:
-        return db.query(Content).filter(Content.id == content_id).first()
+        return (
+            db.query(Content)
+            .options(joinedload(Content.user))
+            .filter(Content.id == content_id)
+            .first()
+        )
 
     @staticmethod
     def get_content_list(
@@ -90,7 +95,7 @@ class ContentService:
         limit: int = 20,
         offset: int = 0
     ) -> List[Content]:
-        query = db.query(Content)
+        query = db.query(Content).options(joinedload(Content.user))
         
         if user_id:
             query = query.filter(Content.user_id == user_id)
