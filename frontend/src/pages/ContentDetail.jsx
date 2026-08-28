@@ -236,7 +236,7 @@ export const ContentDetail = () => {
       )}
 
       {/* AI Processing Results (if available) */}
-      {(content.transcription || content.extracted_text || content.translations) && (
+      {(content.transcription || content.extracted_text || (content.translations && Object.keys(content.translations).length > 0)) && (
         <Card className="mb-4">
           <h3 className="font-semibold text-lg mb-2">🤖 AI Processed Information</h3>
           {content.transcription && (
