@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from datetime import datetime
-from app.models.content import ContentType, ContentStatus
+from backend.app.models.content import ContentType, ContentStatus
 
 
 class ContentBase(BaseModel):

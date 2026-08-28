@@ -70,7 +70,8 @@ function App() {
     </ProtectedRoute>
   }
 />
-              <Route path="/channel/:id" element={<ChannelPage />} />
+<Route path="/contribute" element={<ProtectedRoute><Contribute /></ProtectedRoute>} />
+<Route path="/channel/:id" element={<ChannelPage />} />
               <Route path="/content/:id" element={<ContentDetail />} />
               <Route path="/ai-assistant" element={<AIAssistant />} />
               <Route path="/shorts" element={<AaplaTheva />} />

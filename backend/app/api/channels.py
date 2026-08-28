@@ -16,6 +16,9 @@ from backend.app.schemas.channel import (
     ChannelJoinRequestResponse,
     ChannelJoinRequestDetailResponse,
     JoinRequestDecision,
+    ChannelPostCreate,
+    ChannelPostResponse,
+    ChannelFeedItemResponse,
 )
 from backend.app.services.channels.channel_service import (
     assign_contributor,
@@ -35,12 +38,46 @@ from backend.app.services.channels.channel_service import (
     set_channel_status,
     update_channel,
 )
+from backend.app.services.channels.post_service import create_channel_post, list_channel_posts
 
 
 router = APIRouter(
     prefix="/channels",
     tags=["Channels"],
 )
+
+
+@router.get(
+    "/{channel_id}/posts",
+    response_model=list[ChannelFeedItemResponse],
+)
+def posts(
+    channel_id: UUID,
+    _: User = Depends(authorize_request),
+    db: Session = Depends(get_db),
+):
+    channel = get_channel(db=db, channel_id=channel_id)
+    if channel.status != "active":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Channel not found")
+    return list_channel_posts(db=db, channel_id=channel.id)
+
+
+@router.post(
+    "/{channel_id}/posts",
+    response_model=ChannelPostResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_post(
+    channel_id: UUID,
+    data: ChannelPostCreate,
+    current_user: User = Depends(authorize_request),
+    db: Session = Depends(get_db),
+):
+    message = data.message.strip()
+    if not message:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Message cannot be empty")
+    channel = get_channel(db=db, channel_id=channel_id)
+    return create_channel_post(db=db, channel=channel, user=current_user, message=message)
 
 
 # =========================================================

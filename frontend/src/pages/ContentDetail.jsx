@@ -1,91 +1,270 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { FiHeart, FiBookmark, FiShare, FiTag } from 'react-icons/fi'
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { 
+  FiHeart, 
+  FiBookmark, 
+  FiShare, 
+  FiTag, 
+  FiArrowLeft,
+  FiUser,
+  FiCalendar,
+  FiEye,
+  FiDownload,
+  FiFile,
+  FiCheckCircle,
+  FiClock
+} from 'react-icons/fi';
 
 import Loader from '../components/common/Loader';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
+import Avatar from '../components/common/Avatar';
 import { Comments } from '../components/community/Comments';
+import { getContent } from '../services/content';
 
 export const ContentDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    const mockContent = {
-      1: {
-        id: 1,
-        title: 'Palkhi Procession 2024',
-        type: 'Video',
-        channel: 'Sant Dnyaneshwar Palkhi',
-        description: 'Beautiful footage of the annual Palkhi procession with thousands of devotees.',
-        content: 'Video content will be displayed here.',
-        uploaded: '2026-08-20',
-        likes: 150,
-        comments: 25,
-        tags: ['palkhi', 'procession', '2024']
-      },
-      2: {
-        id: 2,
-        title: 'Ancient Manuscript Discovery',
-        type: 'Image',
-        channel: 'Sant Tukaram Palkhi',
-        description: 'Rare manuscript discovered in the archives.',
-        content: 'Image content will be displayed here.',
-        uploaded: '2026-08-18',
-        likes: 89,
-        comments: 12,
-        tags: ['manuscript', 'history']
-      }
-    };
+    fetchContent();
+  }, [id]);
 
-    setTimeout(() => {
-      const data = mockContent[id] || mockContent[1];
+  const fetchContent = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getContent(id);
       setContent(data);
       setLikeCount(data.likes || 0);
+    } catch (err) {
+      setError(err.message || 'Failed to load content');
+      console.error('Failed to fetch content:', err);
+    } finally {
       setLoading(false);
-    }, 300);
-  }, [id]);
+    }
+  };
 
   const handleLike = () => {
     setLiked(!liked);
     setLikeCount(prev => liked ? prev - 1 : prev + 1);
   };
 
-  if (loading) return <Loader />;
-  if (!content) return <div className="text-center py-10">Content not found</div>;
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'video': return '🎬';
+      case 'image': return '🖼️';
+      case 'audio': return '🎵';
+      case 'pdf': return '📄';
+      case 'manuscript': return '📜';
+      default: return '📝';
+    }
+  };
+
+  const getStatusBadge = (status, verified) => {
+    if (verified) return <Badge variant="success">✓ Verified</Badge>;
+    if (status === 'approved') return <Badge variant="info">Approved</Badge>;
+    if (status === 'pending_review') return <Badge variant="warning">⏳ Pending Review</Badge>;
+    if (status === 'rejected') return <Badge variant="danger">Rejected</Badge>;
+    return <Badge variant="default">{status}</Badge>;
+  };
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  const renderMedia = () => {
+    if (!content.file_url) {
+      return (
+        <div className="bg-gray-100 rounded-lg p-12 text-center">
+          <p className="text-2xl">{getTypeIcon(content.content_type)}</p>
+          <p className="text-gray-500 mt-2">No media attached</p>
+        </div>
+      );
+    }
+
+    switch (content.content_type) {
+      case 'image':
+        return (
+          <img 
+            src={content.file_url} 
+            alt={content.title}
+            className="w-full max-h-[500px] object-contain rounded-lg bg-gray-100"
+          />
+        );
+      case 'video':
+        return (
+          <video 
+            src={content.file_url} 
+            controls 
+            className="w-full max-h-[500px] rounded-lg bg-gray-100"
+          />
+        );
+      case 'audio':
+        return (
+          <audio 
+            src={content.file_url} 
+            controls 
+            className="w-full mt-2"
+          />
+        );
+      case 'pdf':
+        return (
+          <div className="bg-gray-100 rounded-lg p-8 text-center">
+            <FiFile className="text-4xl text-primary mx-auto mb-3" />
+            <p className="font-medium">PDF Document</p>
+            <a 
+              href={content.file_url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline inline-flex items-center gap-2 mt-2"
+            >
+              <FiDownload /> View Document
+            </a>
+          </div>
+        );
+      default:
+        return (
+          <div className="bg-gray-100 rounded-lg p-8 text-center">
+            <p className="text-gray-500">Content type: {content.content_type}</p>
+          </div>
+        );
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader size="lg" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600">{error}</p>
+        <Button variant="outline" className="mt-4" onClick={() => navigate(-1)}>
+          Go Back
+        </Button>
+      </div>
+    );
+  }
+
+  if (!content) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600">Content not found</p>
+        <Button variant="outline" className="mt-4" onClick={() => navigate('/explore')}>
+          Browse Explore
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div className="max-w-4xl mx-auto">
+      {/* Back button */}
+      <button 
+        onClick={() => navigate(-1)} 
+        className="flex items-center gap-2 text-gray-600 hover:text-primary transition mb-4"
+      >
+        <FiArrowLeft /> Back
+      </button>
+
+      {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">{content.title}</h1>
-        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-          <span>{content.channel}</span>
-          <span>📅 {new Date(content.uploaded).toLocaleDateString()}</span>
-          <Badge variant="default">{content.type}</Badge>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              <span className="text-2xl">{getTypeIcon(content.content_type)}</span>
+              <h1 className="text-2xl font-bold">{content.title}</h1>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+              <span className="flex items-center gap-1">
+                <FiUser size={14} /> {content.user?.full_name || content.user?.username || 'Unknown'}
+              </span>
+              <span className="flex items-center gap-1">
+                <FiCalendar size={14} /> {formatDate(content.created_at)}
+              </span>
+              {getStatusBadge(content.status, content.verified)}
+            </div>
+            {content.channel && (
+              <Link 
+                to={`/channel/${content.channel_id}`}
+                className="inline-block mt-2 text-sm text-primary hover:underline"
+              >
+                📢 {content.channel?.name || 'Channel'}
+              </Link>
+            )}
+          </div>
         </div>
       </div>
 
-      <Card className="mb-4">
-        <div className="bg-gray-100 rounded-lg p-12 text-center mb-4">
-          <p className="text-2xl">{content.content}</p>
-          <small className="text-gray-500">Content placeholder (static demo)</small>
-        </div>
-        <p className="text-gray-700">{content.description}</p>
-        <div className="flex flex-wrap gap-2 mt-4">
-          {content.tags.map(tag => (
-            <Badge key={tag} variant="default" className="flex items-center gap-1">
-              <FiTag size={12} /> {tag}
-            </Badge>
-          ))}
-        </div>
+      {/* Media */}
+      <Card className="mb-4 p-4">
+        {renderMedia()}
       </Card>
 
+      {/* Description */}
+      {content.description && (
+        <Card className="mb-4">
+          <h3 className="font-semibold text-lg mb-2">About</h3>
+          <p className="text-gray-700 whitespace-pre-wrap">{content.description}</p>
+          
+          {content.tags && content.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {content.tags.map(tag => (
+                <Badge key={tag} variant="default" className="flex items-center gap-1">
+                  <FiTag size={12} /> {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* AI Processing Results (if available) */}
+      {(content.transcription || content.extracted_text || content.translations) && (
+        <Card className="mb-4">
+          <h3 className="font-semibold text-lg mb-2">🤖 AI Processed Information</h3>
+          {content.transcription && (
+            <div className="mb-3">
+              <p className="text-sm font-medium text-gray-500">Transcription</p>
+              <p className="text-gray-700 text-sm">{content.transcription}</p>
+            </div>
+          )}
+          {content.extracted_text && (
+            <div className="mb-3">
+              <p className="text-sm font-medium text-gray-500">Extracted Text</p>
+              <p className="text-gray-700 text-sm">{content.extracted_text}</p>
+            </div>
+          )}
+          {content.translations && Object.keys(content.translations).length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-gray-500">Translations</p>
+              {Object.entries(content.translations).map(([lang, text]) => (
+                <p key={lang} className="text-gray-700 text-sm">
+                  <span className="font-medium">{lang}:</span> {text}
+                </p>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Actions */}
       <div className="flex flex-wrap gap-3 mb-6">
         <Button onClick={handleLike} className="flex items-center gap-2">
           {liked ? <FiHeart className="fill-current" /> : <FiHeart />} Like ({likeCount})
@@ -96,8 +275,16 @@ export const ContentDetail = () => {
         <Button variant="outline" className="flex items-center gap-2">
           <FiShare /> Share
         </Button>
+        {content.file_url && (
+          <a href={content.file_url} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" className="flex items-center gap-2">
+              <FiDownload /> Download
+            </Button>
+          </a>
+        )}
       </div>
 
+      {/* Comments */}
       <Comments postId={content.id} />
     </div>
   );

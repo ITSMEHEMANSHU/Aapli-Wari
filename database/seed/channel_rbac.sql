@@ -69,6 +69,8 @@ FROM (VALUES
     ('GET',    '/channels/{channel_id}/contributors',               'view_channel'),
     ('POST',   '/channels/{channel_id}/contributors',               'manage_channel_contributors'),
     ('DELETE', '/channels/{channel_id}/contributors/{user_id}',     'manage_channel_contributors')
+    ,('GET',    '/content/',                                        'view_channel')
+    ,('POST',   '/content/upload',                                  'contribute')
 ) AS mapping(method, route_path, permission_name)
 JOIN public.permissions p ON p.name = mapping.permission_name
 ON CONFLICT (method, route_path)

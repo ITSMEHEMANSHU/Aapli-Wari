@@ -2,9 +2,13 @@ const API_URL = 'http://127.0.0.1:8000';
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('access_token');
+  const isFormData = options.body instanceof FormData;
+  const query = options.params
+    ? `?${new URLSearchParams(options.params).toString()}`
+    : '';
 
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers || {}),
   };
 
@@ -12,7 +16,7 @@ async function request(endpoint, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const response = await fetch(`${API_URL}${endpoint}${query}`, {
     ...options,
     headers,
   });
@@ -96,6 +100,15 @@ export const api = {
   channel: (id) =>
     request(`/channels/${id}`),
 
+  channelPosts: (channelId) =>
+    request(`/channels/${channelId}/posts`),
+
+  createChannelPost: (channelId, message) =>
+    request(`/channels/${channelId}/posts`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
+
   createChannel: (data) =>
     request('/channels', {
       method: 'POST',
@@ -154,7 +167,40 @@ decideJoinRequest: (channelId, requestId, action) =>
         method: 'DELETE',
       }
     ),
+
+    content: (id) => request(`/content/${id}`),
+
+    contentList: (params = {}) => request('/content/', { params }),
+
+    uploadContent: (body) => request('/content/upload', {
+      method: 'POST',
+      body,
+    }),
+
+    updateContent: (id, data) => request(`/content/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+    deleteContent: (id) => request(`/content/${id}`, {
+      method: 'DELETE',
+    }),
+
+    likeContent: (id) => request(`/content/${id}/like`, {
+      method: 'POST',
+    }),
+
+    saveContent: (id) => request(`/content/${id}/save`, {
+      method: 'POST',
+    }),
+
+    addComment: (id, comment) => request(`/content/${id}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ comment }),
+    }),
 };
+
+  export default api;
 
 
 

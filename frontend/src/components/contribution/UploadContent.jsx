@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaVideo, FaImage, FaMusic, FaFilePdf, FaPen } from 'react-icons/fa';
 import { ContentForm } from './ContentForm';
 
-export const UploadContent = () => {
+export const UploadContent = ({ preSelectedChannelId = null }) => {
   const navigate = useNavigate();
   const [contentType, setContentType] = useState('');
 
@@ -19,14 +19,19 @@ export const UploadContent = () => {
     return <ContentForm 
       contentType={contentType}
       onBack={() => setContentType('')}
-      onSuccess={() => navigate('/profile')}
+      onSuccess={() => navigate(preSelectedChannelId ? `/channel/${preSelectedChannelId}` : '/profile')}
+      preSelectedChannelId={preSelectedChannelId}
     />;
   }
 
   return (
     <div>
       <h1 className="text-2xl font-bold mb-2">Contribute Content</h1>
-      <p className="text-gray-600 mb-6">Share your Wari heritage knowledge with the community</p>
+      <p className="text-gray-600 mb-6">
+        {preSelectedChannelId 
+          ? 'Share content with your channel followers' 
+          : 'Share your Wari heritage knowledge with the community'}
+      </p>
 
       <h3 className="font-bold mb-4">Choose content type</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -17,3 +17,4 @@ from backend.app.models.palkhi_pramukh_profile import (
 )
 from backend.app.models.palkhi import Palkhi
 from backend.app.models.channel import Channel
+from backend.app.models.channel_post import ChannelPost
