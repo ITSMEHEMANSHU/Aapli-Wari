@@ -1,4 +1,4 @@
-const API_URL = 'http://127.0.0.1:8000';
+const API_URL = 'http://localhost:8000';
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('access_token');
@@ -16,13 +16,18 @@ async function request(endpoint, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${endpoint}${query}`, {
-    ...options,
-    headers,
-  });
+  const fullUrl = `${API_URL}${endpoint}${query}`;
+  console.log(`[API] ${options.method || 'GET'} ${fullUrl}`, options.params || '');
+
+  let response;
+  try {
+    response = await fetch(fullUrl, { ...options, headers });
+  } catch (networkErr) {
+    console.error(`[API] Network error on ${endpoint}:`, networkErr);
+    throw networkErr;
+  }
 
   let data = null;
-
   try {
     data = await response.json();
   } catch {
@@ -30,11 +35,11 @@ async function request(endpoint, options = {}) {
   }
 
   if (!response.ok) {
-    throw new Error(
-      data?.detail || `Request failed with status ${response.status}`
-    );
+    console.error(`[API] ${response.status} ${endpoint}`, data);
+    throw new Error(data?.detail || `Request failed with status ${response.status}`);
   }
 
+  console.log(`[API] ${response.status} ${endpoint}`, data);
   return data;
 }
 

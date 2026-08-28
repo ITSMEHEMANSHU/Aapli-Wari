@@ -1,7 +1,8 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(dotenv_path=Path(__file__).resolve().parents[3] / ".env")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 REDIS_URL = os.getenv("REDIS_URL")
@@ -16,6 +17,4 @@ APPWRITE_API_KEY = os.getenv("APPWRITE_API_KEY")
 APPWRITE_BUCKET_ID = os.getenv("APPWRITE_BUCKET_ID")
 
 OCR_SPACE_API_KEY = os.getenv("OCR_SPACE_API_KEY")
-LIBRETRANSLATE_URL = os.getenv("LIBRETRANSLATE_URL", "https://libretranslate.com/translate")
-# backend/app/core/config.py
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")

@@ -46,10 +46,19 @@ class ContentResponse(BaseModel):
     channel_id: Optional[UUID]
     created_at: datetime
     updated_at: datetime
-    embedding: Optional[List[float]] = None  # ✅ Add this
+    embedding: Optional[List[float]] = None
 
     class Config:
         from_attributes = True
+
+    @classmethod
+    def model_validate(cls, obj, **kwargs):
+        if hasattr(obj, 'embedding') and obj.embedding is not None:
+            try:
+                obj.__dict__['embedding'] = list(obj.embedding)
+            except Exception:
+                obj.__dict__['embedding'] = None
+        return super().model_validate(obj, **kwargs)
 
 
 class ContentUploadResponse(BaseModel):

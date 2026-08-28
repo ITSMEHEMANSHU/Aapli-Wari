@@ -28,16 +28,17 @@ export const ExploreWari = () => {
         limit: 50,
       };
       
-      // Add type filter
       if (filter !== 'all') {
         params.content_type = filter;
       }
-      
+
+      console.log('[Explore] Fetching content with params:', params);
       const data = await getContentList(params);
+      console.log('[Explore] Content received:', data?.length, 'items', data);
       setContent(data);
     } catch (err) {
+      console.error('[Explore] Fetch failed:', err);
       setError(err.message || 'Failed to load content');
-      console.error('Failed to fetch content:', err);
     } finally {
       setLoading(false);
     }

@@ -96,8 +96,6 @@ class ContentService:
             query = query.filter(Content.user_id == user_id)
         if channel_id:
             query = query.filter(Content.channel_id == channel_id)
-        else:
-            query = query.filter(Content.channel_id.is_(None))
         if content_type:
             query = query.filter(Content.content_type == content_type)
         if status:
