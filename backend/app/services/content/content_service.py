@@ -106,14 +106,19 @@ class ContentService:
                 Content.status.in_([
                     ContentStatus.PUBLISHED,
                     ContentStatus.PROCESSED,
+                    ContentStatus.APPROVED,
+                    ContentStatus.PROCESSING,
                 ]),
             )
         if search_query:
+            from sqlalchemy import cast
+            from sqlalchemy.dialects.postgresql import JSONB
             query = query.filter(
                 or_(
                     Content.title.ilike(f"%{search_query}%"),
                     Content.description.ilike(f"%{search_query}%"),
-                    Content.tags.contains([search_query])
+                    Content.extracted_text.ilike(f"%{search_query}%"),
+                    cast(Content.tags, JSONB).contains(cast(f'["{search_query}"]', JSONB)),
                 )
             )
         
