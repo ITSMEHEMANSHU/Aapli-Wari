@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { FiVideo, FiImage, FiMusic, FiFile, FiSearch, FiEye, FiX, FiLoader } from 'react-icons/fi';
+import { FiVideo, FiImage, FiMusic, FiFile, FiSearch, FiEye, FiX } from 'react-icons/fi';
 
 import Button from '../common/Button';
 import Card from '../common/Card';
 import Badge from '../common/Badge';
-import Loader from '../common/Loader';
 import { getContentList } from '../../services/content';
 
 const LIMIT = 20;
@@ -132,25 +131,41 @@ export const ExploreWari = () => {
     setSearchParams({});
   };
 
-  if (loading) {
+  if (error && !loading) {
     return (
-      <div className="flex justify-center py-12 bg-[#FDF8F0]">
-        <Loader size="lg" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-12 bg-[#FDF8F0] rounded-[12px]">
-        <p className="text-[#8B3A3A] font-medium">{error}</p>
-        <Button
-          variant="outline"
-          className="mt-4 rounded-full border-[#8B3A3A] text-[#8B3A3A] hover:bg-[#8B3A3A]/5"
-          onClick={() => fetchContent(true)}
-        >
-          Retry
-        </Button>
+      <div className="bg-[#FDF8F0] px-3 sm:px-6 py-4 sm:py-6 rounded-[12px]">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-[#2D1B0E]">
+              {urlSearch ? `Results for "${urlSearch}"` : 'Explore Wari Heritage'}
+            </h1>
+            <p className="text-[#5A4030] text-sm mt-0.5">
+              {urlSearch
+                ? `${content.length} item${content.length !== 1 ? 's' : ''} found`
+                : 'Discover verified knowledge from the Wari community'}
+            </p>
+          </div>
+          {urlSearch && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearSearch}
+              className="flex items-center gap-1 rounded-full border-[#D4A373] text-[#8B3A3A] hover:bg-[#D4A373]/10"
+            >
+              <FiX size={14} /> Clear search
+            </Button>
+          )}
+        </div>
+        <div className="text-center py-12 bg-white rounded-[12px]">
+          <p className="text-[#8B3A3A] font-medium">{error}</p>
+          <Button
+            variant="outline"
+            className="mt-4 rounded-full border-[#8B3A3A] text-[#8B3A3A] hover:bg-[#8B3A3A]/5"
+            onClick={() => fetchContent(true)}
+          >
+            Retry
+          </Button>
+        </div>
       </div>
     );
   }
@@ -219,7 +234,32 @@ export const ExploreWari = () => {
       </div>
 
       {/* Content grid */}
-      {content.length === 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
+          {Array.from({ length: 8 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="bg-white rounded-[12px] border-l-4 border-l-[#D4A373] shadow-[0_4px_20px_rgba(139,58,58,0.08)] p-3 sm:p-4 overflow-hidden"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-[#FDF8F0] animate-pulse" />
+                  <div className="h-5 w-16 rounded-full bg-[#FDF8F0] animate-pulse" />
+                </div>
+                <div className="h-5 w-16 rounded-full bg-[#FDF8F0] animate-pulse" />
+              </div>
+              <div className="w-full h-36 sm:h-40 rounded-[12px] bg-[#FDF8F0] animate-pulse mb-3" />
+              <div className="h-5 w-3/4 rounded bg-[#FDF8F0] animate-pulse mb-2" />
+              <div className="h-4 w-full rounded bg-[#FDF8F0] animate-pulse mb-1" />
+              <div className="h-4 w-2/3 rounded bg-[#FDF8F0] animate-pulse mb-3" />
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#D4A373]/20">
+                <div className="h-3 w-24 rounded bg-[#FDF8F0] animate-pulse" />
+                <div className="h-3 w-10 rounded bg-[#FDF8F0] animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : content.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-4xl mb-4">📭</div>
           <h3 className="text-lg font-medium text-[#2D1B0E]">
