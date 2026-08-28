@@ -1,0 +1,56 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+:root {
+  --color-primary: #8B3A3A;
+  --color-secondary: #D4A373;
+  --color-accent: #2D6A4F;
+  --color-background: #FDF8F0;
+  --color-card: #FFFFFF;
+  --color-text-primary: #2D1B0E;
+  --color-text-secondary: #5A4030;
+  --shadow-warm: 0 4px 20px rgba(139, 58, 58, 0.08);
+  --shadow-warm-hover: 0 8px 30px rgba(139, 58, 58, 0.15);
+  --border-radius: 12px;
+}
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  html, body {
+    @apply antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    width: 100%;
+    overflow-x: hidden;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold;
+  }
+}
+
+html { scroll-behavior: smooth; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--color-background); }
+::-webkit-scrollbar-thumb { background: var(--color-secondary); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
+
+.bg-wari-background { background-color: var(--color-background); }
+.bg-wari-primary { background-color: var(--color-primary); }
+.bg-wari-secondary { background-color: var(--color-secondary); }
+.text-wari-primary { color: var(--color-primary); }
+.text-wari-secondary { color: var(--color-secondary); }
+.text-wari-ink { color: var(--color-text-primary); }
+.text-wari-brown { color: var(--color-text-secondary); }
+.shadow-warm { box-shadow: var(--shadow-warm); }
+.shadow-warm-hover { box-shadow: var(--shadow-warm-hover); }
+.rounded-wari { border-radius: var(--border-radius); }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
+.animate-slide-up { opacity: 0; animation: slideUp 0.4s ease-out forwards; }
