@@ -103,7 +103,13 @@ class ContentService:
         if status:
             query = query.filter(Content.status == status)
         if verified_only:
-            query = query.filter(Content.verified == True, Content.status == ContentStatus.PUBLISHED)
+            query = query.filter(
+                Content.verified.is_(True),
+                Content.status.in_([
+                    ContentStatus.PUBLISHED,
+                    ContentStatus.PROCESSED,
+                ]),
+            )
         if search_query:
             query = query.filter(
                 or_(

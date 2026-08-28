@@ -40,12 +40,13 @@ class ContentResponse(BaseModel):
     transcription: Optional[str]
     extracted_text: Optional[str]
     entities: Optional[Dict[str, Any]]
-    translations: Dict[str, str]
+    translations: Dict[str, Any]
     verified: bool
     user_id: UUID
     channel_id: Optional[UUID]
     created_at: datetime
     updated_at: datetime
+    embedding: Optional[List[float]] = None  # ✅ Add this
 
     class Config:
         from_attributes = True

@@ -14,3 +14,8 @@ APPWRITE_ENDPOINT = os.getenv("APPWRITE_ENDPOINT", "https://cloud.appwrite.io/v1
 APPWRITE_PROJECT_ID = os.getenv("APPWRITE_PROJECT_ID")
 APPWRITE_API_KEY = os.getenv("APPWRITE_API_KEY")
 APPWRITE_BUCKET_ID = os.getenv("APPWRITE_BUCKET_ID")
+
+OCR_SPACE_API_KEY = os.getenv("OCR_SPACE_API_KEY")
+LIBRETRANSLATE_URL = os.getenv("LIBRETRANSLATE_URL", "https://libretranslate.com/translate")
+# backend/app/core/config.py
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")

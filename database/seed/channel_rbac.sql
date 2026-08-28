@@ -9,7 +9,8 @@ VALUES
     ('view_channel'),
     ('verify_channel'),
     ('contribute'),
-    ('manage_palkhi')
+    ('manage_palkhi'),
+    ('explore')
 ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO public.role_permissions (role_id, permission_id)
@@ -77,4 +78,15 @@ ON CONFLICT (method, route_path)
 DO UPDATE SET
     permission_id = EXCLUDED.permission_id,
     requires_auth = TRUE,
+    is_active = TRUE;
+
+  INSERT INTO public.route_permissions
+    (method, route_path, permission_id, requires_auth, is_active)
+  SELECT 'GET', '/search/', p.id, FALSE, TRUE
+  FROM public.permissions p
+  WHERE p.name = 'explore'
+  ON CONFLICT (method, route_path)
+  DO UPDATE SET
+    permission_id = EXCLUDED.permission_id,
+    requires_auth = FALSE,
     is_active = TRUE;

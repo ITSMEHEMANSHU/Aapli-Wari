@@ -167,6 +167,9 @@ decideJoinRequest: (channelId, requestId, action) =>
         method: 'DELETE',
       }
     ),
+    
+    search: (params) =>
+  request('/search/', { params }),
 
     content: (id) => request(`/content/${id}`),
 

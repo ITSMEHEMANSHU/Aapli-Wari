@@ -7,6 +7,7 @@ from enum import Enum as PyEnum
 
 from backend.app.db.base import Base
 
+from pgvector.sqlalchemy import Vector
 
 class ContentStatus(PyEnum):
     UPLOADED = "uploaded"
@@ -72,6 +73,9 @@ class Content(Base):
         server_default=func.now(),  # ✅ Add this
         onupdate=func.now()
     )
+
+    embedding = Column(Vector(1024), nullable=True)
+
     
     # ✅ FIX: Specify foreign_keys for each relationship
     user = relationship("User", foreign_keys=[user_id])

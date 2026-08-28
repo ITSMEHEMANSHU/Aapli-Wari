@@ -18,6 +18,8 @@ from backend.app.schemas.content import (
     ContentReviewRequest
 )
 from backend.app.services.content.content_service import ContentService
+from backend.app.ai.ocr import process_ocr
+import threading
 
 router = APIRouter(prefix="/content", tags=["content"])
 
@@ -92,6 +94,7 @@ def upload_content(
             file_url=file_url,
             file_obj=file  # ✅ Pass file object for size calculation
         )
+        
     except Exception as e:
         # Try to delete uploaded file if content creation fails
         try:
@@ -99,6 +102,20 @@ def upload_content(
         except:
             pass
         raise HTTPException(status_code=500, detail=f"Failed to create content record: {str(e)}")
+
+     # In upload_content function, after content is created:
+
+# ✅ Trigger OCR + Translation for image/pdf/manuscript
+    if content_type_value in ['image', 'pdf', 'manuscript']:
+        try:
+            from backend.app.ai.ocr import process_ocr
+            import threading
+            thread = threading.Thread(target=process_ocr, args=(content.id,))
+            thread.daemon = True
+            thread.start()
+            print(f"🔄 OCR triggered for content {content.id}")
+        except Exception as e:
+            print(f"Failed to trigger OCR: {e}")
     
     return ContentUploadResponse(
         id=content.id,
@@ -121,7 +138,7 @@ def get_content(
         raise HTTPException(status_code=404, detail="Content not found")
     
     # Check if content is published or user has access
-    if content.status not in [ContentStatus.PUBLISHED, ContentStatus.APPROVED]:
+    if content.status not in [ContentStatus.PUBLISHED, ContentStatus.APPROVED, ContentStatus.PROCESSED] or not content.verified:
         if not current_user or (current_user.id != content.user_id and current_user.role != "admin"):
             raise HTTPException(status_code=403, detail="Content not available")
     
@@ -154,7 +171,6 @@ def list_content(
         return ContentService.get_content_list(
             db,
             verified_only=True,
-            status=ContentStatus.PUBLISHED,
             search_query=search,
             content_type=content_type_enum,
             channel_id=channel_id,
