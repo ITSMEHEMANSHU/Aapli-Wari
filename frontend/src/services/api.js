@@ -180,6 +180,8 @@ decideJoinRequest: (channelId, requestId, action) =>
 
     contentList: (params = {}) => request('/content/', { params }),
 
+    contentSuggestions: (q) => request('/content/suggestions', { params: { q, limit: 6 } }),
+
     uploadContent: (body) => request('/content/upload', {
       method: 'POST',
       body,

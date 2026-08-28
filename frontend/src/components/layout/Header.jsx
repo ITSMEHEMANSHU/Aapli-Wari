@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { FaChevronDown, FaBars, FaTimes } from 'react-icons/fa';
 import { IMAGES, cloudinaryUrl } from '../../utils/cloudinary';
+import SearchBar from '../common/SearchBar';
 
 /**
  * Header — matches the Aapli Wari design:
@@ -49,6 +50,11 @@ export const Header = () => {
             </Link>
           ))}
         </nav>
+
+        {/* ── Search Bar ── */}
+        <div className="hidden md:flex flex-1 justify-center px-4">
+          <SearchBar />
+        </div>
 
         {/* ── Right side ── */}
         <div className="flex items-center gap-2 ml-auto shrink-0">
