@@ -3,55 +3,33 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
+
 import {
   FiArrowLeft,
-  FiUsers,
-  FiCalendar,
-  FiSend,
-  FiImage,
-  FiVideo,
-  FiMusic,
   FiFile,
   FiHeart,
-  FiMessageCircle,
   FiShare2,
-  FiBookmark,
-  FiMoreHorizontal,
   FiCheckCircle,
-  FiUserPlus,
-  FiUserCheck,
   FiEdit2,
-  FiGrid,
-  FiList,
-  FiPaperclip,
-  FiCamera,
-  FiMic,
-  FiSmile,
-  FiClock,
-  FiPhone,
-  FiMapPin,
-  FiAlertTriangle,
-  FiShield,
   FiX,
   FiSettings,
-  FiStar
+  FiStar,
+  FiPaperclip,
 } from 'react-icons/fi';
 import Button from '../components/common/Button';
 import Avatar from '../components/common/Avatar';
-import Card from '../components/common/Card';
-import Badge from '../components/common/Badge';
 import Loader from '../components/common/Loader';
 import Modal from '../components/common/Modal';
+import Badge from '../components/common/Badge';
 
 export const ChannelPage = ({ isAdminView = false }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, loading: authLoading, canContribute, canManageChannel, isPalkhiPramukhApplied } = useAuth();
+  const { user, loading: authLoading, canContribute, canManageChannel } = useAuth();
   const { t, language } = useLanguage();
   const adminView = isAdminView || location.pathname.startsWith('/admin/');
   const canContributePermission = typeof canContribute === 'function' ? canContribute() : false;
-  const canManageChannelPermission = typeof canManageChannel === 'function' ? canManageChannel() : false;
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -71,10 +49,12 @@ export const ChannelPage = ({ isAdminView = false }) => {
   const [loading, setLoading] = useState(true);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [notice, setNotice] = useState(null);
+  const [showEmergencyBanner, setShowEmergencyBanner] = useState(true);
 
   // Tab & View States
-  const [activeTab, setActiveTab] = useState('announcements'); // 'announcements' | 'chat' | 'map' | 'info'
+  const [activeTab, setActiveTab] = useState('chat'); // 'announcements' | 'chat' | 'map' | 'info'
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchBar, setShowSearchBar] = useState(false);
 
   // Modals
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -101,10 +81,8 @@ export const ChannelPage = ({ isAdminView = false }) => {
     }
   });
 
-  // Keep track of optimistic reaction delta per post
   const [reactionMap, setReactionMap] = useState({});
 
-  // Synchronize localStorage when user changes
   useEffect(() => {
     try {
       const stored = localStorage.getItem(likedPostsStorageKey);
@@ -126,16 +104,24 @@ export const ChannelPage = ({ isAdminView = false }) => {
     setNotice({ text, type });
   };
 
-  const scrollToBottom = () => {
-    if (activeTab === 'chat') {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const chatCanvasRef = useRef(null);
+
+  // Keep page scrolled to top when opening channel
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    if (chatCanvasRef.current) {
+      chatCanvasRef.current.scrollTop = 0;
+    }
+  }, [id]);
+
+  const scrollToChatBottom = () => {
+    if (chatCanvasRef.current) {
+      chatCanvasRef.current.scrollTo({
+        top: chatCanvasRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
     }
   };
-
-  // Auto-scroll chat to bottom
-  useEffect(() => {
-    scrollToBottom();
-  }, [posts, activeTab]);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -265,23 +251,6 @@ export const ChannelPage = ({ isAdminView = false }) => {
     }
   };
 
-  const handleJoinChannel = async () => {
-    if (adminView) return;
-    if (!user) {
-      navigate('/login', { state: { message: 'Please log in to join channels.' } });
-      return;
-    }
-    if (isMember) return;
-    try {
-      await api.joinChannel(id);
-      setJoinRequestPending(true);
-      showNotice('Your join request has been sent.', 'success');
-    } catch (error) {
-      console.error('Failed to join channel:', error);
-      showNotice(error?.message || 'Unable to request channel membership.', 'error');
-    }
-  };
-
   const handleRemoveContributor = async (contributorId) => {
     if (!canEditEmergencyContact) return;
     try {
@@ -392,6 +361,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
       setPostMedia(null);
       setReplyToPost(null);
       await fetchPosts();
+      setTimeout(() => scrollToChatBottom(), 100);
     } catch (error) {
       console.error('Failed to send message:', error);
       showNotice(error.message || 'Unable to post message.', 'error');
@@ -445,7 +415,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
           url: window.location.href,
         });
       } catch {
-        // Fallback or user canceled
+        // User cancelled share
       }
     } else {
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
@@ -460,11 +430,11 @@ export const ChannelPage = ({ isAdminView = false }) => {
 
     if (seconds < 60) return language === 'mr' ? 'आत्ताच' : 'Just now';
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return language === 'mr' ? `${minutes} मिनीटांपूर्वी` : `${minutes}m ago`;
+    if (minutes < 60) return language === 'mr' ? `${minutes} मि.` : `${minutes}m ago`;
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return language === 'mr' ? `${hours} तासांपूर्वी` : `${hours}h ago`;
+    if (hours < 24) return language === 'mr' ? `${hours} तास` : `${hours}h ago`;
     const days = Math.floor(hours / 24);
-    if (days < 7) return language === 'mr' ? `${days} दिवसांपूर्वी` : `${days}d ago`;
+    if (days < 7) return language === 'mr' ? `${days} दिवस` : `${days}d ago`;
     return date.toLocaleDateString(language === 'mr' ? 'mr-IN' : 'en-GB', { day: 'numeric', month: 'short' });
   };
 
@@ -504,42 +474,40 @@ export const ChannelPage = ({ isAdminView = false }) => {
 
   // ─── Permission Flags ───────────────────────────────────────────────────────
   const isAdminUser = user?.role === 'admin';
-  // Chat is open to all authenticated users (Normal users, Contributors, Palkhi Pramukhs, Admins)
   const canPostChat = !adminView && Boolean(user);
-  // Official Announcements & Emergency Contact editing remain restricted to Owner + Admin
   const canCreateAnnouncement = !adminView && Boolean(user) && (isOwner || isAdminUser);
   const canEditEmergencyContact = !adminView && Boolean(user) && (isOwner || isAdminUser);
   const hasEmergencyContact = Boolean(channel?.emergency_contact_name || channel?.emergency_contact_phone);
 
   const TABS = useMemo(() => [
-    { id: 'announcements', label: t('channelPage.tabs.announcements'), icon: '📢' },
-    { id: 'chat', label: t('channelPage.tabs.chat'), icon: '💬' },
-    { id: 'map', label: t('channelPage.tabs.map'), icon: '📍' },
-    { id: 'info', label: t('channelPage.tabs.info'), icon: 'ℹ️' },
+    { id: 'announcements', label: t('channelPage.tabs.announcements'), icon: 'campaign' },
+    { id: 'chat', label: t('channelPage.tabs.chat'), icon: 'forum' },
+    { id: 'map', label: t('channelPage.tabs.map'), icon: 'map' },
+    { id: 'info', label: t('channelPage.tabs.info'), icon: 'info' },
   ], [language]);
 
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-[70vh] gap-3">
+      <div className="flex flex-col justify-center items-center min-h-[70vh] gap-3 bg-[#FBF5EC]">
         <Loader size="lg" />
-        <p className="text-sm font-medium text-[#8B1E1E] animate-pulse">Loading Wari Channel...</p>
+        <p className="font-body-md text-sm font-medium text-[#6a020a] animate-pulse">Loading Aapli Wari Channel...</p>
       </div>
     );
   }
 
   if (!channel) {
     return (
-      <div className="text-center py-20 px-4 max-w-md mx-auto">
-        <div className="w-16 h-16 mx-auto mb-4 bg-orange-100 rounded-full flex items-center justify-center text-2xl text-[#DD6B35]">
+      <div className="text-center py-20 px-4 max-w-md mx-auto bg-[#FBF5EC]">
+        <div className="w-16 h-16 mx-auto mb-4 bg-orange-100 rounded-full flex items-center justify-center text-2xl text-[#a13f09]">
           🔍
         </div>
-        <h2 className="text-2xl font-bold text-[#2B1B12]">Channel Not Found</h2>
-        <p className="text-sm text-gray-600 mt-2 mb-6">
+        <h2 className="font-headline-md text-2xl font-bold text-[#1f1b18]">Channel Not Found</h2>
+        <p className="font-body-md text-sm text-[#58413f] mt-2 mb-6">
           The palkhi channel you are looking for might have been moved or removed.
         </p>
         <Link
           to="/channels"
-          className="inline-flex items-center px-4 py-2 bg-[#8B1E1E] text-white rounded-xl font-medium shadow-sm hover:bg-[#701616] transition-colors"
+          className="inline-flex items-center px-4 py-2.5 bg-[#6a020a] text-white rounded-xl font-label-md font-semibold shadow-sm hover:bg-[#8b1e1e] transition-colors"
         >
           <FiArrowLeft className="mr-2" /> Back to all channels
         </Link>
@@ -548,167 +516,170 @@ export const ChannelPage = ({ isAdminView = false }) => {
   }
 
   return (
-    <div className="bg-[#F8F4EE] min-h-[calc(100vh-4rem)] flex flex-col justify-between overflow-hidden">
-      <div className="max-w-[1600px] w-full mx-auto flex-1 flex flex-col lg:flex-row h-full lg:h-[calc(100vh-4rem)]">
-        
-        {/* ========================================================================= */}
-        {/* LEFT COLUMN (30%) - Fixed / Scrollable Channel Summary Sidebar            */}
-        {/* ========================================================================= */}
-        <aside className="w-full lg:w-[32%] xl:w-[30%] bg-white border-b lg:border-b-0 lg:border-r border-[#E8DFC8] flex flex-col overflow-y-auto shrink-0 shadow-sm">
-          
-          {/* Top back button & Mobile Breadcrumb */}
-          <div className="px-5 py-4 border-b border-[#F0E6D8] flex items-center justify-between">
-            <button
-              onClick={() => navigate(adminView ? '/admin/channels' : -1)}
-              className="inline-flex items-center text-xs font-semibold text-[#8B1E1E] hover:text-[#DD6B35] transition-colors cursor-pointer"
-            >
-              <FiArrowLeft className="mr-1.5" size={15} /> {adminView ? t('channelPage.backAdmin') : t('channelPage.backAll')}
-            </button>
-            <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#FBF5EC] text-[#8B1E1E] border border-[#E8D9C3]">
-              {channel.type || t('channelPage.palkhiChannel')}
-            </span>
-          </div>
+    <div className="bg-[#FBF5EC] text-[#1f1b18] min-h-[calc(100vh-4rem)] flex flex-col justify-between font-body-md overflow-hidden">
+      {/* App Container */}
+      <div className="flex w-full h-[calc(100vh-4rem)] max-w-[1600px] mx-auto bg-[#fff8f5] relative shadow-[0_0_40px_rgba(106,2,10,0.05)] overflow-hidden">
 
-          <div className="p-5 space-y-6 flex-1">
-            {/* Channel Avatar & Primary Details */}
-            <div className="flex flex-col items-center text-center">
-              <div className="relative">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-[#8B1E1E] to-[#DD6B35] flex items-center justify-center text-white text-3xl sm:text-4xl font-black shadow-md border-4 border-white ring-2 ring-[#E8D9C3]">
+        {/* ========================================================================= */}
+        {/* LEFT COLUMN: Fixed, Scrollable (Hidden on Mobile, 30% on Desktop)         */}
+        {/* ========================================================================= */}
+        <aside className="hidden md:flex flex-col w-[30%] h-full bg-[#fbf2ed] border-r border-[#dfbfbc]/30 relative overflow-y-auto no-scrollbar pb-6 z-10 shadow-[4px_0_12px_rgba(106,2,10,0.02)] shrink-0">
+          
+          {/* Header / Profile Section */}
+          <div className="px-6 pt-6 pb-4 flex flex-col items-center text-center">
+            <div className="relative mb-3">
+              {channel.avatar_url || channel.image_url ? (
+                <img
+                  alt={channel.name}
+                  className="w-28 h-28 lg:w-32 lg:h-32 rounded-full object-cover border-2 border-[#a13f09] p-1 bg-white shadow-sm"
+                  src={channel.avatar_url || channel.image_url}
+                />
+              ) : (
+                <div className="w-28 h-28 lg:w-32 lg:h-32 rounded-full bg-gradient-to-br from-[#6a020a] to-[#a13f09] flex items-center justify-center text-white text-4xl lg:text-5xl font-headline-lg font-bold shadow-md border-2 border-[#a13f09] p-1 ring-2 ring-white">
                   {channel.name?.[0]?.toUpperCase() || 'W'}
                 </div>
-                {channel.status === 'active' && (
-                  <span className="absolute bottom-1 right-1 bg-green-500 text-white p-1 rounded-full border-2 border-white shadow-sm" title="Active Verified Channel">
-                    <FiCheckCircle size={14} />
-                  </span>
-                )}
-              </div>
+              )}
 
-              <h1 className="text-xl sm:text-2xl font-black text-[#2B1B12] mt-3 tracking-tight">
-                {channel.name}
-              </h1>
-
-              {/* Owner / Palkhi Pramukh subtitle */}
-              <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-600 font-medium">
-                <FiShield className="text-[#DD6B35]" />
-                <span>{t('channelPage.pramukh')}</span>
-                <span className="text-[#2B1B12] font-semibold">
-                  {channel.owner_name || channel.created_by_name || 'Sant Palkhi Mandal'}
-                </span>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="w-full mt-4 flex items-center gap-2">
-                {adminView ? (
-                  <div className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#FDF8F0] text-[#6d2325] border border-[#E8D9C3] text-center shadow-sm">
-                    {t('channelPage.adminViewOnly')}
-                  </div>
-                ) : user && !isOwner ? (
-                  <button
-                    onClick={handleFollowToggle}
-                    disabled={followLoading}
-                    className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer ${
-                      isFollowing
-                        ? 'bg-[#FBF5EC] text-[#8B1E1E] border border-[#DD6B35]/40 hover:bg-red-50'
-                        : 'bg-[#DD6B35] text-white hover:bg-[#C85A28] active:scale-[0.98]'
-                    }`}
-                  >
-                    {followLoading ? (
-                      <Loader size="xs" />
-                    ) : isFollowing ? (
-                      <>
-                        <FiUserCheck size={16} /> {t('channelPage.following')}
-                      </>
-                    ) : (
-                      <>
-                        <FiUserPlus size={16} /> {t('channelPage.followChannel')}
-                      </>
-                    )}
-                  </button>
-                ) : isOwner ? (
-                  <div className="flex-1 flex flex-col gap-2">
-                    <div className="py-1.5 px-3 rounded-xl text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200 text-center flex items-center justify-center gap-1.5">
-                      <FiStar size={11} className="text-amber-500" /> {t('channelPage.youAreOwner')}
-                    </div>
-                    <Link
-                      to={`/channel/${id}/manage`}
-                      className="py-2.5 px-4 rounded-xl text-xs font-bold bg-[#8B1E1E] text-white hover:bg-[#701616] transition-all text-center flex items-center justify-center gap-2 shadow-sm"
-                    >
-                      <FiSettings size={14} /> {t('channelPage.manageChannel')}
-                    </Link>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => navigate('/login', { state: { from: `/channel/${id}` } })}
-                    className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#DD6B35] text-white hover:bg-[#C85A28] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-                  >
-                    <FiUserPlus size={16} /> {t('channelPage.followChannel')}
-                  </button>
-                )}
-
-              </div>
-            </div>
-
-            {/* Quick Stats Grid */}
-            <div className="grid grid-cols-2 gap-2 bg-[#FBF5EC] p-3 rounded-2xl border border-[#E8D9C3]">
-              <div className="bg-white rounded-xl p-2.5 text-center shadow-2xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">{t('channelPage.followers')}</span>
-                <span className="text-lg font-black text-[#8B1E1E]">{followersCount}</span>
-              </div>
-              <div className="bg-white rounded-xl p-2.5 text-center shadow-2xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">{t('channelPage.updates')}</span>
-                <span className="text-lg font-black text-[#8B1E1E]">{posts.length}</span>
-              </div>
-            </div>
-
-            {/* Emergency Contact Card (Highlighted Red Card) */}
-            <div className="rounded-2xl border-2 border-red-200 bg-gradient-to-br from-red-50 to-orange-50/50 p-4 shadow-xs relative overflow-hidden">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center text-xs shadow-xs">
-                    <FiAlertTriangle size={13} />
-                  </span>
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-red-900">
-                    {t('channelPage.emergencyHelpline')}
-                  </h3>
+              {channel.status === 'active' && (
+                <div className="absolute bottom-1 right-1 bg-white text-[#6a020a] rounded-full p-1 shadow-sm border border-[#dfbfbc] flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[16px]" data-weight="fill">verified</span>
                 </div>
-                {canEditEmergencyContact && (
-                  <button
-                    onClick={() => setShowEmergencyModal(true)}
-                    className="text-[11px] font-bold text-red-700 hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <FiEdit2 size={11} /> {t('channelPage.edit')}
-                  </button>
+              )}
+            </div>
+
+            <h1 className="font-headline-lg text-2xl lg:text-[28px] text-[#6a020a] mb-1 font-bold leading-tight">
+              {channel.name}
+            </h1>
+
+            <p className="font-body-md text-sm text-[#58413f] flex items-center justify-center gap-1.5 font-medium">
+              <span className="material-symbols-outlined text-[18px] text-[#a13f09]">groups</span>
+              <span>{t('channelPage.pramukh')} {channel.owner_name || channel.created_by_name || 'Sant Tukaram Palkhi'}</span>
+            </p>
+
+            <div className="mt-2 bg-[#efe6e2] px-3 py-1 rounded-full inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#a13f09]"></span>
+              <span className="font-label-sm text-[11px] text-[#58413f] uppercase tracking-wider font-semibold">
+                Live Route
+              </span>
+            </div>
+          </div>
+
+          {/* Follower Stats Card */}
+          <div className="px-6 pb-4">
+            <div className="flex justify-between bg-white rounded-xl p-3 shadow-[0_2px_8px_rgba(106,2,10,0.03)] border border-[#dfbfbc]/20">
+              <div className="text-center flex-1">
+                <div className="font-headline-md text-xl lg:text-2xl text-[#6a020a] font-bold">
+                  {followersCount >= 1000 ? `${(followersCount / 1000).toFixed(1)}K` : followersCount}
+                </div>
+                <div className="font-label-sm text-xs text-[#58413f]">{t('channelPage.followers')}</div>
+              </div>
+              <div className="w-[1px] bg-[#dfbfbc]/50"></div>
+              <div className="text-center flex-1">
+                <div className="font-headline-md text-xl lg:text-2xl text-[#6a020a] font-bold">
+                  {contributors.length}
+                </div>
+                <div className="font-label-sm text-xs text-[#58413f]">Varkaris</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Action Buttons */}
+          <div className="px-6 pb-5 flex flex-col gap-2.5 border-b border-[#dfbfbc]/30">
+            {isOwner ? (
+              <div className="flex flex-col gap-2">
+                <div className="py-1.5 px-3 rounded-xl text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200 text-center flex items-center justify-center gap-1.5">
+                  <FiStar size={11} className="text-amber-500" /> {t('channelPage.youAreOwner')}
+                </div>
+                <Link
+                  to={`/channel/${id}/manage`}
+                  className="w-full bg-[#6a020a] text-white font-label-md text-sm py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-[#8b1e1e] transition-colors shadow-sm font-semibold"
+                >
+                  <span className="material-symbols-outlined text-[18px]">settings</span>
+                  {t('channelPage.manageChannel')}
+                </Link>
+              </div>
+            ) : adminView ? (
+              <div className="py-2.5 px-4 rounded-xl text-xs font-bold bg-[#FDF8F0] text-[#6a020a] border border-[#dfbfbc] text-center shadow-sm">
+                {t('channelPage.adminViewOnly')}
+              </div>
+            ) : (
+              <button
+                onClick={handleFollowToggle}
+                disabled={followLoading}
+                className={`w-full font-label-md text-sm py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm font-semibold cursor-pointer ${
+                  isFollowing
+                    ? 'bg-[#FBF5EC] text-[#6a020a] border border-[#a13f09]/40 hover:bg-red-50'
+                    : 'bg-[#a13f09] text-white hover:bg-[#8b3506] active:scale-[0.98]'
+                }`}
+              >
+                {followLoading ? (
+                  <Loader size="xs" />
+                ) : isFollowing ? (
+                  <>
+                    <span className="material-symbols-outlined text-[18px]" data-weight="fill">volunteer_activism</span>
+                    {t('channelPage.following')}
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[18px]" data-weight="fill">volunteer_activism</span>
+                    {t('channelPage.followChannel')}
+                  </>
                 )}
+              </button>
+            )}
+
+            <button
+              onClick={() => setActiveTab('map')}
+              className="w-full border border-[#6a020a] text-[#6a020a] font-label-md text-sm py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-[#6a020a]/5 transition-colors font-semibold cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[18px]" data-weight="fill">map</span>
+              {t('channelPage.tabs.map')}
+            </button>
+          </div>
+
+          {/* Emergency Helpline Card (Prominent) */}
+          <div className="px-6 py-4 mt-2">
+            <div className="bg-[#ba1a1a]/5 border border-[#ba1a1a]/20 rounded-xl p-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
+                <span className="material-symbols-outlined text-[64px] text-[#ba1a1a]" data-weight="fill">emergency</span>
+              </div>
+              <div className="flex items-start gap-3 mb-3 relative z-10">
+                <div className="bg-[#ba1a1a] text-white p-1.5 rounded-full flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[20px]" data-weight="fill">medical_services</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-label-md text-sm font-bold text-[#ba1a1a] truncate">
+                      {t('channelPage.emergencyHelpline')}
+                    </h3>
+                    {canEditEmergencyContact && (
+                      <button
+                        onClick={() => setShowEmergencyModal(true)}
+                        className="text-[11px] font-bold text-[#ba1a1a] hover:underline cursor-pointer flex items-center gap-0.5"
+                      >
+                        <FiEdit2 size={10} /> {t('channelPage.edit')}
+                      </button>
+                    )}
+                  </div>
+                  <p className="font-label-sm text-[11px] text-[#ba1a1a]/80">Available 24/7 during Yatra</p>
+                </div>
               </div>
 
               {hasEmergencyContact ? (
-                <div className="space-y-1.5 mt-2">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xs font-semibold text-gray-800">
-                      {channel.emergency_contact_name || 'Emergency Coordinator'}
-                    </span>
-                    {channel.emergency_contact_role && (
-                      <span className="text-[10px] bg-red-100 text-red-800 font-bold px-1.5 py-0.5 rounded">
-                        {channel.emergency_contact_role}
-                      </span>
-                    )}
-                  </div>
-                  {channel.emergency_contact_phone && (
-                    <a
-                      href={`tel:${channel.emergency_contact_phone}`}
-                      className="inline-flex items-center justify-center gap-2 w-full mt-2 py-2 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold tracking-wide shadow-sm transition-all active:scale-[0.98]"
-                    >
-                      <FiPhone size={14} className="animate-bounce" /> {t('channelPage.call')} {channel.emergency_contact_phone}
-                    </a>
-                  )}
-                </div>
+                <a
+                  href={`tel:${channel.emergency_contact_phone}`}
+                  className="w-full bg-white text-[#ba1a1a] border border-[#ba1a1a]/20 font-label-md text-xs py-2.5 px-3 rounded-lg flex items-center justify-center gap-2 hover:bg-[#ba1a1a]/5 transition-colors shadow-sm font-bold truncate"
+                >
+                  <span className="material-symbols-outlined text-[18px]">call</span>
+                  {channel.emergency_contact_phone} ({channel.emergency_contact_name || 'Medical Team'})
+                </a>
               ) : (
-                <div className="py-2 text-center">
-                  <p className="text-xs text-gray-500 italic">{t('channelPage.noHelpline')}</p>
+                <div className="text-center pt-1">
+                  <p className="font-label-sm text-xs text-[#58413f]/70 italic mb-2">{t('channelPage.noHelpline')}</p>
                   {canEditEmergencyContact && (
                     <button
                       onClick={() => setShowEmergencyModal(true)}
-                      className="mt-2 text-xs font-bold text-red-700 bg-white border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                      className="w-full bg-white text-[#ba1a1a] border border-[#ba1a1a]/20 font-label-md text-xs py-2 rounded-lg hover:bg-red-50 font-bold transition-colors cursor-pointer"
                     >
                       {t('channelPage.addEmergencyContact')}
                     </button>
@@ -716,103 +687,191 @@ export const ChannelPage = ({ isAdminView = false }) => {
                 </div>
               )}
             </div>
-
           </div>
+
+          {/* Navigation Links (SideNavBar style mapping) */}
+          <nav className="px-4 mt-auto pt-4">
+            <ul className="flex flex-col gap-1.5">
+              <li>
+                <Link
+                  to="/"
+                  className="flex items-center gap-3 text-[#58413f] px-4 py-2.5 hover:bg-[#efe6e2] rounded-xl transition-all font-label-md text-sm font-medium"
+                >
+                  <span className="material-symbols-outlined text-[20px]">home</span>
+                  <span>Home</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/map"
+                  className="flex items-center gap-3 text-[#58413f] px-4 py-2.5 hover:bg-[#efe6e2] rounded-xl transition-all font-label-md text-sm font-medium"
+                >
+                  <span className="material-symbols-outlined text-[20px]">calendar_month</span>
+                  <span>Schedule</span>
+                </Link>
+              </li>
+              <li>
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all font-label-md text-sm font-bold text-left cursor-pointer ${
+                    activeTab === 'chat'
+                      ? 'bg-[#fe844c]/20 text-[#6a2500] shadow-[0_2px_4px_rgba(0,0,0,0.03)]'
+                      : 'text-[#58413f] hover:bg-[#efe6e2]'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[20px]" data-weight={activeTab === 'chat' ? 'fill' : undefined}>forum</span>
+                  <span>Community Chat</span>
+                </button>
+              </li>
+              <li>
+                <Link
+                  to={isOwner ? `/channel/${id}/manage` : '/settings'}
+                  className="flex items-center gap-3 text-[#58413f] px-4 py-2.5 hover:bg-[#efe6e2] rounded-xl transition-all font-label-md text-sm font-medium"
+                >
+                  <span className="material-symbols-outlined text-[20px]">settings</span>
+                  <span>Settings</span>
+                </Link>
+              </li>
+            </ul>
+          </nav>
         </aside>
 
         {/* ========================================================================= */}
-        {/* RIGHT COLUMN (70%) - Main Tab Navigation & WhatsApp-style Interactive Area */}
+        {/* RIGHT COLUMN: Main Chat Area (100% on Mobile, 70% on Desktop)             */}
         {/* ========================================================================= */}
-        <main className="w-full lg:w-[68%] xl:w-[70%] flex flex-col bg-[#FDFBF7] h-full overflow-hidden">
+        <main className="flex-1 flex flex-col h-full relative bg-[#ffffff] overflow-hidden">
           
-          {/* Top Sticky Bar */}
-          <header className="bg-white/95 backdrop-blur-md border-b border-[#E8D9C3] px-4 py-3 sticky top-0 z-10 shrink-0">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="lg:hidden w-10 h-10 rounded-full bg-[#8B1E1E] text-white flex items-center justify-center font-bold text-sm shrink-0">
+          {/* Emergency Alert Banner (Conditional & Dismissible) */}
+          {hasEmergencyContact && showEmergencyBanner && (
+            <div className="bg-[#ba1a1a] text-white px-4 py-2 flex justify-between items-center z-30 shadow-md">
+              <div className="flex items-center gap-2 min-w-0 pr-2">
+                <span className="material-symbols-outlined text-[20px] shrink-0" data-weight="fill">warning</span>
+                <span className="font-label-sm text-xs font-semibold tracking-wide truncate">
+                  Helpline: {channel.emergency_contact_name || 'Emergency Team'} ({channel.emergency_contact_phone})
+                </span>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <a
+                  className="font-label-sm text-xs underline hover:text-white/80 transition-colors font-bold"
+                  href={`tel:${channel.emergency_contact_phone}`}
+                >
+                  Call Help
+                </a>
+                {canEditEmergencyContact && (
+                  <button
+                    aria-label="Edit banner"
+                    onClick={() => setShowEmergencyModal(true)}
+                    className="text-white/80 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                  </button>
+                )}
+                <button
+                  aria-label="Close banner"
+                  onClick={() => setShowEmergencyBanner(false)}
+                  className="text-white/80 hover:text-white transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">close</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Top App Bar Header */}
+          <header className="bg-[#fff8f5] border-b border-[#dfbfbc]/40 px-4 py-3 z-20 sticky top-0 flex flex-col w-full shadow-[0_2px_10px_rgba(106,2,10,0.02)]">
+            <div className="flex justify-between items-center w-full">
+              {/* Mobile View: Avatar & Title */}
+              <div className="flex items-center gap-3 md:hidden min-w-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6a020a] to-[#a13f09] text-white flex items-center justify-center font-headline-md font-bold text-sm shrink-0 border border-[#a13f09]/40">
                   {channel.name?.[0]?.toUpperCase() || 'W'}
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <h2 className="text-base sm:text-lg font-bold text-[#2B1B12] truncate">
-                      {channel.name}
-                    </h2>
-                    {channel.status === 'active' && (
-                      <FiCheckCircle className="text-green-500 shrink-0" size={15} />
-                    )}
-                  </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-headline-md text-base font-bold text-[#6a020a] leading-tight truncate">
+                    {channel.name}
+                  </span>
+                  <span className="font-label-sm text-[11px] text-[#58413f]">Live Community</span>
                 </div>
               </div>
 
-              {/* Action shortcuts */}
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                {/* Owner badge */}
-                {isOwner && (
-                  <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
-                    <FiStar size={10} className="text-amber-500" /> {t('channelPage.youOwnThis')}
-                  </span>
+              {/* Desktop View: Title */}
+              <div className="hidden md:flex items-center gap-2">
+                <span className="font-headline-md text-xl font-bold text-[#6a020a]">
+                  {channel.name}
+                </span>
+                {channel.status === 'active' && (
+                  <span className="material-symbols-outlined text-[#2D6A4F] text-[18px]" data-weight="fill">verified</span>
                 )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-1 text-[#6a020a]">
+                <button
+                  onClick={() => setShowSearchBar((p) => !p)}
+                  className="p-2 hover:bg-[#efe6e2] rounded-full transition-colors active:scale-95 cursor-pointer"
+                  title="Search messages"
+                >
+                  <span className="material-symbols-outlined text-[20px]">search</span>
+                </button>
                 <button
                   onClick={() => setShowContributorsModal(true)}
-                  className="p-2 hover:bg-gray-100 rounded-xl text-gray-600 transition-colors cursor-pointer"
-                  title={t('channelPage.info.authorizedSevaks')}
+                  className="p-2 hover:bg-[#efe6e2] rounded-full transition-colors active:scale-95 cursor-pointer"
+                  title="View Contributors"
                 >
-                  <FiUsers size={18} />
+                  <span className="material-symbols-outlined text-[20px]">groups</span>
                 </button>
-                {/* Settings gear — only for Owner / Admin */}
                 {(isOwner || isAdminUser) && !adminView && (
                   <Link
                     to={`/channel/${id}/manage`}
-                    className="p-2 hover:bg-[#FBF5EC] rounded-xl text-[#8B1E1E] transition-colors"
-                    title={t('channelPage.manageChannel')}
+                    className="p-2 hover:bg-[#efe6e2] rounded-full transition-colors active:scale-95 cursor-pointer"
+                    title="Channel Settings"
                   >
-                    <FiSettings size={18} />
+                    <span className="material-symbols-outlined text-[20px]">settings</span>
                   </Link>
                 )}
               </div>
             </div>
 
-            {notice && (
-              <div className={`mt-3 rounded-xl border px-3 py-2 text-xs font-semibold ${
-                notice.type === 'success'
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                  : 'border-red-200 bg-red-50 text-red-700'
-              }`}>
-                {notice.text}
+            {/* Expandable Quick Search Bar */}
+            {showSearchBar && (
+              <div className="mt-2.5 flex items-center bg-white border border-[#dfbfbc]/60 rounded-xl px-3 py-1.5 shadow-2xs animate-fade-in">
+                <span className="material-symbols-outlined text-[#58413f] text-[18px] mr-2">search</span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('channelPage.searchPlaceholder')}
+                  className="w-full bg-transparent text-xs text-[#1f1b18] placeholder:text-gray-400 focus:outline-none font-body-md"
+                  autoFocus
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-[#6a020a]">
+                    <FiX size={14} />
+                  </button>
+                )}
               </div>
             )}
 
-            {/* Quick Search Bar */}
-            <div className="mt-3 flex items-center bg-[#FDFBF7] border border-[#E8D9C3] rounded-xl px-3 py-1.5 shadow-2xs">
-              <span className="text-gray-400 mr-2 text-xs">🔍</span>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder={t('channelPage.searchPlaceholder')}
-                className="w-full bg-transparent text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none"
-              />
-            </div>
-
-            {/* Tab Navigation Pill Bar */}
-            <div className="flex gap-1 overflow-x-auto no-scrollbar pt-3 mt-1 border-t border-gray-100">
+            {/* Navigation Tabs (Announcements, Chat, Map, Info) */}
+            <div className="flex gap-4 overflow-x-auto no-scrollbar w-full mt-2 pt-2 border-t border-[#dfbfbc]/20">
               {TABS.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    className={`pb-2 font-label-md text-sm transition-colors whitespace-nowrap px-2 flex items-center gap-1.5 cursor-pointer border-b-2 ${
                       isActive
-                        ? 'bg-[#8B1E1E] text-white shadow-xs'
-                        : 'bg-[#FBF5EC] text-gray-700 hover:bg-[#F3E7D3] hover:text-[#2B1B12]'
+                        ? 'text-[#a13f09] border-[#a13f09] font-bold'
+                        : 'text-[#58413f] border-transparent hover:text-[#a13f09]'
                     }`}
                   >
-                    <span>{tab.icon}</span>
+                    <span className="material-symbols-outlined text-[18px]" data-weight={isActive ? 'fill' : undefined}>
+                      {tab.icon}
+                    </span>
                     <span>{tab.label}</span>
                     {tab.id === 'announcements' && announcementPosts.length > 0 && (
                       <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                        isActive ? 'bg-white text-[#8B1E1E]' : 'bg-[#DD6B35] text-white'
+                        isActive ? 'bg-[#a13f09] text-white' : 'bg-[#efe6e2] text-[#6a020a]'
                       }`}>
                         {announcementPosts.length}
                       </span>
@@ -823,18 +882,30 @@ export const ChannelPage = ({ isAdminView = false }) => {
             </div>
           </header>
 
-          {/* Tab Content Display Area (Scrollable independently) */}
-          <div className="flex-1 overflow-y-auto p-3.5 sm:p-5 space-y-4">
+          {notice && (
+            <div className={`mx-4 mt-2 rounded-xl border px-3 py-2 text-xs font-semibold ${
+              notice.type === 'success'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : 'border-red-200 bg-red-50 text-red-700'
+            }`}>
+              {notice.text}
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB CONTENTS (Independently Scrollable with Chat Canvas Background)        */}
+          {/* ========================================================================= */}
+          <div ref={chatCanvasRef} className="flex-1 overflow-y-auto chat-bg p-4 md:p-6 flex flex-col gap-4 relative">
             
             {/* -------------------- TAB 1: ANNOUNCEMENTS -------------------- */}
             {activeTab === 'announcements' && (
-              <div className="space-y-4 max-w-2xl mx-auto">
+              <div className="space-y-4 max-w-2xl w-full mx-auto">
                 {/* Post Announcement Form for Pramukh / Owner / Admins */}
                 {canCreateAnnouncement && (
-                  <div className="bg-white border-2 border-[#DD6B35]/30 rounded-2xl p-4 shadow-sm">
+                  <div className="bg-white border border-[#a13f09]/30 rounded-2xl p-4 shadow-sm">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-base">📢</span>
-                      <h3 className="text-xs font-black uppercase tracking-wider text-[#8B1E1E]">
+                      <span className="material-symbols-outlined text-[#6a020a] text-[20px]" data-weight="fill">campaign</span>
+                      <h3 className="font-label-md text-xs font-bold uppercase tracking-wider text-[#6a020a]">
                         {t('channelPage.announcements.postTitle')}
                       </h3>
                     </div>
@@ -844,22 +915,22 @@ export const ChannelPage = ({ isAdminView = false }) => {
                         placeholder={t('channelPage.announcements.placeholder')}
                         value={newAnnouncement}
                         onChange={(e) => setNewAnnouncement(e.target.value)}
-                        className="w-full p-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#8B1E1E] focus:ring-1 focus:ring-[#8B1E1E]/20 resize-none bg-[#FDFBF7]"
+                        className="w-full p-3 font-body-md text-sm border border-[#dfbfbc]/50 rounded-xl focus:outline-none focus:border-[#6a020a] focus:ring-1 focus:ring-[#6a020a]/20 resize-none bg-[#fff8f5]"
                       />
                       <div className="flex items-center justify-between gap-3 flex-wrap">
-                        <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                        <label className="flex items-center gap-2 font-label-sm text-xs font-semibold text-[#58413f] cursor-pointer select-none">
                           <input
                             type="checkbox"
                             checked={announcementPinned}
                             onChange={(e) => setAnnouncementPinned(e.target.checked)}
-                            className="w-4 h-4 rounded text-[#8B1E1E] focus:ring-[#8B1E1E] accent-[#8B1E1E]"
+                            className="w-4 h-4 rounded text-[#6a020a] focus:ring-[#6a020a] accent-[#6a020a]"
                           />
                           {t('channelPage.announcements.pin')}
                         </label>
                         <Button
                           type="submit"
                           disabled={postingAnnouncement || !newAnnouncement.trim()}
-                          className="!px-4 !py-1.5 !bg-[#8B1E1E] hover:!bg-[#701616] text-white text-xs font-bold rounded-xl shadow-xs"
+                          className="!px-4 !py-2 !bg-[#6a020a] hover:!bg-[#8b1e1e] text-white font-label-md text-xs font-bold rounded-xl shadow-xs cursor-pointer"
                         >
                           {postingAnnouncement ? t('channelPage.announcements.broadcasting') : t('channelPage.announcements.broadcast')}
                         </Button>
@@ -868,48 +939,12 @@ export const ChannelPage = ({ isAdminView = false }) => {
                   </div>
                 )}
 
-                {/* Admins feed vs User view */}
-                {adminView ? (
-                  adminFeedPosts.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
-                      <div className="text-5xl mb-3">🪧</div>
-                      <h3 className="text-base font-bold text-[#2B1B12]">{t('channelPage.announcements.empty')}</h3>
-                      <p className="text-xs text-gray-500 mt-1">{t('channelPage.announcements.emptySub')}</p>
-                    </div>
-                  ) : (
-                    adminFeedPosts.map((post) => (
-                      <article key={`admin-feed-${post.id}`} className="rounded-2xl border border-[#E8DFC8] bg-white p-4 sm:p-5 shadow-xs">
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-[#8B1E1E]">
-                            {post.is_announcement ? t('channelPage.announcements.badge') : post.content_type ? 'Channel Content' : 'Channel Chat'}
-                          </span>
-                          <span className="text-[11px] font-medium text-gray-400">{timeAgo(post.created_at)}</span>
-                        </div>
-                        {post.title && post.title !== 'Channel Post' && (
-                          <h4 className="text-base font-bold text-[#2B1B12] mb-1.5">{post.title}</h4>
-                        )}
-                        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-                          {post.message || post.description || 'Uploaded channel content'}
-                        </p>
-                        {post.file_url && (
-                          <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-[#8B1E1E]">
-                            <FiFile size={15} /> {t('channelPage.announcements.viewDoc')}
-                          </a>
-                        )}
-                        <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
-                          Posted by {post.user?.full_name || post.user?.username || 'Channel user'}
-                        </div>
-                      </article>
-                    ))
-                  )
-                ) : (
-                <>
-                {/* Announcements List */}
+                {/* Announcements Feed */}
                 {announcementPosts.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
-                    <div className="text-5xl mb-3">🪧</div>
-                    <h3 className="text-base font-bold text-[#2B1B12]">{t('channelPage.announcements.empty')}</h3>
-                    <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
+                  <div className="rounded-2xl border border-dashed border-[#dfbfbc] bg-white p-10 text-center">
+                    <div className="text-4xl mb-3">📢</div>
+                    <h3 className="font-headline-md text-base font-bold text-[#1f1b18]">{t('channelPage.announcements.empty')}</h3>
+                    <p className="font-body-md text-xs text-[#58413f] mt-1 max-w-sm mx-auto">
                       {t('channelPage.announcements.emptySub')}
                     </p>
                   </div>
@@ -917,50 +952,50 @@ export const ChannelPage = ({ isAdminView = false }) => {
                   announcementPosts.map((post) => (
                     <article
                       key={`ann-${post.id}`}
-                      className={`rounded-2xl border p-4 sm:p-5 transition-all shadow-xs ${
+                      className={`rounded-2xl border p-4 sm:p-5 transition-all shadow-[0_2px_8px_rgba(106,2,10,0.04)] ${
                         post.is_pinned
                           ? 'bg-[#FFFBF2] border-amber-300 ring-1 ring-amber-200'
-                          : 'bg-white border-[#E8DFC8]'
+                          : 'bg-white border-[#dfbfbc]/30'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center justify-between gap-2 mb-2.5">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="inline-flex items-center gap-1 rounded-md bg-[#8B1E1E] px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-[#6a020a] px-2.5 py-0.5 font-label-sm text-[10px] font-black uppercase tracking-wider text-white">
                             📢 {t('channelPage.announcements.badge')}
                           </span>
                           {post.is_pinned && (
-                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-900">
+                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 font-label-sm text-[10px] font-black uppercase tracking-wider text-amber-900">
                               {t('channelPage.announcements.pinned')}
                             </span>
                           )}
                         </div>
-                        <span className="text-[11px] font-medium text-gray-400">{timeAgo(post.created_at)}</span>
+                        <span className="font-label-sm text-[11px] text-[#58413f]/70">{timeAgo(post.created_at)}</span>
                       </div>
 
                       {post.title && post.title !== 'Channel Post' && (
-                        <h4 className="text-base font-bold text-[#2B1B12] mb-1.5">{post.title}</h4>
+                        <h4 className="font-headline-md text-base font-bold text-[#1f1b18] mb-1.5">{post.title}</h4>
                       )}
 
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+                      <p className="font-body-md text-sm text-[#1f1b18] whitespace-pre-wrap leading-relaxed">
                         {post.message || post.description}
                       </p>
 
                       {post.file_url && (
-                        <div className="mt-3 rounded-xl overflow-hidden border border-gray-100 bg-gray-50">
+                        <div className="mt-3 rounded-xl overflow-hidden border border-[#dfbfbc]/30 bg-gray-50">
                           {post.content_type === 'image' ? (
                             <img src={post.file_url} alt={post.title || 'Announcement'} className="w-full max-h-80 object-cover" />
                           ) : (
-                            <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="p-3 flex items-center gap-2 text-xs font-bold text-[#8B1E1E]">
+                            <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="p-3 flex items-center gap-2 font-label-md text-xs font-bold text-[#6a020a]">
                               <FiFile size={16} /> {t('channelPage.announcements.viewDoc')}
                             </a>
                           )}
                         </div>
                       )}
 
-                      <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                      <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between font-label-sm text-xs text-[#58413f]">
                         <div className="flex items-center gap-2">
                           <Avatar size="xs" fallback={post.user?.full_name?.[0] || 'P'} />
-                          <span className="font-bold text-[#2B1B12] text-xs">
+                          <span className="font-bold text-[#1f1b18] text-xs">
                             {post.user?.full_name || 'Palkhi Pramukh'}
                           </span>
                         </div>
@@ -973,7 +1008,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                                 type="button"
                                 onClick={() => handleToggleLike(post.id)}
                                 className={`flex items-center gap-1.5 transition-colors cursor-pointer ${
-                                  isLiked ? 'text-red-600 font-bold' : 'hover:text-[#8B1E1E]'
+                                  isLiked ? 'text-red-600 font-bold' : 'hover:text-[#6a020a]'
                                 }`}
                                 title={isLiked ? 'Unlike announcement' : 'Like announcement'}
                               >
@@ -983,7 +1018,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                           })()}
                           <button
                             type="button"
-                            className="flex items-center gap-1 hover:text-[#8B1E1E] cursor-pointer"
+                            className="flex items-center gap-1 hover:text-[#6a020a] cursor-pointer"
                             onClick={() => handleSharePost(post)}
                           >
                             <FiShare2 size={13} /> {t('channelPage.announcements.share')}
@@ -993,21 +1028,45 @@ export const ChannelPage = ({ isAdminView = false }) => {
                     </article>
                   ))
                 )}
-                </>
-                )}
               </div>
             )}
 
             {/* -------------------- TAB 2: WHATSAPP-STYLE CHAT -------------------- */}
             {activeTab === 'chat' && (
-              <div className="space-y-3 pb-2 max-w-3xl mx-auto">
+              <div className="space-y-4 pb-2 max-w-3xl w-full mx-auto flex flex-col">
+                
+                {/* Sticky Date Separator */}
+                <div className="flex justify-center my-1 sticky top-2 z-10">
+                  <span className="bg-white border border-[#dfbfbc]/30 text-[#58413f] font-label-sm text-xs px-3 py-1 rounded-full shadow-sm">
+                    Today
+                  </span>
+                </div>
+
+                {/* System Message / Pinned Notice Highlight */}
+                {announcementPosts.length > 0 && (
+                  <div className="flex justify-center my-1">
+                    <div className="bg-[#6a020a]/5 border border-[#6a020a]/20 px-4 py-3 rounded-xl flex items-start gap-3 max-w-md shadow-sm">
+                      <span className="material-symbols-outlined text-[#6a020a] text-[20px] mt-0.5" data-weight="fill">info</span>
+                      <div>
+                        <p className="font-label-md text-xs text-[#6a020a] font-bold">
+                          {announcementPosts[0]?.title || 'Palkhi Route Notice'}
+                        </p>
+                        <p className="font-label-sm text-xs text-[#58413f] mt-0.5 line-clamp-2">
+                          {announcementPosts[0]?.message}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Loading State */}
                 {loadingPosts ? (
                   <div className="flex justify-center py-10"><Loader size="md" /></div>
                 ) : chatPosts.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
-                    <div className="text-5xl mb-3">💬</div>
-                    <h3 className="text-base font-bold text-[#2B1B12]">{t('channelPage.chat.emptyTitle')}</h3>
-                    <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
+                  <div className="rounded-2xl border border-dashed border-[#dfbfbc] bg-white p-10 text-center">
+                    <div className="text-4xl mb-3">💬</div>
+                    <h3 className="font-headline-md text-base font-bold text-[#1f1b18]">{t('channelPage.chat.emptyTitle')}</h3>
+                    <p className="font-body-md text-xs text-[#58413f] mt-1 max-w-sm mx-auto">
                       {t('channelPage.chat.emptySub')}
                     </p>
                   </div>
@@ -1016,131 +1075,135 @@ export const ChannelPage = ({ isAdminView = false }) => {
                     const isMyPost = Boolean(user) && String(post.user_id) === String(user.id);
                     const isPostOwner = channel && String(post.user_id) === String(channel.created_by_user_id);
                     const isContributorPost = post.user?.role === 'contributor';
-                    return (
-                      <div
-                        key={post.id}
-                        className={`flex gap-2 sm:gap-3 items-end ${isMyPost ? 'justify-end' : 'justify-start'}`}
-                      >
-                        {!isMyPost && (
-                          <Avatar
-                            size="sm"
-                            fallback={post.user?.full_name?.[0] || post.user?.username?.[0] || 'W'}
-                            className="shrink-0 mb-1"
-                          />
-                        )}
 
-                        <div className={`max-w-[85%] sm:max-w-[75%] min-w-[140px]`}>
-                          {/* Bubble Container */}
-                          <div
-                            className={`px-3.5 py-2.5 rounded-2xl shadow-xs text-sm relative ${
-                              isMyPost
-                                ? 'bg-gradient-to-br from-[#8B1E1E] to-[#A42525] text-white rounded-br-xs'
-                                : 'bg-white text-gray-900 border border-[#E8D9C3] rounded-bl-xs'
-                            }`}
-                          >
-                            {!isMyPost && (
-                              <div className="flex items-center gap-1.5 mb-1">
-                                <p className="text-[11px] font-bold text-[#DD6B35] truncate">
-                                  {post.user?.full_name || post.user?.username || t('channelPage.chat.warkari')}
-                                </p>
-                                {isPostOwner ? (
-                                  <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded-full">
-                                    {t('channelPage.chat.pramukh')}
-                                  </span>
-                                ) : isContributorPost ? (
-                                  <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded-full">
-                                    {t('channelPage.chat.sevak')}
-                                  </span>
-                                ) : null}
-                              </div>
-                            )}
+                    return isMyPost ? (
+                      /* Self Message (Right Aligned, Warm Peach Tint) */
+                      <div key={post.id} className="flex flex-col items-end self-end max-w-[85%] md:max-w-[70%]">
+                        <div className="bg-[#FFF0E6] border border-[#FFDBCD] p-3 rounded-2xl rounded-tr-none shadow-[0_2px_8px_rgba(161,63,9,0.06)] relative min-w-[120px]">
+                          {post.title && post.title !== 'Channel Post' && (
+                            <p className="font-headline-md text-xs font-bold text-[#6a020a] mb-1">
+                              {post.title}
+                            </p>
+                          )}
+                          <p className="font-body-md text-sm text-[#1f1b18] whitespace-pre-wrap leading-relaxed">
+                            {post.description || post.message}
+                          </p>
 
-                            {post.title && post.title !== 'Channel Post' && (
-                              <p className={`font-bold mb-1 ${isMyPost ? 'text-white' : 'text-[#2B1B12]'}`}>
-                                {post.title}
-                              </p>
-                            )}
+                          {post.file_url && (
+                            <div className="mt-2 rounded-xl overflow-hidden border border-[#FFDBCD]">
+                              {post.content_type === 'image' && (
+                                <img
+                                  src={post.file_url}
+                                  alt="Attachment"
+                                  className="w-full max-h-72 object-cover rounded-lg cursor-pointer"
+                                  onClick={() => window.open(post.file_url, '_blank')}
+                                />
+                              )}
+                              {post.content_type === 'video' && (
+                                <video src={post.file_url} controls className="w-full max-h-72 rounded-lg" />
+                              )}
+                              {post.content_type === 'pdf' && (
+                                <a
+                                  href={post.file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 p-2 rounded-lg text-xs font-semibold bg-white text-[#6a020a]"
+                                >
+                                  <FiFile size={16} /> Attached Document (PDF)
+                                </a>
+                              )}
+                            </div>
+                          )}
 
-                            {post.description && (
-                              <p className={`whitespace-pre-wrap leading-relaxed ${isMyPost ? 'text-white/95' : 'text-gray-800'}`}>
-                                {post.description}
-                              </p>
-                            )}
+                          <div className="flex justify-end items-center mt-1.5 gap-1 text-[11px] text-[#58413f]/80">
+                            <span>{timeAgo(post.created_at)}</span>
+                            <span className="material-symbols-outlined text-[14px] text-[#a13f09]" data-weight="fill">done_all</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Other User / Admin Message (Left Aligned, Pure White Card) */
+                      <div key={post.id} className="flex flex-col items-start max-w-[85%] md:max-w-[70%]">
+                        <div className="flex items-end gap-1.5 mb-1">
+                          <div className="w-7 h-7 rounded-full bg-[#efe6e2] text-[#6a020a] flex items-center justify-center font-bold text-xs shadow-sm border border-[#dfbfbc]/40">
+                            {post.user?.full_name?.[0]?.toUpperCase() || post.user?.username?.[0]?.toUpperCase() || 'W'}
+                          </div>
+                          <span className="font-label-sm text-xs font-semibold text-[#6a020a]">
+                            {post.user?.full_name || post.user?.username || t('channelPage.chat.warkari')}
+                          </span>
+                          {isPostOwner ? (
+                            <span className="bg-[#6a020a]/10 text-[#6a020a] font-label-sm text-[10px] px-2 py-[1px] rounded-full uppercase tracking-wider font-bold">
+                              {t('channelPage.chat.pramukh')}
+                            </span>
+                          ) : isContributorPost ? (
+                            <span className="bg-emerald-100 text-emerald-800 font-label-sm text-[10px] px-2 py-[1px] rounded-full uppercase tracking-wider font-bold">
+                              {t('channelPage.chat.sevak')}
+                            </span>
+                          ) : null}
+                        </div>
 
-                            {/* Media Attachment Rendering */}
-                            {post.file_url && (
-                              <div className="mt-2 rounded-xl overflow-hidden bg-black/5">
-                                {post.content_type === 'image' && (
-                                  <img
-                                    src={post.file_url}
-                                    alt="Shared attachment"
-                                    className="w-full max-h-72 object-cover rounded-lg cursor-pointer hover:opacity-95"
-                                    onClick={() => window.open(post.file_url, '_blank')}
-                                  />
-                                )}
-                                {post.content_type === 'video' && (
-                                  <video src={post.file_url} controls className="w-full max-h-72 rounded-lg" />
-                                )}
-                                {post.content_type === 'audio' && (
-                                  <audio src={post.file_url} controls className="w-full mt-1" />
-                                )}
-                                {post.content_type === 'pdf' && (
-                                  <a
-                                    href={post.file_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`flex items-center gap-2 p-2.5 rounded-lg text-xs font-semibold ${
-                                      isMyPost ? 'bg-white/20 text-white' : 'bg-[#FBF5EC] text-[#8B1E1E]'
+                        <div className="bg-white border border-[#dfbfbc]/20 p-3 rounded-2xl rounded-tl-none shadow-[0_2px_8px_rgba(106,2,10,0.04)] ml-8 min-w-[140px]">
+                          {post.title && post.title !== 'Channel Post' && (
+                            <p className="font-headline-md text-xs font-bold text-[#6a020a] mb-1">
+                              {post.title}
+                            </p>
+                          )}
+                          
+                          {/* Image Thumbnail if attached */}
+                          {post.file_url && post.content_type === 'image' && (
+                            <img
+                              src={post.file_url}
+                              alt="Attachment"
+                              className="w-full max-h-64 object-cover rounded-xl mb-2 border border-[#dfbfbc]/20 cursor-pointer"
+                              onClick={() => window.open(post.file_url, '_blank')}
+                            />
+                          )}
+
+                          {post.file_url && post.content_type === 'video' && (
+                            <video src={post.file_url} controls className="w-full max-h-64 rounded-xl mb-2" />
+                          )}
+
+                          {post.file_url && post.content_type === 'pdf' && (
+                            <a
+                              href={post.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 p-2 rounded-lg text-xs font-semibold bg-[#fbf2ed] text-[#6a020a] mb-2"
+                            >
+                              <FiFile size={16} /> Attached Document (PDF)
+                            </a>
+                          )}
+
+                          <p className="font-body-md text-sm text-[#1f1b18] whitespace-pre-wrap leading-relaxed">
+                            {post.description || post.message}
+                          </p>
+
+                          <div className="flex justify-between items-center mt-2 pt-1 border-t border-gray-50 text-[11px] text-[#58413f]">
+                            <div className="flex items-center gap-2.5">
+                              {(() => {
+                                const isLiked = Boolean(likedPostIds[post.id]);
+                                const totalLikes = Math.max(0, (post.likes || 0) + (reactionMap[post.id] || 0));
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleLike(post.id)}
+                                    className={`flex items-center gap-1 transition-colors cursor-pointer ${
+                                      isLiked ? 'text-red-600 font-bold' : 'hover:text-[#6a020a]'
                                     }`}
                                   >
-                                    <FiFile size={16} /> {t('channelPage.chat.attachedPdf')}
-                                  </a>
-                                )}
-                              </div>
-                            )}
-
-                            <div
-                              className={`flex items-center justify-end gap-1 mt-1 text-[10px] ${
-                                isMyPost ? 'text-white/70' : 'text-gray-400'
-                              }`}
-                            >
-                              <span>{timeAgo(post.created_at)}</span>
-                              {isMyPost && <FiCheckCircle size={10} className="text-white/80" />}
+                                    <FiHeart size={12} className={isLiked ? 'fill-red-600 text-red-600' : ''} /> {totalLikes}
+                                  </button>
+                                );
+                              })()}
+                              <button
+                                type="button"
+                                className="hover:text-[#6a020a] font-medium cursor-pointer"
+                                onClick={() => setReplyToPost(post)}
+                              >
+                                {t('channelPage.chat.reply')}
+                              </button>
                             </div>
-                          </div>
-
-                          {/* Quick Message Actions */}
-                          <div className={`flex items-center gap-3 mt-1 px-1.5 text-[11px] text-gray-500 ${isMyPost ? 'justify-end' : ''}`}>
-                            {(() => {
-                              const isLiked = Boolean(likedPostIds[post.id]);
-                              const totalLikes = Math.max(0, (post.likes || 0) + (reactionMap[post.id] || 0));
-                              return (
-                                <button
-                                  type="button"
-                                  className={`flex items-center gap-1 transition-colors cursor-pointer ${
-                                    isLiked ? 'text-red-600 font-bold' : 'hover:text-[#8B1E1E]'
-                                  }`}
-                                  onClick={() => handleToggleLike(post.id)}
-                                  title={isLiked ? 'Unlike' : 'Like'}
-                                >
-                                  <FiHeart size={12} className={isLiked ? 'fill-red-600 text-red-600' : ''} /> {totalLikes}
-                                </button>
-                              );
-                            })()}
-                            <button
-                              type="button"
-                              className="flex items-center gap-1 hover:text-[#8B1E1E] cursor-pointer"
-                              onClick={() => setReplyToPost(post)}
-                            >
-                              <FiMessageCircle size={12} /> {t('channelPage.chat.reply')}
-                            </button>
-                            <button
-                              type="button"
-                              className="hover:text-[#8B1E1E] cursor-pointer"
-                              onClick={() => handleSharePost(post)}
-                            >
-                              <FiShare2 size={12} />
-                            </button>
+                            <span className="text-[11px] text-[#58413f]/70">{timeAgo(post.created_at)}</span>
                           </div>
                         </div>
                       </div>
@@ -1153,104 +1216,106 @@ export const ChannelPage = ({ isAdminView = false }) => {
 
             {/* -------------------- TAB 3: ROUTE MAP -------------------- */}
             {activeTab === 'map' && (
-              <div className="bg-white border border-[#E8D9C3] rounded-3xl p-6 sm:p-10 text-center max-w-2xl mx-auto shadow-sm">
-                <div className="w-20 h-20 mx-auto mb-4 bg-orange-100 rounded-full flex items-center justify-center text-4xl text-[#DD6B35] shadow-inner">
-                  📍
+              <div className="bg-white border border-[#dfbfbc]/30 rounded-3xl p-6 sm:p-10 text-center max-w-2xl w-full mx-auto shadow-sm">
+                <div className="w-20 h-20 mx-auto mb-4 bg-[#fbf2ed] rounded-full flex items-center justify-center text-4xl text-[#a13f09] shadow-inner border border-[#dfbfbc]/30">
+                  <span className="material-symbols-outlined text-[36px]" data-weight="fill">map</span>
                 </div>
-                <h3 className="text-xl font-black text-[#2B1B12]">{t('channelPage.map.title')}</h3>
-                <p className="text-xs sm:text-sm text-gray-600 mt-2 max-w-md mx-auto leading-relaxed">
+                <h3 className="font-headline-md text-xl font-bold text-[#1f1b18]">{t('channelPage.map.title')}</h3>
+                <p className="font-body-md text-xs sm:text-sm text-[#58413f] mt-2 max-w-md mx-auto leading-relaxed">
                   {t('channelPage.map.desc')}
                 </p>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-6 max-w-lg mx-auto">
-                  <div className="p-3 bg-[#FBF5EC] rounded-xl text-center border border-[#E8D9C3]">
+                  <div className="p-3 bg-[#fbf2ed] rounded-xl text-center border border-[#dfbfbc]/30">
                     <span className="text-lg">🏕️</span>
-                    <p className="text-[11px] font-bold text-gray-700 mt-1">{t('channelPage.map.nightHalts')}</p>
+                    <p className="font-label-sm text-[11px] font-bold text-[#58413f] mt-1">{t('channelPage.map.nightHalts')}</p>
                   </div>
-                  <div className="p-3 bg-[#FBF5EC] rounded-xl text-center border border-[#E8D9C3]">
+                  <div className="p-3 bg-[#fbf2ed] rounded-xl text-center border border-[#dfbfbc]/30">
                     <span className="text-lg">🍲</span>
-                    <p className="text-[11px] font-bold text-gray-700 mt-1">{t('channelPage.map.annachhatra')}</p>
+                    <p className="font-label-sm text-[11px] font-bold text-[#58413f] mt-1">{t('channelPage.map.annachhatra')}</p>
                   </div>
-                  <div className="p-3 bg-[#FBF5EC] rounded-xl text-center border border-[#E8D9C3]">
+                  <div className="p-3 bg-[#fbf2ed] rounded-xl text-center border border-[#dfbfbc]/30">
                     <span className="text-lg">🚑</span>
-                    <p className="text-[11px] font-bold text-gray-700 mt-1">{t('channelPage.map.medical')}</p>
+                    <p className="font-label-sm text-[11px] font-bold text-[#58413f] mt-1">{t('channelPage.map.medical')}</p>
                   </div>
-                  <div className="p-3 bg-[#FBF5EC] rounded-xl text-center border border-[#E8D9C3]">
+                  <div className="p-3 bg-[#fbf2ed] rounded-xl text-center border border-[#dfbfbc]/30">
                     <span className="text-lg">💧</span>
-                    <p className="text-[11px] font-bold text-gray-700 mt-1">{t('channelPage.map.waterTanks')}</p>
+                    <p className="font-label-sm text-[11px] font-bold text-[#58413f] mt-1">{t('channelPage.map.waterTanks')}</p>
                   </div>
                 </div>
 
                 <Button
                   onClick={() => navigate('/map')}
-                  className="!bg-[#8B1E1E] hover:!bg-[#701616] text-white text-xs font-bold !px-6 !py-2.5 rounded-xl shadow-sm inline-flex items-center gap-2"
+                  className="!bg-[#6a020a] hover:!bg-[#8b1e1e] text-white font-label-md text-xs font-bold !px-6 !py-3 rounded-xl shadow-sm inline-flex items-center gap-2 cursor-pointer"
                 >
-                  <FiMapPin /> {t('channelPage.map.openMap')}
+                  <span className="material-symbols-outlined text-[18px]">near_me</span>
+                  {t('channelPage.map.openMap')}
                 </Button>
               </div>
             )}
 
             {/* -------------------- TAB 4: ABOUT & INFO -------------------- */}
             {activeTab === 'info' && (
-              <div className="space-y-4 max-w-2xl mx-auto">
-                <div className="bg-white border border-[#E8D9C3] rounded-2xl p-5 shadow-2xs">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
+              <div className="space-y-4 max-w-2xl w-full mx-auto">
+                <div className="bg-white border border-[#dfbfbc]/30 rounded-2xl p-5 shadow-[0_2px_8px_rgba(106,2,10,0.03)]">
+                  <h3 className="font-headline-md text-sm font-bold text-[#6a020a] mb-2 uppercase tracking-wider">
                     {t('channelPage.info.aboutTitle')}
                   </h3>
-                  <p className="text-sm text-gray-800 leading-relaxed">
+                  <p className="font-body-md text-sm text-[#1f1b18] leading-relaxed">
                     {channel.description || t('channelPage.info.aboutDefault')}
                   </p>
                 </div>
 
                 {/* Emergency Contact detail card */}
-                <div className="bg-red-50 border border-red-200 rounded-2xl p-5 shadow-2xs">
+                <div className="bg-[#ba1a1a]/5 border border-[#ba1a1a]/20 rounded-2xl p-5 shadow-2xs">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-red-800 flex items-center gap-1.5">
-                      <FiAlertTriangle /> {t('channelPage.info.helplineTitle')}
+                    <h3 className="font-label-md text-xs font-bold uppercase tracking-wider text-[#ba1a1a] flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[18px]" data-weight="fill">medical_services</span>
+                      {t('channelPage.info.helplineTitle')}
                     </h3>
                     {canEditEmergencyContact && (
                       <button
                         onClick={() => setShowEmergencyModal(true)}
-                        className="text-xs font-bold text-red-700 underline cursor-pointer"
+                        className="text-xs font-bold text-[#ba1a1a] underline cursor-pointer"
                       >
                         {t('channelPage.info.editHelpline')}
                       </button>
                     )}
                   </div>
-                  <div className="space-y-2 text-sm text-gray-800">
-                    <p><span className="font-semibold text-gray-600">{t('channelPage.contactPerson')}</span> {channel.emergency_contact_name || t('channelPage.notSpecified')}</p>
+                  <div className="space-y-2 font-body-md text-sm text-[#1f1b18]">
+                    <p><span className="font-semibold text-[#58413f]">{t('channelPage.contactPerson')}</span> {channel.emergency_contact_name || t('channelPage.notSpecified')}</p>
                     <p>
-                      <span className="font-semibold text-gray-600">{t('channelPage.helplinePhone')}</span>{' '}
+                      <span className="font-semibold text-[#58413f]">{t('channelPage.helplinePhone')}</span>{' '}
                       {channel.emergency_contact_phone ? (
-                        <a href={`tel:${channel.emergency_contact_phone}`} className="text-red-700 font-bold underline">
+                        <a href={`tel:${channel.emergency_contact_phone}`} className="text-[#ba1a1a] font-bold underline">
                           {channel.emergency_contact_phone}
                         </a>
                       ) : t('channelPage.notSpecified')}
                     </p>
-                    <p><span className="font-semibold text-gray-600">{t('channelPage.role')}</span> {channel.emergency_contact_role || 'Pramukh / Seva Head'}</p>
+                    <p><span className="font-semibold text-[#58413f]">{t('channelPage.role')}</span> {channel.emergency_contact_role || 'Pramukh / Seva Head'}</p>
                   </div>
                 </div>
 
                 {/* Contributors List card */}
-                <div className="bg-white border border-[#E8D9C3] rounded-2xl p-5 shadow-2xs">
+                <div className="bg-white border border-[#dfbfbc]/30 rounded-2xl p-5 shadow-[0_2px_8px_rgba(106,2,10,0.03)]">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                    <h3 className="font-headline-md text-sm font-bold text-[#6a020a] uppercase tracking-wider">
                       {t('channelPage.info.authorizedSevaks')} ({contributors.length})
                     </h3>
                     <button
                       onClick={() => setShowContributorsModal(true)}
-                      className="text-xs font-bold text-[#8B1E1E] hover:underline cursor-pointer"
+                      className="font-label-md text-xs font-bold text-[#a13f09] hover:underline cursor-pointer"
                     >
                       {t('channelPage.info.viewAll')}
                     </button>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {contributors.slice(0, 6).map((c) => (
-                      <div key={c.id} className="flex items-center gap-2.5 p-2 bg-[#FBF5EC] rounded-xl border border-[#E8D9C3]/60">
+                      <div key={c.id || c.user_id} className="flex items-center gap-2.5 p-2 bg-[#fbf2ed] rounded-xl border border-[#dfbfbc]/40">
                         <Avatar size="xs" fallback={c.full_name?.[0] || 'S'} />
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-[#2B1B12] truncate">{c.full_name || c.username}</p>
-                          <p className="text-[10px] text-gray-500 truncate">{c.email || t('channelPage.info.verifiedSevak')}</p>
+                          <p className="font-label-md text-xs font-bold text-[#1f1b18] truncate">{c.full_name || c.username}</p>
+                          <p className="font-label-sm text-[10px] text-[#58413f] truncate">{c.email || t('channelPage.info.verifiedSevak')}</p>
                         </div>
                       </div>
                     ))}
@@ -1260,53 +1325,64 @@ export const ChannelPage = ({ isAdminView = false }) => {
             )}
           </div>
 
-          {/* Sticky Input Bar for Chat Tab */}
+          {/* ========================================================================= */}
+          {/* STICKY INPUT AREA (WhatsApp style matching code.html)                      */}
+          {/* ========================================================================= */}
           {activeTab === 'chat' && (
-            <footer className="bg-white border-t border-[#E8D9C3] px-3 sm:px-5 py-3 shrink-0">
+            <footer className="bg-white border-t border-[#dfbfbc]/30 p-3 md:p-4 sticky bottom-0 z-20 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
               {canPostChat ? (
-                <form onSubmit={handlePost} className="flex items-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-2.5 text-gray-500 hover:text-[#8B1E1E] hover:bg-[#FBF5EC] rounded-full transition-colors shrink-0 cursor-pointer"
-                    title="Attach Media / Document"
-                  >
-                    <FiPaperclip size={20} />
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    accept="image/*,video/*,audio/*,application/pdf"
-                    onChange={handleFileChange}
-                  />
+                <form onSubmit={handlePost} className="flex flex-col gap-1.5">
+                  {/* Reply Context Banner */}
+                  {replyToPost && (
+                    <div className="bg-[#fbf2ed] px-3 py-1.5 rounded-t-xl border-l-4 border-[#a13f09] flex justify-between items-center text-xs">
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-label-sm text-[#a13f09] font-bold text-[11px]">
+                          {t('channelPage.chat.replyingTo')} {replyToPost.user?.full_name || replyToPost.user?.username || 'sevak'}
+                        </span>
+                        <span className="font-body-md text-xs text-[#58413f] truncate max-w-[280px] sm:max-w-md">
+                          {replyToPost.description || replyToPost.message}
+                        </span>
+                      </div>
+                      <button type="button" onClick={() => setReplyToPost(null)} className="text-[#58413f] hover:text-[#6a020a]">
+                        <span className="material-symbols-outlined text-[18px]">close</span>
+                      </button>
+                    </div>
+                  )}
 
-                  <div className="flex-1 relative min-w-0">
-                    {postMedia && (
-                      <div className="absolute -top-10 left-0 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-2 shadow-md max-w-full">
-                        <span className="truncate">📎 {postMedia.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => setPostMedia(null)}
-                          className="text-red-400 hover:text-white cursor-pointer"
-                        >
-                          <FiX size={14} />
-                        </button>
-                      </div>
-                    )}
-                    {replyToPost && (
-                      <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-[#E8D9C3] bg-[#FBF5EC] px-2.5 py-1.5 text-[11px] text-[#8B1E1E]">
-                        <span>{t('channelPage.chat.replyingTo')} {replyToPost.user?.full_name || replyToPost.user?.username || t('channelPage.chat.sevak')}</span>
-                        <button type="button" onClick={() => setReplyToPost(null)} className="text-gray-500 hover:text-[#8B1E1E] cursor-pointer">
-                          <FiX size={12} />
-                        </button>
-                      </div>
-                    )}
+                  {/* Selected Media Indicator */}
+                  {postMedia && (
+                    <div className="bg-[#1f1b18] text-white text-xs px-3 py-1 rounded-full flex items-center justify-between gap-2 max-w-sm mb-1">
+                      <span className="truncate">📎 {postMedia.name}</span>
+                      <button type="button" onClick={() => setPostMedia(null)} className="text-red-400 hover:text-white">
+                        <FiX size={14} />
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="flex items-end gap-2 bg-[#FBF5EC] rounded-2xl p-1.5 border border-[#dfbfbc]/40 focus-within:bg-white focus-within:border-[#a13f09] transition-colors shadow-sm">
+                    {/* Attachment button */}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-2 text-[#58413f] hover:text-[#a13f09] transition-colors rounded-full shrink-0 flex items-center justify-center h-10 w-10 cursor-pointer"
+                      title="Attach Media or Document"
+                    >
+                      <span className="material-symbols-outlined text-[24px]">add_circle</span>
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      accept="image/*,video/*,audio/*,application/pdf"
+                      onChange={handleFileChange}
+                    />
+
+                    {/* Textarea */}
                     <textarea
                       rows={1}
                       placeholder={
                         replyToPost
-                          ? `${t('channelPage.chat.replyPlaceholder')} ${replyToPost.user?.full_name || replyToPost.user?.username || t('channelPage.chat.sevak')}...`
+                          ? `${t('channelPage.chat.replyPlaceholder')} ${replyToPost.user?.full_name || replyToPost.user?.username || 'sevak'}...`
                           : postMedia
                             ? `File attached: ${postMedia.name}`
                             : t('channelPage.chat.placeholder')
@@ -1319,36 +1395,44 @@ export const ChannelPage = ({ isAdminView = false }) => {
                           handlePost(e);
                         }
                       }}
-                      className="w-full px-4 py-2.5 text-sm bg-[#FDFBF7] border border-[#E8D9C3] rounded-2xl focus:outline-none focus:border-[#8B1E1E] focus:ring-1 focus:ring-[#8B1E1E]/30 resize-none max-h-28"
+                      className="flex-1 bg-transparent border-none focus:ring-0 resize-none font-body-md text-sm py-[10px] px-1 max-h-32 min-h-[44px] text-[#1f1b18] placeholder:text-[#58413f]/50 no-scrollbar outline-none"
                     />
-                  </div>
 
-                  <button
-                    type="submit"
-                    disabled={posting || (!newPost.trim() && !postMedia)}
-                    className={`p-3 rounded-full shrink-0 transition-all shadow-sm cursor-pointer ${
-                      newPost.trim() || postMedia
-                        ? 'bg-[#8B1E1E] text-white hover:bg-[#701616] scale-100'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    {posting ? <Loader size="xs" /> : <FiSend size={16} />}
-                  </button>
+                    {/* Send Button */}
+                    <button
+                      type="submit"
+                      disabled={posting || (!newPost.trim() && !postMedia)}
+                      className="bg-[#a13f09] text-white p-2 rounded-full shrink-0 flex items-center justify-center h-10 w-10 hover:bg-[#8b3506] transition-transform active:scale-95 shadow-md ml-1 mb-[2px] cursor-pointer disabled:opacity-50"
+                      title="Send message"
+                    >
+                      {posting ? (
+                        <Loader size="xs" />
+                      ) : (
+                        <span
+                          className="material-symbols-outlined text-[20px]"
+                          data-weight="fill"
+                          style={{ transform: 'rotate(-45deg) translateX(2px) translateY(-2px)' }}
+                        >
+                          send
+                        </span>
+                      )}
+                    </button>
+                  </div>
                 </form>
               ) : (
-                <div className="flex items-center justify-between gap-3 py-1.5 px-3 bg-[#FBF5EC] rounded-xl border border-[#E8D9C3]">
+                <div className="flex items-center justify-between gap-3 py-2 px-3 bg-[#fbf2ed] rounded-xl border border-[#dfbfbc]/40">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm">💬</span>
+                    <span className="material-symbols-outlined text-[#a13f09] text-[22px]">forum</span>
                     <div>
-                      <p className="text-xs font-bold text-[#2B1B12]">{t('channelPage.chat.joinTitle')}</p>
-                      <p className="text-[11px] text-gray-500">{t('channelPage.chat.joinSub')}</p>
+                      <p className="font-label-md text-xs font-bold text-[#1f1b18]">{t('channelPage.chat.joinTitle')}</p>
+                      <p className="font-label-sm text-[11px] text-[#58413f]">{t('channelPage.chat.joinSub')}</p>
                     </div>
                   </div>
                   <Button
                     variant="primary"
                     size="sm"
                     onClick={() => navigate('/login', { state: { from: `/channel/${id}` } })}
-                    className="!bg-[#DD6B35] hover:!bg-[#C85A28] text-white text-xs font-bold shrink-0 shadow-xs"
+                    className="!bg-[#a13f09] hover:!bg-[#8b3506] text-white font-label-md text-xs font-bold shrink-0 shadow-xs cursor-pointer"
                   >
                     {t('channelPage.chat.signIn')}
                   </Button>
@@ -1358,6 +1442,38 @@ export const ChannelPage = ({ isAdminView = false }) => {
           )}
         </main>
       </div>
+
+      {/* ========================================================================= */}
+      {/* MOBILE BOTTOM NAVIGATION BAR (Visible on mobile < md)                     */}
+      {/* ========================================================================= */}
+      <nav className="md:hidden fixed bottom-0 w-full bg-white border-t border-[#dfbfbc]/40 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-40">
+        <div className="flex justify-between items-center px-3 py-1">
+          <Link to="/" className="flex flex-col items-center p-2 text-[#58413f] flex-1">
+            <span className="material-symbols-outlined text-[22px]">home</span>
+            <span className="font-label-sm text-[10px] mt-0.5">Home</span>
+          </Link>
+          <Link to="/map" className="flex flex-col items-center p-2 text-[#58413f] flex-1">
+            <span className="material-symbols-outlined text-[22px]">calendar_month</span>
+            <span className="font-label-sm text-[10px] mt-0.5">Schedule</span>
+          </Link>
+          <button
+            onClick={() => setActiveTab('chat')}
+            className="flex flex-col items-center p-2 text-[#a13f09] flex-1 cursor-pointer"
+          >
+            <div className="bg-[#fe844c]/20 px-3.5 py-0.5 rounded-full mb-0.5">
+              <span className="material-symbols-outlined text-[22px]" data-weight="fill">forum</span>
+            </div>
+            <span className="font-label-sm text-[10px] font-bold">Chat</span>
+          </button>
+          <button
+            onClick={() => setShowEmergencyModal(true)}
+            className="flex flex-col items-center p-2 text-[#ba1a1a] flex-1 cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[22px]">emergency</span>
+            <span className="font-label-sm text-[10px] mt-0.5">Alerts</span>
+          </button>
+        </div>
+      </nav>
 
       {/* ========================================================================= */}
       {/* MODALS: Emergency Contact Editor, Info & Contributors List                 */}
@@ -1370,9 +1486,9 @@ export const ChannelPage = ({ isAdminView = false }) => {
         title={t('channelPage.modals.emergencyTitle')}
         size="md"
       >
-        <form onSubmit={handleSaveEmergencyContact} className="space-y-4">
+        <form onSubmit={handleSaveEmergencyContact} className="space-y-4 font-body-md">
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">
+            <label className="block font-label-md text-xs font-bold text-[#1f1b18] uppercase tracking-wide mb-1">
               {t('channelPage.modals.personName')}
             </label>
             <input
@@ -1381,11 +1497,11 @@ export const ChannelPage = ({ isAdminView = false }) => {
               placeholder="e.g. Dr. Patil / Palkhi Seva Kendra"
               value={emergencyContact.name}
               onChange={(e) => setEmergencyContact((p) => ({ ...p, name: e.target.value }))}
-              className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-xl focus:border-[#8B1E1E] focus:outline-none"
+              className="w-full px-3.5 py-2.5 text-sm border border-[#dfbfbc] rounded-xl focus:border-[#6a020a] focus:outline-none bg-[#fff8f5]"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">
+            <label className="block font-label-md text-xs font-bold text-[#1f1b18] uppercase tracking-wide mb-1">
               {t('channelPage.modals.phone')}
             </label>
             <input
@@ -1394,11 +1510,11 @@ export const ChannelPage = ({ isAdminView = false }) => {
               placeholder="e.g. 9876543210"
               value={emergencyContact.phone}
               onChange={(e) => setEmergencyContact((p) => ({ ...p, phone: e.target.value }))}
-              className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-xl focus:border-[#8B1E1E] focus:outline-none"
+              className="w-full px-3.5 py-2.5 text-sm border border-[#dfbfbc] rounded-xl focus:border-[#6a020a] focus:outline-none bg-[#fff8f5]"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">
+            <label className="block font-label-md text-xs font-bold text-[#1f1b18] uppercase tracking-wide mb-1">
               {t('channelPage.modals.roleDesc')}
             </label>
             <input
@@ -1406,7 +1522,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
               placeholder="e.g. Medical Van Coordinator, Local Pramukh"
               value={emergencyContact.role}
               onChange={(e) => setEmergencyContact((p) => ({ ...p, role: e.target.value }))}
-              className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-xl focus:border-[#8B1E1E] focus:outline-none"
+              className="w-full px-3.5 py-2.5 text-sm border border-[#dfbfbc] rounded-xl focus:border-[#6a020a] focus:outline-none bg-[#fff8f5]"
             />
           </div>
           <div className="flex gap-2 pt-2">
@@ -1414,14 +1530,14 @@ export const ChannelPage = ({ isAdminView = false }) => {
               type="button"
               variant="outline"
               onClick={() => setShowEmergencyModal(false)}
-              className="flex-1 text-xs cursor-pointer"
+              className="flex-1 text-xs cursor-pointer font-label-md"
             >
               {t('channelPage.modals.cancel')}
             </Button>
             <Button
               type="submit"
               disabled={savingEmergency}
-              className="flex-1 !bg-red-600 hover:!bg-red-700 text-white text-xs font-bold cursor-pointer"
+              className="flex-1 !bg-[#ba1a1a] hover:!bg-[#93000a] text-white text-xs font-bold cursor-pointer font-label-md"
             >
               {savingEmergency ? t('channelPage.modals.saving') : t('channelPage.modals.saveHelpline')}
             </Button>
@@ -1436,30 +1552,30 @@ export const ChannelPage = ({ isAdminView = false }) => {
         title={t('channelPage.modals.detailsTitle')}
         size="lg"
       >
-        <div className="space-y-4 text-sm text-gray-700">
-          <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
-            <div className="w-14 h-14 rounded-full bg-[#8B1E1E] text-white flex items-center justify-center font-black text-xl">
+        <div className="space-y-4 font-body-md text-sm text-[#1f1b18]">
+          <div className="flex items-center gap-3 pb-3 border-b border-[#dfbfbc]/30">
+            <div className="w-14 h-14 rounded-full bg-[#6a020a] text-white flex items-center justify-center font-headline-md font-bold text-xl">
               {channel.name?.[0]?.toUpperCase() || 'W'}
             </div>
             <div>
-              <h3 className="text-base font-bold text-[#2B1B12]">{channel.name}</h3>
-              <p className="text-xs text-gray-500">{t('channelPage.modals.created')} {new Date(channel.created_at).toLocaleDateString(language === 'mr' ? 'mr-IN' : 'en-GB')}</p>
+              <h3 className="font-headline-md text-base font-bold text-[#6a020a]">{channel.name}</h3>
+              <p className="font-label-sm text-xs text-[#58413f]">{t('channelPage.modals.created')} {new Date(channel.created_at).toLocaleDateString(language === 'mr' ? 'mr-IN' : 'en-GB')}</p>
             </div>
           </div>
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">{t('channelPage.modals.descLabel')}</h4>
-            <p className="leading-relaxed bg-[#FBF5EC] p-3 rounded-xl border border-[#E8D9C3]">
+            <h4 className="font-label-md text-xs font-bold uppercase tracking-wider text-[#58413f] mb-1">{t('channelPage.modals.descLabel')}</h4>
+            <p className="leading-relaxed bg-[#fbf2ed] p-3 rounded-xl border border-[#dfbfbc]/40">
               {channel.description || t('channelPage.info.aboutDefault')}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-gray-50 rounded-xl border">
-              <span className="text-xs text-gray-500 block">{t('channelPage.followers')}</span>
-              <span className="text-base font-bold text-[#2B1B12]">{followersCount}</span>
+            <div className="p-3 bg-white rounded-xl border border-[#dfbfbc]/30">
+              <span className="font-label-sm text-xs text-[#58413f] block">{t('channelPage.followers')}</span>
+              <span className="font-headline-md text-base font-bold text-[#6a020a]">{followersCount}</span>
             </div>
-            <div className="p-3 bg-gray-50 rounded-xl border">
-              <span className="text-xs text-gray-500 block">{t('channelPage.modals.totalUpdates')}</span>
-              <span className="text-base font-bold text-[#2B1B12]">{posts.length}</span>
+            <div className="p-3 bg-white rounded-xl border border-[#dfbfbc]/30">
+              <span className="font-label-sm text-xs text-[#58413f] block">{t('channelPage.modals.totalUpdates')}</span>
+              <span className="font-headline-md text-base font-bold text-[#6a020a]">{posts.length}</span>
             </div>
           </div>
         </div>
@@ -1472,20 +1588,20 @@ export const ChannelPage = ({ isAdminView = false }) => {
         title={`${t('channelPage.modals.contributorsTitle')} (${contributors.length})`}
         size="md"
       >
-        <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+        <div className="max-h-80 overflow-y-auto space-y-2 pr-1 no-scrollbar">
           {contributors.length === 0 ? (
-            <p className="text-center py-6 text-xs text-gray-500">{t('channelPage.modals.noContributors')}</p>
+            <p className="text-center py-6 font-label-sm text-xs text-[#58413f]">{t('channelPage.modals.noContributors')}</p>
           ) : (
             contributors.map((c) => (
               <div
                 key={c.id || c.user_id}
-                className="flex items-center justify-between p-2.5 bg-gray-50 hover:bg-[#FBF5EC] rounded-xl border border-gray-100 transition-colors"
+                className="flex items-center justify-between p-2.5 bg-white hover:bg-[#fbf2ed] rounded-xl border border-[#dfbfbc]/30 transition-colors"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <Avatar size="sm" fallback={c.full_name?.[0] || c.username?.[0] || 'S'} />
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-[#2B1B12] truncate">{c.full_name || c.username}</p>
-                    <p className="text-[11px] text-gray-500 truncate">{c.email}</p>
+                    <p className="font-label-md text-xs font-bold text-[#1f1b18] truncate">{c.full_name || c.username}</p>
+                    <p className="font-label-sm text-[11px] text-[#58413f] truncate">{c.email}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1497,7 +1613,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                   {canEditEmergencyContact && c.id !== channel?.created_by_user_id && (
                     <button
                       onClick={() => handleRemoveContributor(c.id || c.user_id)}
-                      className="text-[11px] text-red-600 hover:text-red-800 font-bold p-1 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                      className="font-label-sm text-[11px] text-[#ba1a1a] hover:underline font-bold p-1 transition-colors cursor-pointer"
                       title={t('channelPage.modals.remove')}
                     >
                       {t('channelPage.modals.remove')}
