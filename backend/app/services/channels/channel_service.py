@@ -1,10 +1,11 @@
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from backend.app.models.channel import Channel
+from backend.app.models.channel import channel_followers
 from backend.app.models.palkhi import Palkhi
 from backend.app.models.rbac import Role, VerificationStatus
 from backend.app.models.user import User
@@ -178,6 +179,20 @@ def list_channels(
             .order_by(Channel.created_at.desc())
         ).all()
     )
+
+def get_channel_followers_count(db: Session, channel_id) -> int:
+    return db.execute(
+        select(func.count()).select_from(channel_followers).where(
+            channel_followers.c.channel_id == channel_id
+        )
+    ).scalar() or 0
+
+
+def get_channel_with_followers_count(db: Session, channel_id: UUID) -> Channel:
+    channel = get_channel(db=db, channel_id=channel_id)
+    channel.__dict__["followers_count"] = get_channel_followers_count(db, channel.id)
+    return channel
+
 
 def create_join_request(
     db: Session,

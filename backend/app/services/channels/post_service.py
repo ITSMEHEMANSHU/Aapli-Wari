@@ -42,7 +42,10 @@ def list_channel_posts(db: Session, channel_id: UUID) -> list[dict]:
             "id": post.id, "channel_id": post.channel_id, "user_id": post.user_id,
             "message": post.message, "title": None, "description": post.message,
             "content_type": None, "file_url": None, "verified": True,
-            "status": "published", "created_at": post.created_at,
+            "status": "published",
+            "is_announcement": post.is_announcement,
+            "is_pinned": post.is_pinned,
+            "created_at": post.created_at,
             "updated_at": post.updated_at, "user": post.user,
         }
         for post in text_posts
@@ -53,7 +56,10 @@ def list_channel_posts(db: Session, channel_id: UUID) -> list[dict]:
             "message": content.description, "title": content.title,
             "description": content.description, "content_type": content.content_type.value,
             "file_url": content.file_url, "verified": content.verified,
-            "status": content.status.value, "created_at": content.created_at,
+            "status": content.status.value,
+            "is_announcement": False,
+            "is_pinned": False,
+            "created_at": content.created_at,
             "updated_at": content.updated_at, "user": content.user,
         }
         for content in media_posts

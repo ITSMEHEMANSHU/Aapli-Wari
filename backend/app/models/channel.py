@@ -8,6 +8,31 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.app.db.base import Base
 
 
+channel_followers = Table(
+    "channel_followers",
+    Base.metadata,
+    Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
+    Column(
+        "channel_id",
+        UUID(as_uuid=True),
+        ForeignKey("channels.id", ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column(
+        "user_id",
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column(
+        "created_at",
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    ),
+)
+
+
 channel_contributors = Table(
     "channel_contributors",
     Base.metadata,
@@ -114,4 +139,12 @@ class Channel(Base):
     contributors = relationship(
         "User",
         secondary=channel_contributors,
+    )
+
+    followers = relationship(
+        "User",
+        secondary="channel_followers",
+        primaryjoin="Channel.id == channel_followers.c.channel_id",
+        secondaryjoin="User.id == channel_followers.c.user_id",
+        viewonly=True,
     )

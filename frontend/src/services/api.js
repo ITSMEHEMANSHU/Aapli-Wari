@@ -199,7 +199,41 @@ decideJoinRequest: (channelId, requestId, action) =>
         method: 'DELETE',
       }
     ),
-    
+
+  // =========================
+  // Follow / Unfollow
+  // =========================
+
+  followChannel: (channelId) =>
+    request(`/channels/${channelId}/follow`, { method: 'POST' }),
+
+  unfollowChannel: (channelId) =>
+    request(`/channels/${channelId}/follow`, { method: 'DELETE' }),
+
+  getFollowStatus: (channelId) =>
+    request(`/channels/${channelId}/follow-status`),
+
+  // =========================
+  // Announcements
+  // =========================
+
+  createAnnouncement: (channelId, data) =>
+    request(`/channels/${channelId}/announcements`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // =========================
+  // Emergency Contact
+  // =========================
+
+  updateEmergencyContact: (channelId, data) =>
+    request(`/channels/${channelId}/emergency-contact`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+
     search: (params) =>
   request('/search/', { params }),
 

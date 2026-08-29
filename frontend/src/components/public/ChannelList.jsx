@@ -24,6 +24,8 @@ export const ChannelList = () => {
 
   const [channels, setChannels] = useState([]);
   const [membership, setMembership] = useState({});
+  const [followingMap, setFollowingMap] = useState({});
+  const [followingLoading, setFollowingLoading] = useState({});
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState({});
   const [error, setError] = useState('');
@@ -77,6 +79,58 @@ export const ChannelList = () => {
     loadChannels();
   }, [user, isContributorUser]);
 
+  // Fetch follow status for all channels once channels are loaded
+  useEffect(() => {
+    if (!user || channels.length === 0) return;
+    const fetchFollowStatuses = async () => {
+      const map = {};
+      await Promise.all(
+        channels.map(async (ch) => {
+          try {
+            const data = await api.getFollowStatus(ch.id);
+            map[ch.id] = data.is_following;
+          } catch {
+            map[ch.id] = false;
+          }
+        })
+      );
+      setFollowingMap(map);
+    };
+    fetchFollowStatuses();
+  }, [user, channels]);
+
+  const handleFollowToggle = async (channelId, e) => {
+    e.stopPropagation();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setFollowingLoading(prev => ({ ...prev, [channelId]: true }));
+    try {
+      if (followingMap[channelId]) {
+        await api.unfollowChannel(channelId);
+        setFollowingMap(prev => ({ ...prev, [channelId]: false }));
+        setChannels(prev => prev.map(ch =>
+          ch.id === channelId
+            ? { ...ch, followers_count: Math.max(0, (ch.followers_count || 0) - 1) }
+            : ch
+        ));
+      } else {
+        await api.followChannel(channelId);
+        setFollowingMap(prev => ({ ...prev, [channelId]: true }));
+        setChannels(prev => prev.map(ch =>
+          ch.id === channelId
+            ? { ...ch, followers_count: (ch.followers_count || 0) + 1 }
+            : ch
+        ));
+      }
+    } catch (err) {
+      console.error('Follow toggle failed:', err);
+    } finally {
+      setFollowingLoading(prev => ({ ...prev, [channelId]: false }));
+    }
+  };
+
   const sendJoinRequest = async (channelId) => {
     try {
       setRequesting((prev) => ({ ...prev, [channelId]: true }));
@@ -109,6 +163,7 @@ export const ChannelList = () => {
       navigate('/apply-palkhi-pramukh', { state: { from: '/channel/create' } });
     }
   };
+
 
   /* ── 1. Loading State ── */
   if (loading) {
@@ -238,6 +293,10 @@ export const ChannelList = () => {
                   channel={channel}
                   navigate={navigate}
                   isContributor={true}
+                  currentUser={user}
+                  isFollowing={followingMap[channel.id]}
+                  onFollowToggle={handleFollowToggle}
+                  followLoading={followingLoading[channel.id]}
                 />
               ))}
             </div>
@@ -260,6 +319,10 @@ export const ChannelList = () => {
                   requestPending={membership[channel.id]?.requestPending}
                   requesting={requesting[channel.id]}
                   onJoinRequest={() => sendJoinRequest(channel.id)}
+                  currentUser={user}
+                  isFollowing={followingMap[channel.id]}
+                  onFollowToggle={handleFollowToggle}
+                  followLoading={followingLoading[channel.id]}
                 />
               ))}
             </div>
@@ -285,7 +348,15 @@ export const ChannelList = () => {
       ) : (
         <div className="space-y-3">
           {channels.map((channel) => (
-            <ChannelCard key={channel.id} channel={channel} navigate={navigate} />
+            <ChannelCard
+              key={channel.id}
+              channel={channel}
+              navigate={navigate}
+              currentUser={user}
+              isFollowing={followingMap[channel.id]}
+              onFollowToggle={handleFollowToggle}
+              followLoading={followingLoading[channel.id]}
+            />
           ))}
         </div>
       )}
@@ -327,6 +398,10 @@ const ChannelCard = ({
   requestPending = false,
   requesting = false,
   onJoinRequest,
+  isFollowing = false,
+  onFollowToggle,
+  followLoading = false,
+  currentUser,
 }) => {
   return (
     <Card hover className="p-4 sm:p-5 transition-all">
@@ -364,7 +439,7 @@ const ChannelCard = ({
               </span>
               <span className="flex items-center gap-1">
                 <FiUsers className="text-gray-400" />
-                Official Channel
+                {channel.followers_count || 0} followers
               </span>
             </div>
           </div>
@@ -372,6 +447,21 @@ const ChannelCard = ({
 
         {/* Right Section: Action Buttons */}
         <div className="flex items-center gap-2 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-gray-100 justify-end">
+          {/* Follow/Unfollow (non-owner, authenticated only) */}
+          {currentUser && currentUser.id !== channel.created_by_user_id && (
+            <button
+              onClick={(e) => onFollowToggle && onFollowToggle(channel.id, e)}
+              disabled={followLoading}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition border ${
+                isFollowing
+                  ? 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
+                  : 'bg-[#DD6B35] text-white border-[#DD6B35] hover:bg-[#C85A28]'
+              }`}
+            >
+              {followLoading ? '...' : isFollowing ? '✓ Following' : '+ Follow'}
+            </button>
+          )}
+
           <Button
             variant="outline"
             size="sm"
@@ -407,6 +497,7 @@ const ChannelCard = ({
     </Card>
   );
 };
+
 
 /* ── Palkhi Pramukh Specific Card Renderer ── */
 const renderPalkhiChannelCard = (channel, isOwnChannel, navigate) => (
@@ -446,7 +537,7 @@ const renderPalkhiChannelCard = (channel, isOwnChannel, navigate) => (
             </span>
             <span className="flex items-center gap-1">
               <FiUsers className="text-gray-400" />
-              Official Channel
+              {channel.followers_count || 0} followers
             </span>
           </div>
         </div>
@@ -477,5 +568,6 @@ const renderPalkhiChannelCard = (channel, isOwnChannel, navigate) => (
     </div>
   </Card>
 );
+
 
 export default ChannelList;

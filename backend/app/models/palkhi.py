@@ -27,6 +27,10 @@ class Palkhi(Base):
         nullable=True,
     )
 
+    emergency_contact_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    emergency_contact_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    emergency_contact_role: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
     owner_user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="RESTRICT"),
