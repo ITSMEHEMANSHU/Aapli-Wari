@@ -17,7 +17,6 @@ export const Header = () => {
     { label: t('nav.explore') || 'Explore', to: ROUTES.EXPLORE },
     { label: t('nav.map') || 'Map', to: ROUTES.MAP },
     { label: t('nav.channels') || 'Channels', to: ROUTES.CHANNELS },
-    { label: 'AI Help', to: ROUTES.AI_ASSISTANT },
     { label: 'Aapla Theva', to: ROUTES.KNOWLEDGE_PAGE },
   ];
 
