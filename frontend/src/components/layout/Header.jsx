@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { FaChevronDown, FaBars, FaTimes } from 'react-icons/fa';
 import { IMAGES, cloudinaryUrl } from '../../utils/cloudinary';
+import { useLanguage } from '../../context/LanguageContext';
 import SearchBar from '../common/SearchBar';
 
 /**
@@ -13,12 +14,13 @@ export const Header = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { language, setLanguage, t, languageOptions } = useLanguage();
 
   const navLinks = [
-    { label: 'Explore',    to: '/explore' },
-    { label: 'Map',        to: '/map' },
-    { label: 'Channels',   to: '/channels' },
-    { label: 'Contribute', to: '/contribute' },
+    { label: t('nav.explore'), to: '/explore' },
+    { label: t('nav.map'), to: '/map' },
+    { label: t('nav.channels'), to: '/channels' },
+    { label: t('nav.contribute'), to: '/contribute' },
   ];
 
   return (
@@ -60,15 +62,27 @@ export const Header = () => {
         <div className="flex items-center gap-2 ml-auto shrink-0">
 
           {/* Language toggle */}
-          <button className="hidden md:flex items-center gap-1 text-sm text-[#5A4030] border border-[#D4A373]/40 rounded-full px-3 py-1.5 hover:bg-[#D4A373]/10 transition-colors">
-            मराठी <FaChevronDown size={9} className="mt-px" />
-          </button>
+          <div className="hidden md:flex items-center relative">
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              aria-label="Select language"
+              className="appearance-none bg-transparent text-sm text-[#5A4030] border border-[#D4A373]/40 rounded-full px-3 py-1.5 pr-7 hover:bg-[#D4A373]/10 transition-colors focus:outline-none"
+            >
+              {languageOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <FaChevronDown size={9} className="pointer-events-none absolute right-2.5 text-[#5A4030]" />
+          </div>
 
           {user ? (
             <>
               <Link to="/contribute">
                 <button className="hidden sm:inline-flex bg-[#8B3A3A] hover:bg-[#7a3232] text-[#FDF8F0] px-4 py-1.5 rounded-full transition text-sm font-medium shadow-[0_4px_20px_rgba(139,58,58,0.08)]">
-                  Contribute
+                  {t('nav.contribute')}
                 </button>
               </Link>
               <Link
@@ -81,7 +95,7 @@ export const Header = () => {
           ) : (
             <Link to="/register">
               <button className="bg-[#8B3A3A] hover:bg-[#7a3232] text-[#FDF8F0] px-4 py-2 rounded-full transition text-sm font-semibold whitespace-nowrap shadow-[0_4px_20px_rgba(139,58,58,0.08)]">
-                Join Aapli Wari
+                {t('nav.join')}
               </button>
             </Link>
           )}
@@ -117,13 +131,25 @@ export const Header = () => {
             </Link>
           ))}
           <div className="pt-2 border-t border-[#D4A373]/30 flex gap-3">
-            <button className="flex items-center gap-1 text-sm text-[#5A4030] border border-[#D4A373]/40 rounded-full px-3 py-1.5">
-              मराठी <FaChevronDown size={9} />
-            </button>
+            <div className="relative">
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                aria-label="Select language"
+                className="appearance-none bg-transparent text-sm text-[#5A4030] border border-[#D4A373]/40 rounded-full px-3 py-1.5 pr-7 focus:outline-none"
+              >
+                {languageOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <FaChevronDown size={9} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#5A4030]" />
+            </div>
             {!user && (
               <Link to="/register" onClick={() => setMobileOpen(false)}>
                 <button className="bg-[#8B3A3A] text-[#FDF8F0] px-4 py-1.5 rounded-full text-sm font-semibold shadow-[0_4px_20px_rgba(139,58,58,0.08)]">
-                  Join Aapli Wari
+                  {t('nav.join')}
                 </button>
               </Link>
             )}

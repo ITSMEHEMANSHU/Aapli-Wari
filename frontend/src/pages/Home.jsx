@@ -5,6 +5,7 @@ import {
   FiBook, FiUsers, FiShare2, FiShield, FiGlobe,
 } from 'react-icons/fi';
 import { IMAGES, heroImage, cardImage } from '../utils/cloudinary';
+import { useLanguage } from '../context/LanguageContext';
 
 /* ─────────────────────────────────────────────────────────────────────────────
  * HERO MEDIA CONFIG
@@ -44,6 +45,21 @@ const stats = [
 
 const Home = () => {
   const [email, setEmail] = useState('');
+  const { t, language } = useLanguage();
+
+  const pillarTranslations = [
+    { icon: FiBook, key: 'discover' },
+    { icon: FiUsers, key: 'learn' },
+    { icon: FiShare2, key: 'share' },
+    { icon: FiShield, key: 'preserve' },
+    { icon: FiGlobe, key: 'connect' },
+  ];
+
+  const translatedPillars = pillarTranslations.map(({ icon, key }) => ({
+    icon,
+    title: t(`home.pillars.${key}.title`),
+    desc: t(`home.pillars.${key}.desc`),
+  }));
 
   return (
     <div className="w-full">
@@ -78,24 +94,23 @@ const Home = () => {
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10">
           <div className="max-w-xl">
             <h1 className="text-5xl sm:text-6xl font-serif font-bold text-white leading-[1.1] mb-5">
-              Walk the path.<br />
-              Live the <span className="text-[#E8723A]">legacy.</span>
+              {t('home.heroTitleOne')}<br />
+              {t('home.heroTitleTwo')} <span className="text-[#E8723A]">{t('home.heroTitleAccent')}</span>
             </h1>
 
             <p className="text-base sm:text-lg text-white/85 max-w-sm mb-8 leading-relaxed">
-              Aapli Wari is a digital home for the living heritage of Pandharpur Wari.
-              Discover. Learn. Share. Preserve.
+              {t('home.heroSubtitle')}
             </p>
 
             <div className="flex flex-wrap gap-3 mb-7">
               <Link to="/explore">
                 <button className="inline-flex items-center gap-2 bg-[#DD6B35] hover:bg-[#C85A28] text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-colors text-sm sm:text-base">
-                  Explore the Wari <FiArrowRight />
+                  {t('home.exploreButton')} <FiArrowRight />
                 </button>
               </Link>
               <Link to="/ai-assistant">
                 <button className="inline-flex items-center gap-2 bg-white hover:bg-white/90 text-[#2B1B12] font-semibold px-6 py-3 rounded-full shadow-lg transition-colors text-sm sm:text-base">
-                  Ask Aapli Wari AI ✳
+                  {t('home.aiButton')} ✳
                 </button>
               </Link>
             </div>
@@ -104,7 +119,7 @@ const Home = () => {
               <span className="w-8 h-8 rounded-full border border-white/40 bg-white/10 flex items-center justify-center group-hover:border-white transition-colors">
                 <FiPlay size={11} className="ml-0.5" />
               </span>
-              Watch the journey in 90 seconds
+              {t('home.watchJourney')}
             </button>
           </div>
         </div>
@@ -117,11 +132,11 @@ const Home = () => {
       <section className="bg-[#FBF5EC] border-y border-[#E8D9C3]">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-0">
-            {pillars.map((item, i) => (
+            {translatedPillars.map((item, i) => (
               <div
                 key={i}
                 className={`text-center flex flex-col items-center gap-3 px-4 py-2
-                  ${i < pillars.length - 1 ? 'md:border-r border-[#E8D9C3]' : ''}`}
+                  ${i < translatedPillars.length - 1 ? 'md:border-r border-[#E8D9C3]' : ''}`}
               >
                 {/* Icon circle */}
                 <div className="w-11 h-11 rounded-full border border-[#E8D9C3] bg-white text-[#DD6B35] flex items-center justify-center shadow-sm">
@@ -148,21 +163,20 @@ const Home = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div>
             <span className="inline-flex items-center gap-2 text-[#DD6B35] text-xs font-semibold tracking-widest uppercase mb-3">
-              ⟿ The Wari Experience ⟿
+              ⟿ {t('home.experience.eyebrow')} ⟿
             </span>
             <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#2B1B12] leading-tight">
-              More than a journey,<br />
-              it's a <span className="text-[#DD6B35]">way of life</span>.
+              {t('home.experience.titleOne')}<br />
+              {t('home.experience.titleTwo')} <span className="text-[#DD6B35]">{t('home.experience.titleAccent')}</span>.
             </h2>
           </div>
           <div className="md:max-w-xs">
             <p className="text-sm text-[#4A392E]/70 mb-4 leading-relaxed">
-              From the abhangs of saints to the footsteps of millions, explore every aspect of
-              Wari in one unified platform.
+              {t('home.experience.description')}
             </p>
             <Link to="/explore">
               <button className="inline-flex items-center gap-2 border border-[#2B1B12]/20 text-[#2B1B12] hover:bg-[#F5EADA] font-medium px-5 py-2.5 rounded-lg transition-colors text-sm">
-                Start Exploring <FiArrowRight />
+                {t('home.experience.cta')} <FiArrowRight />
               </button>
             </Link>
           </div>
@@ -201,7 +215,9 @@ const Home = () => {
             {stats.map((s, i) => (
               <div key={i} className="text-center md:text-left">
                 <div className="text-3xl sm:text-4xl font-serif font-bold text-[#E8A15C] leading-none">{s.value}</div>
-                <div className="text-xs text-white/60 mt-1.5">{s.label}</div>
+                <div className="text-xs text-white/60 mt-1.5">
+                  {i === 0 ? t('home.stats.authenticStories') : i === 1 ? t('home.stats.palkhiRoutes') : i === 2 ? t('home.stats.contributors') : t('home.stats.devotees')}
+                </div>
               </div>
             ))}
             <div className="col-span-2 sm:col-span-1 text-center md:text-left">
@@ -221,10 +237,10 @@ const Home = () => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-8 sm:p-10">
             <div>
               <h3 className="text-2xl sm:text-3xl font-serif font-bold text-[#2B1B12] mb-1">
-                Be a part of the movement.
+                {t('home.newsletter.title')}
               </h3>
               <p className="text-sm text-[#4A392E]/70">
-                Join our community and never miss important updates, stories and Wari moments.
+                {t('home.newsletter.subtitle')}
               </p>
             </div>
             <form onSubmit={(e) => e.preventDefault()} className="flex w-full md:w-auto gap-2">
@@ -232,7 +248,7 @@ const Home = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder={t('home.newsletter.placeholder')}
                 aria-label="Email address"
                 className="flex-1 md:w-64 px-4 py-3 rounded-lg border border-[#E8D9C3] bg-white text-sm text-[#2B1B12] placeholder-[#4A392E]/40 focus:outline-none focus:ring-2 focus:ring-[#DD6B35]/40"
               />
