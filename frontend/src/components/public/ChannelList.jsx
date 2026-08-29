@@ -98,6 +98,18 @@ export const ChannelList = () => {
     }
   };
 
+  const handleCreateChannelClick = () => {
+    if (!user) {
+      navigate('/login', { state: { from: '/channel/create' } });
+      return;
+    }
+    if (isPalkhiPramukhUser) {
+      navigate('/channel/create');
+    } else {
+      navigate('/apply-palkhi-pramukh', { state: { from: '/channel/create' } });
+    }
+  };
+
   /* ── 1. Loading State ── */
   if (loading) {
     return (
@@ -256,18 +268,6 @@ export const ChannelList = () => {
       </div>
     );
   }
-
-  const handleCreateChannelClick = () => {
-    if (!user) {
-      navigate('/login', { state: { from: '/channel/create' } });
-      return;
-    }
-    if (isPalkhiPramukhUser) {
-      navigate('/channel/create');
-    } else {
-      navigate('/apply-palkhi-pramukh', { state: { from: '/channel/create' } });
-    }
-  };
 
   /* ── 6. Normal User View ── */
   return (
