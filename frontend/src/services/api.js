@@ -226,12 +226,6 @@ decideJoinRequest: (channelId, requestId, action) =>
 
     chat: (data) =>
   request('/chat/', {
-  // =========================
-  // Amenities (Map)
-  // =========================
-  getAmenities: (params = {}) => request('/amenities', { params }),
-
-  addAmenity: (data) => request('/amenities', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
@@ -245,6 +239,16 @@ shorts: (params = {}) =>
 
 short: (id) =>
   request(`/shorts/${id}`),
+
+// =========================
+  // Amenities (Map)
+  // =========================
+  getAmenities: (params = {}) => request('/amenities', { params }),
+
+  addAmenity: (data) => request('/amenities', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
 
   deleteAmenity: (id) => request(`/amenities/${id}`, { method: 'DELETE' }),
 
