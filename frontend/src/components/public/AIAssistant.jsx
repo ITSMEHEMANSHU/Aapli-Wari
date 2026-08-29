@@ -5,40 +5,38 @@ import Loader from '../../components/common/Loader';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import { api } from '../../services/api';
 
 export const AIAssistant = () => {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const askQuestion = () => {
-    if (!question.trim()) return;
+  const askQuestion = async () => {
+  if (!question.trim()) return;
+  
+  const userMessage = { role: 'user', content: question };
+  setMessages([...messages, userMessage]);
+  setQuestion('');
+  setLoading(true);
 
-    const userMessage = { role: 'user', content: question };
-    setMessages([...messages, userMessage]);
-    setQuestion('');
-    setLoading(true);
-
-    const responses = {
-      'history': 'The Wari tradition dates back to the 13th century. It is an annual pilgrimage to Pandharpur, dedicated to Lord Vitthal.',
-      'palkhi': 'Palkhi is the palanquin procession carrying the paduka (footprints) of saints.',
-      'default': 'Based on verified Wari heritage records, I can help you with information about traditions, saints, history, and cultural practices.'
-    };
-
-    setTimeout(() => {
-      let answer = responses.default;
-      const lowerQ = question.toLowerCase();
-      if (lowerQ.includes('history')) answer = responses.history;
-      else if (lowerQ.includes('palkhi')) answer = responses.palkhi;
-
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: answer,
-        sources: ['Verified Knowledge Base', 'Wari Heritage Archives']
-      }]);
-      setLoading(false);
-    }, 1000);
-  };
+  try {
+    const response = await api.chat({ query: question });
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: response.answer,
+      sources: response.sources
+    }]);
+  } catch (error) {
+    console.error('Chat error:', error);
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: 'Sorry, I encountered an error. Please try again.'
+    }]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div>

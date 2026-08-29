@@ -30,8 +30,7 @@ import ChannelList from './components/public/ChannelList';
 import ManageChannel from './components/channel-management/ManageChannel';
 import ContributorManagement from './components/channel-management/ContributorManagement';
 import PalkhiRegistration from './components/auth/PalkhiRegistration';
-
-// Inside Routes:
+import MapPage from './pages/MapPage';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -52,6 +51,7 @@ function App() {
           <main className="flex-1 w-full">
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/map" element={<MapPage />} />
               <Route path="/explore" element={<Explore />} />
               <Route path="/search" element={<Search />} />
               <Route path="/channels" element={<ChannelList />} />
