@@ -85,9 +85,9 @@ export const Register = () => {
 
           <div className="relative z-10">
             <span className="inline-block px-3 py-1 bg-[#DD6B35]/20 border border-[#DD6B35]/30 text-[#E8A15C] rounded-full text-xs font-semibold uppercase tracking-widest mb-4">
-              Join the Wari
+              Join the Aapli Wari
             </span>
-            <h1 className="text-3xl font-serif font-bold tracking-tight leading-tight mb-3 text-white">
+            <h1 className="text-3xl font-bold tracking-tight leading-tight mb-3 text-white">
               Walk the path.
             </h1>
             <p className="text-white/70 text-sm leading-relaxed font-light">
@@ -112,7 +112,7 @@ export const Register = () => {
         {/* Right Side Form */}
         <div className="md:w-7/12 p-6 sm:p-8 lg:p-10 flex flex-col justify-center">
           <div className="mb-5">
-            <h2 className="text-2xl font-serif font-bold text-[#2B1B12]">Create an Account</h2>
+            <h2 className="text-2xl font-bold text-[#2B1B12]">Create an Account</h2>
             <p className="text-xs text-[#4A392E]/65 mt-1">Fill in your details below to get started.</p>
           </div>
 
