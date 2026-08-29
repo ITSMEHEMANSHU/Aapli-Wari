@@ -16,7 +16,7 @@ export const Header = () => {
 
   const navLinks = [
     { label: 'Explore',    to: '/explore' },
-    { label: 'Map',        to: '/explore?type=map' },
+    { label: 'Map',        to: '/map' },
     { label: 'Channels',   to: '/channels' },
     { label: 'Contribute', to: '/contribute' },
   ];
