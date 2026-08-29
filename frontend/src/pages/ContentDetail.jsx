@@ -131,6 +131,7 @@ export const ContentDetail = () => {
       case 'video': return '🎬';
       case 'image': return '🖼️';
       case 'audio': return '🎵';
+      case 'short': return '🎬';
       case 'pdf': return '📄';
       case 'manuscript': return '📜';
       default: return '📝';
@@ -163,7 +164,17 @@ export const ContentDetail = () => {
       );
     }
 
-    switch (content.content_type) {
+    const mediaType = content.content_type === 'short'
+      ? (() => {
+          const url = (content.file_url || '').toLowerCase();
+          if (/\.(mp4|webm|mov|m4v|avi)(\?|$)/.test(url) || url.includes('video')) return 'video';
+          if (/\.(mp3|wav|ogg|m4a|aac|flac)(\?|$)/.test(url) || url.includes('audio')) return 'audio';
+          if (/\.(jpg|jpeg|png|gif|webp|bmp)(\?|$)/.test(url) || url.includes('image')) return 'image';
+          return 'video';
+        })()
+      : content.content_type;
+
+    switch (mediaType) {
       case 'image':
         return (
           <img 

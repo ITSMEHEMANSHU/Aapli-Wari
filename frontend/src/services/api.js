@@ -221,7 +221,39 @@ decideJoinRequest: (channelId, requestId, action) =>
       body: JSON.stringify({ platform }),
     }),
 
+  
     trackDownload: (id) => request(`/engagement/content/${id}/download`),
+
+    chat: (data) =>
+  request('/chat/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+
+  // =========================
+// Shorts (Aapla Theva)
+// =========================
+
+shorts: (params = {}) =>
+  request('/shorts/', { params }),
+
+short: (id) =>
+  request(`/shorts/${id}`),
+
+// =========================
+  // Amenities (Map)
+  // =========================
+  getAmenities: (params = {}) => request('/amenities', { params }),
+
+  addAmenity: (data) => request('/amenities', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+
+  deleteAmenity: (id) => request(`/amenities/${id}`, { method: 'DELETE' }),
+
+  // Palkhi live locations
+  getPalkhiLocations: () => request('/palkhis/live-locations'),
 };
 
   export default api;

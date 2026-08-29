@@ -5,7 +5,7 @@ import { FiVideo, FiImage, FiMusic, FiFile, FiSearch, FiEye, FiX } from 'react-i
 import Button from '../common/Button';
 import Card from '../common/Card';
 import Badge from '../common/Badge';
-import { getContentList } from '../../services/content';
+import { api } from '../../services/api';
 
 const LIMIT = 20;
 
@@ -95,13 +95,38 @@ export const ExploreWari = () => {
     reset ? setLoading(true) : setLoadingMore(true);
     setError(null);
 
-    try {
-      const params = { verified_only: true, limit: LIMIT, offset: currentOffset };
-      if (filter !== 'all') params.content_type = filter;
-      if (urlSearch) params.search = urlSearch;
+    const cleanedQuery = urlSearch?.trim() || '';
+    const useSemanticSearch = cleanedQuery.length >= 2;
 
-      const data = await getContentList(params);
-      const items = data || [];
+    try {
+      const params = {
+        verified_only: true,
+        limit: LIMIT,
+        offset: currentOffset,
+        exclude_short: true, // ✅ Exclude shorts from Explore
+      };
+
+      if (filter !== 'all') params.content_type = filter;
+
+      let data;
+      let items = [];
+
+      if (useSemanticSearch) {
+        data = await api.search({
+          ...params,
+          q: cleanedQuery,
+        });
+        items = data?.results || [];
+        const totalCount = data?.count || 0;
+        setHasMore(items.length === LIMIT && (reset ? items.length < totalCount : true));
+      } else {
+        if (cleanedQuery) {
+          params.search = cleanedQuery;
+        }
+        data = await api.contentList(params);
+        items = Array.isArray(data) ? data : [];
+        setHasMore(items.length === LIMIT);
+      }
 
       if (reset) {
         setContent(items);
@@ -110,7 +135,6 @@ export const ExploreWari = () => {
         setContent(prev => [...prev, ...items]);
         setOffset(currentOffset + LIMIT);
       }
-      setHasMore(items.length === LIMIT);
     } catch (err) {
       console.error('[Explore] Fetch failed:', err);
       setError(err.message || 'Failed to load content');
@@ -129,6 +153,12 @@ export const ExploreWari = () => {
 
   const handleClearSearch = () => {
     setSearchParams({});
+  };
+
+  // ✅ Helper to capitalize filter name
+  const getFilterLabel = () => {
+    const found = FILTERS.find(f => f.id === filter);
+    return found ? found.label : filter;
   };
 
   if (error && !loading) {
@@ -280,14 +310,26 @@ export const ExploreWari = () => {
                 Browse All
               </Button>
             )}
-            <Link to="/contribute">
-              <Button
-                variant="primary"
-                className="rounded-full bg-[#8B3A3A] hover:bg-[#7a3232] text-[#FDF8F0] shadow-[0_4px_20px_rgba(139,58,58,0.08)]"
-              >
-                Contribute Now
-              </Button>
-            </Link>
+            {/* ✅ Category-specific contribute button */}
+            {filter !== 'all' ? (
+              <Link to={`/contribute?type=${filter}`}>
+                <Button
+                  variant="primary"
+                  className="rounded-full bg-[#8B3A3A] hover:bg-[#7a3232] text-[#FDF8F0] shadow-[0_4px_20px_rgba(139,58,58,0.08)]"
+                >
+                  Contribute {getFilterLabel()} Now
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/contribute">
+                <Button
+                  variant="primary"
+                  className="rounded-full bg-[#8B3A3A] hover:bg-[#7a3232] text-[#FDF8F0] shadow-[0_4px_20px_rgba(139,58,58,0.08)]"
+                >
+                  Contribute Now
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       ) : (
@@ -323,6 +365,26 @@ export const ExploreWari = () => {
                   <h3 className="font-bold text-lg line-clamp-1 text-[#2D1B0E]">{item.title}</h3>
                   {item.description && (
                     <p className="text-[#5A4030] text-sm line-clamp-2 mt-1">{item.description}</p>
+                  )}
+                  
+                  {/* Show match type for semantic search results */}
+                  {item.match_type && (
+                    <div className="mt-1.5">
+                      <Badge 
+                        variant="default" 
+                        className={`text-xs rounded-full ${
+                          item.match_type === 'both' 
+                            ? 'bg-[#2D6A4F]/20 text-[#2D6A4F] border-[#2D6A4F]/30' 
+                            : item.match_type === 'semantic'
+                            ? 'bg-[#8B3A3A]/20 text-[#8B3A3A] border-[#8B3A3A]/30'
+                            : 'bg-[#D4A373]/20 text-[#5A4030] border-[#D4A373]/30'
+                        }`}
+                      >
+                        {item.match_type === 'both' ? '🔍 + 🧠' : 
+                         item.match_type === 'semantic' ? '🧠 Semantic' : 
+                         '🔍 Keyword'}
+                      </Badge>
+                    </div>
                   )}
 
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#D4A373]/20">

@@ -27,6 +27,8 @@ class ContentType(PyEnum):
     PDF = "pdf"
     MANUSCRIPT = "manuscript"
     STORY = "story"
+    SHORT = "short"  # ✅ Add this
+
 
 
 class Content(Base):
@@ -39,6 +41,7 @@ class Content(Base):
         Enum(ContentType, values_callable=lambda enum_type: [item.value for item in enum_type]),
         nullable=False,
     )
+    is_short = Column(Boolean, default=False, nullable=False)
     file_url = Column(String(500), nullable=True)
     thumbnail_url = Column(String(500), nullable=True)
     
