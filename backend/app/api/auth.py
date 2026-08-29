@@ -61,21 +61,14 @@ def signup(
 
     role = db.execute(
         select(Role)
-        .where(Role.name == data.role)
+        .where(Role.name == "user")
     ).scalar_one_or_none()
 
     if role is None:
 
         raise HTTPException(
-            status_code=400,
-            detail="Invalid role",
-        )
-
-    if not role.is_public_signup_allowed:
-
-        raise HTTPException(
-            status_code=403,
-            detail="This role cannot be selected during public signup",
+            status_code=500,
+            detail="Default role 'user' not found in database",
         )
 
     try:

@@ -11,8 +11,6 @@ class SignupRequest(BaseModel):
 
     password: str
 
-    role: str
-
 
 class LoginRequest(BaseModel):
 
