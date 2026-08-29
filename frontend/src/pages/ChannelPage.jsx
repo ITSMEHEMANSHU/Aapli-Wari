@@ -482,7 +482,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
 
   const TABS = useMemo(() => [
     { id: 'announcements', label: t('channelPage.tabs.announcements'), icon: 'campaign' },
-    { id: 'chat', label: t('channelPage.tabs.chat'), icon: 'forum' },
+    // { id: 'chat', label: t('channelPage.tabs.chat'), icon: 'forum' },
     { id: 'map', label: t('channelPage.tabs.map'), icon: 'map' },
     { id: 'info', label: t('channelPage.tabs.info'), icon: 'info' },
   ], [language]);

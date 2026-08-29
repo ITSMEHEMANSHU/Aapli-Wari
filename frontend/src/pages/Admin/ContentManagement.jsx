@@ -1,24 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiRefreshCw, FiEye, FiTrash2, FiImage, FiVideo, FiMusic, FiFile, FiFileText } from 'react-icons/fi';
+import { FiSearch, FiRefreshCw, FiEye, FiTrash2, FiImage, FiVideo, FiMusic, FiFile, FiFileText, FiX } from 'react-icons/fi';
 import { api } from '../../services/api';
 
 export const ContentManagement = () => {
-  const navigate = useNavigate();
   const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedType, setSelectedType] = useState('All');
+  
+  // Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [selectedContent, setSelectedContent] = useState(null);
 
   useEffect(() => {
     const fetchContent = async () => {
       try {
         setLoading(true);
-        console.log('📡 Fetching content from API...');
         const data = await api.contentList({ limit: 50 });
-        console.log('✅ API Response:', data);
         
         let contentData = [];
         if (data?.items) {
@@ -29,10 +28,9 @@ export const ContentManagement = () => {
           contentData = data;
         }
         
-        console.log('📦 Content data to set:', contentData);
         setContent(contentData);
       } catch (error) {
-        console.error('❌ Failed to fetch content:', error);
+        console.error('Failed to fetch content:', error);
         setContent([]);
       } finally {
         setLoading(false);
@@ -232,7 +230,10 @@ export const ContentManagement = () => {
                     </span>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => navigate(`/content/${item.id}`)}
+                        onClick={() => {
+                          setSelectedContent(item);
+                          setShowViewModal(true);
+                        }}
                         className="p-1.5 text-[#5A4030] hover:text-[#8b3a3a] rounded hover:bg-[#FDF8F0] transition-colors"
                         title="View Content"
                       >
@@ -256,6 +257,64 @@ export const ContentManagement = () => {
           })
         )}
       </div>
+
+      {/* View Modal */}
+      {showViewModal && selectedContent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl border border-[#E8D9C3] shadow-xl w-full max-w-lg overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E8D9C3] bg-[#F9F1E5]">
+              <h3 className="font-bold text-base text-[#3D2518]">Content Details</h3>
+              <button 
+                onClick={() => { setShowViewModal(false); setSelectedContent(null); }}
+                className="p-1 text-[#5A4030] hover:text-[#3D2518] rounded-lg transition-colors"
+              >
+                <FiX size={18} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              {getFileUrl(selectedContent) && (
+                <div className="w-full h-56 bg-[#FDF8F0] rounded-xl overflow-hidden border border-[#E8D9C3]">
+                  {getContentType(selectedContent) === 'image' ? (
+                    <img src={getFileUrl(selectedContent)} alt="Preview" className="w-full h-full object-contain" />
+                  ) : (
+                    <video src={getFileUrl(selectedContent)} controls className="w-full h-full object-contain" />
+                  )}
+                </div>
+              )}
+              <div>
+                <h4 className="font-bold text-lg text-[#2D1B0E]">{selectedContent.title || selectedContent.vernacular_title || 'Untitled'}</h4>
+                <p className="text-xs text-[#5A4030] mt-1">Type: <span className="capitalize font-semibold">{getContentType(selectedContent)}</span></p>
+              </div>
+              <div>
+                <span className="block text-xs font-semibold text-[#5A4030] uppercase">Description</span>
+                <p className="text-sm text-[#2D1B0E] mt-1 bg-[#F9F1E5] p-3 rounded-xl border border-[#E8D9C3]">
+                  {selectedContent.description || 'No description provided.'}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="block text-xs font-semibold text-[#5A4030] uppercase">Status</span>
+                  <span className="font-medium text-[#2D1B0E] capitalize">{selectedContent.status || 'Pending'}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-[#5A4030] uppercase">Created At</span>
+                  <span className="font-medium text-[#2D1B0E]">
+                    {selectedContent.created_at ? new Date(selectedContent.created_at).toLocaleDateString() : 'N/A'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex justify-end pt-4 border-t border-[#E8D9C3]/40">
+                <button 
+                  onClick={() => { setShowViewModal(false); setSelectedContent(null); }}
+                  className="px-4 py-2 bg-[#8b3a3a] hover:bg-[#6e2d2d] text-white text-xs font-semibold rounded-xl transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Modal */}
       {showDeleteModal && selectedContent && (
