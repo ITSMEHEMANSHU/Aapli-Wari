@@ -15,14 +15,14 @@ class AdminService:
     @staticmethod
     def get_stats(db: Session) -> Dict[str, Any]:
         """Get dashboard statistics"""
-        total_users = db.query(func.count()).select_from(User).scalar()
-        active_users = db.query(func.count()).filter(User.is_active == True).select_from(User).scalar()
-        total_channels = db.query(func.count()).select_from(Channel).scalar()
-        active_channels = db.query(func.count()).filter(Channel.status == "active").select_from(Channel).scalar()
-        total_content = db.query(func.count()).select_from(Content).scalar()
-        published_content = db.query(func.count()).filter(Content.status == ContentStatus.PUBLISHED).select_from(Content).scalar()
-        pending_review = db.query(func.count()).filter(Content.status == ContentStatus.PENDING_REVIEW).select_from(Content).scalar()
-        
+        total_users = db.query(func.count(User.id)).scalar()
+        active_users = db.query(func.count(User.id)).filter(User.is_active.is_(True)).scalar()
+        total_channels = db.query(func.count(Channel.id)).scalar()
+        active_channels = db.query(func.count(Channel.id)).filter(Channel.status == "active").scalar()
+        total_content = db.query(func.count(Content.id)).scalar()
+        published_content = db.query(func.count(Content.id)).filter(Content.status == ContentStatus.PUBLISHED).scalar()
+        pending_review = db.query(func.count(Content.id)).filter(Content.status == ContentStatus.PENDING_REVIEW).scalar()
+
         return {
             "total_users": total_users,
             "active_users": active_users,
@@ -52,7 +52,8 @@ class AdminService:
                 (User.username.ilike(f"%{search}%"))
             )
         if role:
-            query = query.filter(User.role == role)
+            normalized_role = role.strip().lower().replace(" ", "_")
+            query = query.filter(User.role == normalized_role)
         if status:
             is_active = status.lower() == "active"
             query = query.filter(User.is_active == is_active)

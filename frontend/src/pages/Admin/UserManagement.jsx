@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiSearch, FiMoreVertical, FiEdit2, FiUserX, FiUserCheck } from 'react-icons/fi';
+import { FiSearch, FiEdit2 } from 'react-icons/fi';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
 import Avatar from '../../components/common/Avatar';
 import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
@@ -15,14 +14,17 @@ export const UserManagement = () => {
   const [selectedRole, setSelectedRole] = useState('All');
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [formData, setFormData] = useState({ role: 'user', is_active: true });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const data = await api.users(); // Assuming api.users() exists
-        setUsers(data || []);
+        const data = await api.users({ limit: 100 });
+        setUsers(data?.users || []);
       } catch (error) {
         console.error('Failed to fetch users:', error);
       } finally {
@@ -36,10 +38,11 @@ export const UserManagement = () => {
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
+      const role = u.role?.toLowerCase().replaceAll(' ', '_');
       const matchesRole = selectedRole === 'All' ||
-        (selectedRole === 'Contributors' && u.role?.toLowerCase() === 'contributor') ||
-        (selectedRole === 'Palkhi Pramukh' && u.role?.toLowerCase() === 'palkhi pramukh') ||
-        (selectedRole === 'Admins' && u.role?.toLowerCase() === 'admin');
+        (selectedRole === 'Contributors' && role === 'contributor') ||
+        (selectedRole === 'Palkhi Pramukh' && role === 'palkhi_pramukh') ||
+        (selectedRole === 'Admins' && role === 'admin');
 
       const query = search.toLowerCase().trim();
       const matchesSearch = !query ||
@@ -58,30 +61,62 @@ export const UserManagement = () => {
   );
 
   const getRoleBadge = (role) => {
+    const normalizedRole = role?.toLowerCase().replaceAll(' ', '_');
     const styles = {
       admin: 'bg-[#ffdad6] text-[#93000a] border-[#ba1a1a]/20',
       contributor: 'bg-[#E8F5E9] text-[#2E7D32] border-[#4CAF50]/20',
-      'palkhi pramukh': 'bg-[#ffca98] text-[#7a532a] border-[#7d562d]/20',
+      palkhi_pramukh: 'bg-[#ffca98] text-[#7a532a] border-[#7d562d]/20',
     };
-    return styles[role?.toLowerCase()] || 'bg-[#efdfdd] text-[#554241] border-[#E8D9C3]';
+    return styles[normalizedRole] || 'bg-[#efdfdd] text-[#554241] border-[#E8D9C3]';
   };
 
-  const getStatusBadge = (status) => {
-    return status === 'active' 
+  const getStatusBadge = (isActive) => {
+    return isActive
       ? <Badge variant="success">Active</Badge>
       : <Badge variant="warning">Suspended</Badge>;
   };
 
-  const handleToggleStatus = async (userId) => {
+  const handleToggleStatus = async (userId, isActive) => {
     try {
-      // await api.toggleUserStatus(userId);
-      setUsers(users.map(u => 
-        u.id === userId 
-          ? { ...u, status: u.status === 'active' ? 'suspended' : 'active' }
-          : u
-      ));
+      await api.updateUserStatus(userId, !isActive);
+      setUsers((currentUsers) => currentUsers.map((user) => (
+        user.id === userId ? { ...user, is_active: !isActive } : user
+      )));
     } catch (error) {
       console.error('Failed to toggle status:', error);
+    }
+  };
+
+  const openEditModal = (user) => {
+    setEditingUser(user);
+    setFormError('');
+    setFormData({
+      role: user.role || 'user',
+      is_active: user.is_active,
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setFormError('');
+
+    try {
+      if (editingUser) {
+        const updated = await api.updateUserRole(editingUser.id, formData.role);
+        await api.updateUserStatus(editingUser.id, formData.is_active);
+        setUsers((currentUsers) => currentUsers.map((user) => (
+          user.id === editingUser.id
+            ? { ...user, ...(updated?.user || {}), is_active: formData.is_active }
+            : user
+        )));
+      }
+      setShowEditModal(false);
+    } catch (error) {
+      setFormError(error.message || 'Unable to save user');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -105,16 +140,6 @@ export const UserManagement = () => {
             Manage system access, roles, and contributor permissions
           </p>
         </div>
-        <Button 
-          variant="primary"
-          className="bg-[#8b3a3a] hover:bg-[#6d2325] text-white flex items-center gap-2"
-          onClick={() => {
-            setEditingUser(null);
-            setShowEditModal(true);
-          }}
-        >
-          <FiEdit2 size={16} /> Add User
-        </Button>
       </div>
 
       {/* Filters */}
@@ -186,17 +211,16 @@ export const UserManagement = () => {
                     </td>
                     <td className="p-4">
                       <button
-                        onClick={() => handleToggleStatus(user.id)}
+                        onClick={() => handleToggleStatus(user.id, user.is_active)}
                         className="inline-flex items-center gap-1.5 text-xs font-medium hover:opacity-80 transition-opacity"
                       >
-                        {getStatusBadge(user.status)}
+                        {getStatusBadge(user.is_active)}
                       </button>
                     </td>
                     <td className="p-4 text-right">
                       <button
                         onClick={() => {
-                          setEditingUser(user);
-                          setShowEditModal(true);
+                          openEditModal(user);
                         }}
                         className="p-2 text-[#5A4030] hover:text-[#8b3a3a] rounded-full hover:bg-[#FDF8F0] transition-colors"
                       >
@@ -242,29 +266,36 @@ export const UserManagement = () => {
       <Modal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
-        title={editingUser ? 'Edit User' : 'Add New User'}
+        title="Edit User"
         size="lg"
       >
-        <form className="space-y-4" onSubmit={(e) => {
-          e.preventDefault();
-          setShowEditModal(false);
-        }}>
-          <Input label="Full Name" placeholder="Enter full name" required />
-          <Input label="Email" type="email" placeholder="Enter email" required />
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          {formError && <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">{formError}</p>}
           <div className="grid grid-cols-2 gap-4">
-            <select className="w-full px-4 py-2 border border-[#E8D9C3] rounded-lg focus:outline-none focus:border-[#8b3a3a] text-sm">
+            <select
+              value={formData.role}
+              onChange={(event) => setFormData({ ...formData, role: event.target.value })}
+              className="w-full px-4 py-2 border border-[#E8D9C3] rounded-lg focus:outline-none focus:border-[#8b3a3a] text-sm"
+            >
+              <option value="user">User</option>
               <option value="contributor">Contributor</option>
-              <option value="palkhi pramukh">Palkhi Pramukh</option>
+              <option value="palkhi_pramukh">Palkhi Pramukh</option>
               <option value="admin">Admin</option>
             </select>
-            <select className="w-full px-4 py-2 border border-[#E8D9C3] rounded-lg focus:outline-none focus:border-[#8b3a3a] text-sm">
-              <option value="active">Active</option>
-              <option value="suspended">Suspended</option>
+            <select
+              value={String(formData.is_active)}
+              onChange={(event) => setFormData({ ...formData, is_active: event.target.value === 'true' })}
+              className="w-full px-4 py-2 border border-[#E8D9C3] rounded-lg focus:outline-none focus:border-[#8b3a3a] text-sm"
+            >
+              <option value="true">Active</option>
+              <option value="false">Suspended</option>
             </select>
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="ghost" onClick={() => setShowEditModal(false)}>Cancel</Button>
-            <Button variant="primary" className="bg-[#8b3a3a] hover:bg-[#6d2325] text-white">Save</Button>
+            <Button type="submit" disabled={saving} variant="primary" className="bg-[#8b3a3a] hover:bg-[#6d2325] text-white">
+              {saving ? 'Saving...' : 'Save'}
+            </Button>
           </div>
         </form>
       </Modal>

@@ -159,7 +159,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAdmin = () => {
-    return user?.role === 'admin';
+    return normalizeRole(user?.role) === 'admin';
   };
 
   const canView = () => {
@@ -228,11 +228,8 @@ export const AuthProvider = ({ children }) => {
       isContributor,
       hasContributePermission,
       isPalkhiPramukh,
-      isAuthenticated: !!user
-      updateUser, // ✅ Export the new function
-      hasRole,
       isAuthenticated: !!user,
-      isAdmin: normalizeRole(user?.role) === 'admin',
+      updateUser,
     }}>
       {children}
     </AuthContext.Provider>

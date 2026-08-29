@@ -10,6 +10,23 @@ import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import { api } from '../../services/api';
 
+const formatRelativeTime = (value) => {
+  if (!value) return 'Just now';
+
+  const timestamp = new Date(value).getTime();
+  if (Number.isNaN(timestamp)) return 'Just now';
+
+  const minutes = Math.max(1, Math.round((Date.now() - timestamp) / 60000));
+
+  if (minutes < 60) return `${minutes} min ago`;
+
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+};
+
 export const AdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
@@ -19,22 +36,75 @@ export const AdminDashboard = () => {
     pendingActions: 0
   });
   const [activities, setActivities] = useState([]);
+  const [quickActions, setQuickActions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Fetch real aggregated stats from backend to prevent connection overload
-        const data = await api.getAdminStats();
-        
+        const [adminStats, usersRes, contentRes, channelsRes] = await Promise.all([
+          api.getAdminStats(),
+          api.users({ limit: 3 }),
+          api.contentList({ limit: 3 }),
+          api.channels({ limit: 3 }),
+        ]);
+
+        const recentUsers = usersRes?.users || [];
+        const recentContent = contentRes?.items || [];
+        const recentChannels = channelsRes?.items || channelsRes || [];
+
+        const recentActivity = [
+          ...recentUsers.map((user) => ({
+            id: `user-${user.id}`,
+            title: `${user.full_name || user.username || 'New user'} joined`,
+            time: formatRelativeTime(user.created_at),
+            color: '#8b3a3a',
+            dot: FiUserPlus,
+          })),
+          ...recentContent.map((item) => ({
+            id: `content-${item.id}`,
+            title: `${item.title || 'Content'} ${item.status === 'published' ? 'published' : 'updated'}`,
+            time: formatRelativeTime(item.created_at),
+            color: '#D4A373',
+            dot: FiFileText,
+          })),
+          ...recentChannels.map((channel) => ({
+            id: `channel-${channel.id}`,
+            title: `${channel.name || 'Channel'} is ${channel.status || 'active'}`,
+            time: formatRelativeTime(channel.created_at),
+            color: '#2D6A4F',
+            dot: FiHash,
+          })),
+        ].slice(0, 5);
+
         setStats({
-          totalUsers: data?.users || 0,
-          totalChannels: data?.channels || 0,
-          totalContent: data?.content || 0,
-          pendingActions: data?.pendingApproval || 0
+          totalUsers: adminStats?.total_users ?? 0,
+          totalChannels: adminStats?.total_channels ?? 0,
+          totalContent: adminStats?.total_content ?? 0,
+          pendingActions: adminStats?.pending_review ?? 0,
         });
+
+        setActivities(recentActivity.length ? recentActivity : [
+          { id: 'placeholder-user', title: 'No recent activity available', time: 'Just now', color: '#5A4030', dot: FiAlertCircle },
+        ]);
+
+        setQuickActions([
+          { id: 'users', label: `Manage Users (${adminStats?.total_users ?? 0})`, icon: FiUsers, color: '#8b3a3a', path: '/admin/users' },
+          { id: 'content', label: `Review Content (${adminStats?.pending_review ?? 0})`, icon: FiFileText, color: '#7d562d', path: '/admin/content' },
+          { id: 'channels', label: `Channel Management (${adminStats?.total_channels ?? 0})`, icon: FiHash, color: '#6d2325', path: '/admin/channels' },
+          { id: 'settings', label: 'System Settings', icon: FiSettings, color: '#554241', path: '/admin/settings' },
+        ]);
       } catch (error) {
         console.error('Failed to fetch stats:', error);
+        setActivities([
+          { id: 'placeholder-user', title: 'Unable to load recent activity', time: 'Just now', color: '#5A4030', dot: FiAlertCircle },
+        ]);
+        setQuickActions([
+          { id: 'users', label: 'Manage Users', icon: FiUsers, color: '#8b3a3a', path: '/admin/users' },
+          { id: 'content', label: 'Review Content', icon: FiFileText, color: '#7d562d', path: '/admin/content' },
+          { id: 'channels', label: 'Channel Management', icon: FiHash, color: '#6d2325', path: '/admin/channels' },
+          { id: 'settings', label: 'System Settings', icon: FiSettings, color: '#554241', path: '/admin/settings' },
+        ]);
       } finally {
         setLoading(false);
       }
@@ -83,13 +153,6 @@ export const AdminDashboard = () => {
       color: '#ba1a1a',
       onClick: () => navigate('/admin/users')
     },
-  ];
-
-  const quickActions = [
-    { id: 'users', label: 'Manage Users', icon: FiUsers, color: '#8b3a3a', path: '/admin/users' },
-    { id: 'content', label: 'Review Content', icon: FiFileText, color: '#7d562d', path: '/admin/content' },
-    { id: 'channels', label: 'Channel Management', icon: FiHash, color: '#6d2325', path: '/admin/channels' },
-    { id: 'settings', label: 'System Settings', icon: FiSettings, color: '#554241', path: '/admin/settings' },
   ];
 
   if (loading) {
@@ -178,33 +241,24 @@ export const AdminDashboard = () => {
           </div>
           <div className="flex-1 p-6 overflow-y-auto max-h-[400px]">
             <div className="relative border-l-2 border-[#E8D9C3] ml-3 space-y-7">
-              <div className="relative pl-6">
-                <span className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-[#8b3a3a] shadow-[0_0_0_4px_#FDF8F0]"></span>
-                <div>
-                  <span className="text-xs font-semibold text-[#5A4030]">Just Now</span>
-                  <p className="text-sm text-[#2D1B0E]">
-                    <span className="font-semibold text-[#8b3a3a]">New user registered:</span> John Doe
-                  </p>
-                </div>
-              </div>
-              <div className="relative pl-6">
-                <span className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-[#D4A373] shadow-[0_0_0_4px_#FDF8F0]"></span>
-                <div>
-                  <span className="text-xs font-semibold text-[#5A4030]">2 hours ago</span>
-                  <p className="text-sm text-[#2D1B0E]">
-                    <span className="font-semibold text-[#D4A373]">Channel created:</span> Sant Eknath
-                  </p>
-                </div>
-              </div>
-              <div className="relative pl-6">
-                <span className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-[#2D6A4F] shadow-[0_0_0_4px_#FDF8F0]"></span>
-                <div>
-                  <span className="text-xs font-semibold text-[#5A4030]">Yesterday</span>
-                  <p className="text-sm text-[#2D1B0E]">
-                    <span className="font-semibold text-[#2D6A4F]">Content approved:</span> Ringan Ceremony
-                  </p>
-                </div>
-              </div>
+              {activities.map((activity) => {
+                const ActivityIcon = activity.dot;
+                return (
+                  <div key={activity.id} className="relative pl-6">
+                    <span
+                      className="absolute -left-[9px] top-1 w-4 h-4 rounded-full shadow-[0_0_0_4px_#FDF8F0]"
+                      style={{ backgroundColor: activity.color }}
+                    ></span>
+                    <div>
+                      <span className="text-xs font-semibold text-[#5A4030]">{activity.time}</span>
+                      <p className="text-sm text-[#2D1B0E] flex items-center gap-2">
+                        <ActivityIcon size={14} style={{ color: activity.color }} />
+                        <span>{activity.title}</span>
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

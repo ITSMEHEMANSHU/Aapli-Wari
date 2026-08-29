@@ -157,7 +157,7 @@ export const ChannelManagement = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => window.open(`/channel/${channel.id}`, '_blank')}
+                    onClick={() => window.open(`/admin/channels/${channel.id}`, '_blank')}
                     className="px-3 py-1.5 text-xs font-semibold text-[#8b3a3a] border border-[#8b3a3a] rounded-lg hover:bg-[#8b3a3a] hover:text-white transition-colors flex items-center gap-1"
                   >
                     <FiEye size={14} /> View
