@@ -4,9 +4,7 @@ import { FaSearch } from 'react-icons/fa';
 export const KnowledgeHero = ({ searchQuery, setSearchQuery }) => {
   return (
     <div className="text-center max-w-3xl mx-auto pt-2 pb-2">
-      <span className="inline-block px-3 py-1 bg-[#DD6B35]/15 text-[#DD6B35] rounded-full text-xs font-bold uppercase tracking-wider mb-3 border border-[#DD6B35]/20">
-        Community Repository
-      </span>
+     
       <h1 className="text-3xl sm:text-4xl font-serif font-bold text-[#2B1B12] tracking-tight">
         Explore Wari Knowledge
       </h1>
@@ -14,7 +12,7 @@ export const KnowledgeHero = ({ searchQuery, setSearchQuery }) => {
         Discover the people, places, history, traditions, stories and culture that make the Wari a living heritage.
       </p>
 
-      <div className="mt-6 relative max-w-2xl mx-auto">
+      <div className="mt-6 relative max-w-4xl mx-auto">
         <div className="relative flex items-center">
           <FaSearch className="absolute left-4 text-[#4A392E]/40 text-sm" />
           <input
