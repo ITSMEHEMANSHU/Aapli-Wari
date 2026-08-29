@@ -222,6 +222,21 @@ decideJoinRequest: (channelId, requestId, action) =>
     }),
 
     trackDownload: (id) => request(`/engagement/content/${id}/download`),
+
+  // =========================
+  // Amenities (Map)
+  // =========================
+  getAmenities: (params = {}) => request('/amenities', { params }),
+
+  addAmenity: (data) => request('/amenities', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+
+  deleteAmenity: (id) => request(`/amenities/${id}`, { method: 'DELETE' }),
+
+  // Palkhi live locations
+  getPalkhiLocations: () => request('/palkhis/live-locations'),
 };
 
   export default api;
