@@ -76,6 +76,23 @@ export const AuthProvider = ({ children }) => {
     return response;
   };
 
+  const refreshUser = async () => {
+    try {
+      const currentUser = await api.me();
+      const cachedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const updated = {
+        ...currentUser,
+        name: currentUser.full_name || currentUser.username,
+        role: currentUser.role || cachedUser.role,
+      };
+      setUser(updated);
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.warn('Failed to refresh user profile:', e);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
@@ -87,6 +104,14 @@ export const AuthProvider = ({ children }) => {
     return user?.role === role;
   };
 
+  const isContributor = () => {
+    return ['contributor', 'palkhi_pramukh', 'admin'].includes(user?.role);
+  };
+
+  const hasContributePermission = () => {
+    return isContributor();
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -95,7 +120,10 @@ export const AuthProvider = ({ children }) => {
       register,
       registerPalkhiPramukh,
       logout,
+      refreshUser,
       hasRole,
+      isContributor,
+      hasContributePermission,
       isAuthenticated: !!user
     }}>
       {children}

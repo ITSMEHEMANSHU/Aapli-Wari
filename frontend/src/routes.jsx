@@ -17,6 +17,7 @@ export const ROUTES = {
   PROFILE_USER: '/profile/:id',
   SETTINGS: '/settings',
   CONTRIBUTE: '/contribute',
+  APPLY_CONTRIBUTOR: '/apply-contributor',
   ADMIN: '/admin',
   ADMIN_USERS: '/admin/users',
   ADMIN_CHANNELS: '/admin/channels',

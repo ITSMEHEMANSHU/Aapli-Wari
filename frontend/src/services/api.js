@@ -73,6 +73,12 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  applyContributor: (data) =>
+    request('/auth/apply-contributor', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   roles: () => request('/auth/roles'),
 
   me: () => request('/auth/me'),

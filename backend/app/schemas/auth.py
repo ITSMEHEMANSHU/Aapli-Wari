@@ -38,3 +38,10 @@ class PalkhiPramukhSignupRequest(BaseModel):
     password: str
     palkhi_name: str
     palkhi_description: str | None = None
+
+
+class ContributorApplyRequest(BaseModel):
+    full_name: str
+    email: EmailStr
+    mobile: str
+    consent: bool = True

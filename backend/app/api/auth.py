@@ -17,6 +17,7 @@ from backend.app.models.rbac import Role
 from backend.app.models.user import User
 
 from backend.app.schemas.auth import (
+    ContributorApplyRequest,
     LoginRequest,
     PalkhiPramukhSignupRequest,
     SignupRequest,
@@ -28,6 +29,7 @@ from backend.app.schemas.user import UserResponse
 from backend.app.services.users.user_service import (
     create_user,
     get_user_by_id,
+    upgrade_to_contributor,
 )
 
 
@@ -303,6 +305,40 @@ def register_palkhi_pramukh(
             "name": palkhi.name,
             "description": palkhi.description,
         },
+    }
+
+
+@router.post("/apply-contributor")
+def apply_contributor(
+    data: ContributorApplyRequest,
+    current_user: User = Depends(authorize_request),
+    db: Session = Depends(get_db),
+):
+    if current_user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+        )
+
+    if data.full_name and data.full_name.strip() and data.full_name != current_user.full_name:
+        current_user.full_name = data.full_name.strip()
+
+    if current_user.role in ("contributor", "palkhi_pramukh", "admin"):
+        upgrade_to_contributor(db=db, user=current_user, mobile=data.mobile)
+        return {
+            "message": "Contributor registration successful",
+            "role": current_user.role,
+        }
+
+    user = upgrade_to_contributor(
+        db=db,
+        user=current_user,
+        mobile=data.mobile,
+    )
+
+    return {
+        "message": "Contributor registration successful",
+        "role": user.role,
     }
 
 
