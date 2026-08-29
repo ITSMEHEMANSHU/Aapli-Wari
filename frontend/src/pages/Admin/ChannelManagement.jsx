@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiUser, FiCalendar, FiEye, FiEyeOff } from 'react-icons/fi';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -7,6 +8,7 @@ import Modal from '../../components/common/Modal';
 import { api } from '../../services/api';
 
 export const ChannelManagement = () => {
+  const navigate = useNavigate();
   const [channels, setChannels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -49,9 +51,9 @@ export const ChannelManagement = () => {
       // ✅ UNCOMMENTED: Live API update
       const newStatus = selectedChannel.status === 'active' ? 'inactive' : 'active';
       await api.updateChannel(selectedChannel.id, { status: newStatus });
-      
-      setChannels(channels.map(c => 
-        c.id === selectedChannel.id 
+
+      setChannels(channels.map(c =>
+        c.id === selectedChannel.id
           ? { ...c, status: newStatus }
           : c
       ));
@@ -107,11 +109,10 @@ export const ChannelManagement = () => {
             <button
               key={filter}
               onClick={() => setStatusFilter(filter)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                statusFilter === filter
-                  ? 'bg-[#efdfdd] text-[#2D1B0E] border-[#E8D9C3] shadow-sm'
-                  : 'bg-white text-[#5A4030] border-[#E8D9C3] hover:bg-[#efdfdd]/60'
-              }`}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors ${statusFilter === filter
+                ? 'bg-[#efdfdd] text-[#2D1B0E] border-[#E8D9C3] shadow-sm'
+                : 'bg-white text-[#5A4030] border-[#E8D9C3] hover:bg-[#efdfdd]/60'
+                }`}
             >
               {filter}
             </button>
@@ -150,14 +151,17 @@ export const ChannelManagement = () => {
                   {channel.description && (
                     <p className="text-xs text-[#5A4030] line-clamp-1">{channel.description}</p>
                   )}
-                  <div className="flex items-center gap-4 text-xs text-[#5A4030] mt-1">
-                    <span className="flex items-center gap-1"><FiUser size={12} /> Owner</span>
+                  <div className="flex items-center gap-4 text-xs text-[#5A4030] mt-1 flex-wrap">
+                    <span className="flex items-center gap-1">
+                      <FiUser size={12} />
+                      {channel.owner_name || channel.created_by_name || channel.palkhi?.owner?.full_name || 'Palkhi Pramukh'}
+                    </span>
                     <span className="flex items-center gap-1"><FiCalendar size={12} /> {new Date(channel.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => window.open(`/admin/channels/${channel.id}`, '_blank')}
+                    onClick={() => navigate(`/admin/channels/${channel.id}`)}
                     className="px-3 py-1.5 text-xs font-semibold text-[#8b3a3a] border border-[#8b3a3a] rounded-lg hover:bg-[#8b3a3a] hover:text-white transition-colors flex items-center gap-1"
                   >
                     <FiEye size={14} /> View
@@ -193,7 +197,7 @@ export const ChannelManagement = () => {
             <Button variant="ghost" onClick={() => { setShowToggleModal(false); setSelectedChannel(null); }}>
               Cancel
             </Button>
-            <Button 
+            <Button
               variant={selectedChannel?.status === 'active' ? 'danger' : 'primary'}
               className={selectedChannel?.status === 'active' ? 'bg-[#ba1a1a] hover:bg-[#93000a] text-white' : 'bg-[#2D6A4F] hover:bg-[#1b5e20] text-white'}
               onClick={handleToggleStatus}

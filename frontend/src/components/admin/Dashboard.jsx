@@ -52,7 +52,7 @@ export const Dashboard = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <Button onClick={() => navigate('/admin/channels')}>Review Pending Channels</Button>
             <Button variant="outline" onClick={() => navigate('/admin/users')}>Manage Users</Button>
-            <Button variant="outline" onClick={() => navigate('/admin/moderation')}>Content Moderation</Button>
+            <Button variant="outline" onClick={() => navigate('/admin/content')}>Content Moderation</Button>
           </div>
         </Card>
       </div>

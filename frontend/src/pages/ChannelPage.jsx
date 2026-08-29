@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../context/LanguageContext';
@@ -482,7 +482,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
 
   const TABS = useMemo(() => [
     { id: 'announcements', label: t('channelPage.tabs.announcements'), icon: 'campaign' },
-    { id: 'chat', label: t('channelPage.tabs.chat'), icon: 'forum' },
+    // { id: 'chat', label: t('channelPage.tabs.chat'), icon: 'forum' },
     { id: 'map', label: t('channelPage.tabs.map'), icon: 'map' },
     { id: 'info', label: t('channelPage.tabs.info'), icon: 'info' },
   ], [language]);
@@ -1255,121 +1255,92 @@ loading="lazy"
             )}
           </div>
 
-          {/* ========================================================================= */}
-          {/* STICKY INPUT AREA (WhatsApp style matching code.html)                      */}
-          {/* ========================================================================= */}
-          {activeTab === 'chat' && (
-            <footer className="bg-white border-t border-[#dfbfbc]/30 p-3 md:p-4 sticky bottom-0 z-20 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
-              {canPostChat ? (
-                <form onSubmit={handlePost} className="flex flex-col gap-1.5">
-                  {/* Reply Context Banner */}
-                  {replyToPost && (
-                    <div className="bg-[#fbf2ed] px-3 py-1.5 rounded-t-xl border-l-4 border-[#a13f09] flex justify-between items-center text-xs">
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-label-sm text-[#a13f09] font-bold text-[11px]">
-                          {t('channelPage.chat.replyingTo')} {replyToPost.user?.full_name || replyToPost.user?.username || 'sevak'}
-                        </span>
-                        <span className="font-body-md text-xs text-[#58413f] truncate max-w-[280px] sm:max-w-md">
-                          {replyToPost.description || replyToPost.message}
-                        </span>
-                      </div>
-                      <button type="button" onClick={() => setReplyToPost(null)} className="text-[#58413f] hover:text-[#6a020a]">
-                        <span className="material-symbols-outlined text-[18px]">close</span>
-                      </button>
-                    </div>
-                  )}
+{activeTab === 'chat' && !window.location.pathname.includes('/admin') && (
+  <footer className="bg-white border-t border-[#dfbfbc]/30 p-3 md:p-4 sticky bottom-0 z-20 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
+    <form onSubmit={handlePost} className="flex flex-col gap-1.5">
+      {/* Reply Context Banner */}
+      {replyToPost && (
+        <div className="bg-[#fbf2ed] px-3 py-1.5 rounded-t-xl border-l-4 border-[#a13f09] flex justify-between items-center text-xs">
+          <div className="flex flex-col min-w-0">
+            <span className="font-label-sm text-[#a13f09] font-bold text-[11px]">
+              {t('channelPage.chat.replyingTo')} {replyToPost.user?.full_name || replyToPost.user?.username || 'sevak'}
+            </span>
+            <span className="font-body-md text-xs text-[#58413f] truncate max-w-[280px] sm:max-w-md">
+              {replyToPost.description || replyToPost.message}
+            </span>
+          </div>
+          <button type="button" onClick={() => setReplyToPost(null)} className="text-[#58413f] hover:text-[#6a020a]">
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+      )}
 
-                  {/* Selected Media Indicator */}
-                  {postMedia && (
-                    <div className="bg-[#1f1b18] text-white text-xs px-3 py-1 rounded-full flex items-center justify-between gap-2 max-w-sm mb-1">
-                      <span className="truncate">📎 {postMedia.name}</span>
-                      <button type="button" onClick={() => setPostMedia(null)} className="text-red-400 hover:text-white">
-                        <FiX size={14} />
-                      </button>
-                    </div>
-                  )}
+      {/* Selected Media Indicator */}
+      {postMedia && (
+        <div className="bg-[#1f1b18] text-white text-xs px-3 py-1 rounded-full flex items-center justify-between gap-2 max-w-sm mb-1">
+          <span className="truncate">📎 {postMedia.name}</span>
+          <button type="button" onClick={() => setPostMedia(null)} className="text-red-400 hover:text-white">
+            <FiX size={14} />
+          </button>
+        </div>
+      )}
 
-                  <div className="flex items-end gap-2 bg-[#FBF5EC] rounded-2xl p-1.5 border border-[#dfbfbc]/40 focus-within:bg-white focus-within:border-[#a13f09] transition-colors shadow-sm">
-                    {/* Attachment button */}
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-2 text-[#58413f] hover:text-[#a13f09] transition-colors rounded-full shrink-0 flex items-center justify-center h-10 w-10 cursor-pointer"
-                      title="Attach Media or Document"
-                    >
-                      <span className="material-symbols-outlined text-[24px]">add_circle</span>
-                    </button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      className="hidden"
-                      accept="image/*,video/*,audio/*,application/pdf"
-                      onChange={handleFileChange}
-                    />
+      <div className="flex items-end gap-2 bg-[#FBF5EC] rounded-2xl p-1.5 border border-[#dfbfbc]/40 focus-within:bg-white focus-within:border-[#a13f09] transition-colors shadow-sm">
+        {/* Attachment button */}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="p-2 text-[#58413f] hover:text-[#a13f09] transition-colors rounded-full shrink-0 flex items-center justify-center h-10 w-10 cursor-pointer"
+          title="Attach Media or Document"
+        >
+          <span className="material-symbols-outlined text-[24px]">add_circle</span>
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*,video/*,audio/*,application/pdf"
+          onChange={handleFileChange}
+        />
 
-                    {/* Textarea */}
-                    <textarea
-                      rows={1}
-                      placeholder={
-                        replyToPost
-                          ? `${t('channelPage.chat.replyPlaceholder')} ${replyToPost.user?.full_name || replyToPost.user?.username || 'sevak'}...`
-                          : postMedia
-                            ? `File attached: ${postMedia.name}`
-                            : t('channelPage.chat.placeholder')
-                      }
-                      value={newPost}
-                      onChange={(e) => setNewPost(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handlePost(e);
-                        }
-                      }}
-                      className="flex-1 bg-transparent border-none focus:ring-0 resize-none font-body-md text-sm py-[10px] px-1 max-h-32 min-h-[44px] text-[#1f1b18] placeholder:text-[#58413f]/50 no-scrollbar outline-none"
-                    />
+        {/* Textarea */}
+        <textarea
+          rows={1}
+          placeholder={t('channelPage.chat.placeholder')}
+          value={newPost}
+          onChange={(e) => setNewPost(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handlePost(e);
+            }
+          }}
+          className="flex-1 bg-transparent border-none focus:ring-0 resize-none font-body-md text-sm py-[10px] px-1 max-h-32 min-h-[44px] text-[#1f1b18] placeholder:text-[#58413f]/50 no-scrollbar outline-none"
+        />
 
-                    {/* Send Button */}
-                    <button
-                      type="submit"
-                      disabled={posting || (!newPost.trim() && !postMedia)}
-                      className="bg-[#a13f09] text-white p-2 rounded-full shrink-0 flex items-center justify-center h-10 w-10 hover:bg-[#8b3506] transition-transform active:scale-95 shadow-md ml-1 mb-[2px] cursor-pointer disabled:opacity-50"
-                      title="Send message"
-                    >
-                      {posting ? (
-                        <Loader size="xs" />
-                      ) : (
-                        <span
-                          className="material-symbols-outlined text-[20px]"
-                          data-weight="fill"
-                          style={{ transform: 'rotate(-45deg) translateX(2px) translateY(-2px)' }}
-                        >
-                          send
-                        </span>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <div className="flex items-center justify-between gap-3 py-2 px-3 bg-[#fbf2ed] rounded-xl border border-[#dfbfbc]/40">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[#a13f09] text-[22px]">forum</span>
-                    <div>
-                      <p className="font-label-md text-xs font-bold text-[#1f1b18]">{t('channelPage.chat.joinTitle')}</p>
-                      <p className="font-label-sm text-[11px] text-[#58413f]">{t('channelPage.chat.joinSub')}</p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => navigate('/login', { state: { from: `/channel/${id}` } })}
-                    className="!bg-[#a13f09] hover:!bg-[#8b3506] text-white font-label-md text-xs font-bold shrink-0 shadow-xs cursor-pointer"
-                  >
-                    {t('channelPage.chat.signIn')}
-                  </Button>
-                </div>
-              )}
-            </footer>
+        {/* Send Button */}
+        <button
+          type="submit"
+          disabled={posting}
+          className="bg-[#a13f09] text-white p-2 rounded-full shrink-0 flex items-center justify-center h-10 w-10 hover:bg-[#8b3506] transition-transform active:scale-95 shadow-md ml-1 mb-[2px] cursor-pointer disabled:opacity-50"
+          title="Send message"
+        >
+          {posting ? (
+            <Loader size="xs" />
+          ) : (
+            <span
+              className="material-symbols-outlined text-[20px]"
+              data-weight="fill"
+              style={{ transform: 'rotate(-45deg) translateX(2px) translateY(-2px)' }}
+            >
+              send
+            </span>
           )}
+        </button>
+      </div>
+    </form>
+  </footer>
+)}
         </main>
       </div>
 

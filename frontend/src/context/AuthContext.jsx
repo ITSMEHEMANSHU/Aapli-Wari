@@ -5,7 +5,7 @@ export const AuthContext = createContext();
 
 const normalizeRole = (value) => {
   if (!value && value !== 0) return '';
-  return String(value).trim().toLowerCase();
+  return String(value).trim().toLowerCase().replaceAll(' ', '_');
 };
 
 export const AuthProvider = ({ children }) => {

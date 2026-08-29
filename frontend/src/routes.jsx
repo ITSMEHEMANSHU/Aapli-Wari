@@ -25,7 +25,7 @@ export const ROUTES = {
   ADMIN: '/admin',
   ADMIN_USERS: '/admin/users',
   ADMIN_CHANNELS: '/admin/channels',
-  ADMIN_MODERATION: '/admin/moderation'
+  ADMIN_MODERATION: '/admin/content'
 };
 
 export const PROTECTED_ROUTES = [
