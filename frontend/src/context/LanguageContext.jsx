@@ -114,7 +114,7 @@ const translations = {
       searchPlaceholder: 'Search channel posts and announcements',
       tabs: {
         announcements: 'Announcements',
-        chat: 'Chat',
+        chat: 'Posts',
         map: 'Route Map',
         info: 'About & Info',
       },
@@ -142,9 +142,9 @@ const translations = {
         attachedPdf: 'Attached Document (PDF)',
         placeholder: 'Write a message to channel...',
         replyPlaceholder: 'Write a reply to',
-        joinTitle: 'Join the Conversation',
-        joinSub: 'Sign in to share updates, ask questions, and chat with fellow warkaris.',
-        signIn: 'Sign In to Chat',
+       // joinTitle: 'Join the Conversation',
+        // joinSub: 'Sign in to share updates, ask questions, and chat with fellow warkaris.',
+        // signIn: 'Sign In to Chat',
       },
       map: {
         title: 'Palkhi Route Map & Halts',
@@ -324,8 +324,8 @@ const translations = {
         placeholder: 'चॅनेलवर संदेश लिहा...',
         replyPlaceholder: 'उत्तर लिहा...',
         joinTitle: 'संवादात सामील व्हा',
-        joinSub: 'अपडेट्स शेअर करण्यासाठी आणि वारकऱ्यांशी संवाद साधण्यासाठी साइन इन करा.',
-        signIn: 'चॅट करण्यासाठी साइन इन करा',
+        // joinSub: 'अपडेट्स शेअर करण्यासाठी आणि वारकऱ्यांशी संवाद साधण्यासाठी साइन इन करा.',
+        // signIn: 'चॅट करण्यासाठी साइन इन करा',
       },
       map: {
         title: 'पालखी मार्ग आणि मुक्काम',

@@ -148,6 +148,37 @@ class Channel(Base):
     )
 
     @property
+    def followers_count(self) -> int:
+        try:
+            return len(self.followers or [])
+        except Exception:
+            return 0
+
+    @property
+    def owner_name(self) -> str | None:
+        if self.palkhi and getattr(self.palkhi, "owner", None):
+            owner = self.palkhi.owner
+            return owner.full_name or owner.username or self.palkhi.name
+
+        if self.created_by:
+            created_by = self.created_by
+            return created_by.full_name or created_by.username or (self.palkhi.name if self.palkhi else None)
+
+        return self.palkhi.name if self.palkhi else None
+
+    @property
+    def created_by_name(self) -> str | None:
+        if self.created_by:
+            created_by = self.created_by
+            return created_by.full_name or created_by.username or (self.palkhi.name if self.palkhi else None)
+
+        if self.palkhi and getattr(self.palkhi, "owner", None):
+            owner = self.palkhi.owner
+            return owner.full_name or owner.username or self.palkhi.name
+
+        return self.palkhi.name if self.palkhi else None
+
+    @property
     def emergency_contact_name(self):
         return self.palkhi.emergency_contact_name if self.palkhi else None
 

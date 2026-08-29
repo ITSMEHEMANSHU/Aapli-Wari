@@ -24,10 +24,12 @@ import { Comments } from '../components/community/Comments';
 import { useAuth } from '../hooks/useAuth';
 import { getContent, likeContent, trackDownload, trackShare } from '../services/content';
 
-export const ContentDetail = () => {
+export const ContentDetail = ({ isAdminView = false }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+  const adminView = isAdminView || location.pathname.startsWith('/admin/');
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -166,12 +168,12 @@ export const ContentDetail = () => {
 
     const mediaType = content.content_type === 'short'
       ? (() => {
-          const url = (content.file_url || '').toLowerCase();
-          if (/\.(mp4|webm|mov|m4v|avi)(\?|$)/.test(url) || url.includes('video')) return 'video';
-          if (/\.(mp3|wav|ogg|m4a|aac|flac)(\?|$)/.test(url) || url.includes('audio')) return 'audio';
-          if (/\.(jpg|jpeg|png|gif|webp|bmp)(\?|$)/.test(url) || url.includes('image')) return 'image';
-          return 'video';
-        })()
+        const url = (content.file_url || '').toLowerCase();
+        if (/\.(mp4|webm|mov|m4v|avi)(\?|$)/.test(url) || url.includes('video')) return 'video';
+        if (/\.(mp3|wav|ogg|m4a|aac|flac)(\?|$)/.test(url) || url.includes('audio')) return 'audio';
+        if (/\.(jpg|jpeg|png|gif|webp|bmp)(\?|$)/.test(url) || url.includes('image')) return 'image';
+        return 'video';
+      })()
       : content.content_type;
 
     switch (mediaType) {
@@ -185,17 +187,27 @@ export const ContentDetail = () => {
         );
       case 'video':
         return (
-          <video 
-            src={content.file_url} 
-            controls 
-            className="w-full max-h-[500px] rounded-lg bg-gray-100"
-          />
+          <div>
+            <video
+              src={content.file_url}
+              controls
+              className="w-full max-h-[500px] rounded-lg bg-gray-100"
+            />
+            {content.transcription && (
+              <div className="mt-4 rounded-lg border border-[#E8D9C3] bg-[#FDF8F0] p-4">
+                <p className="mb-1 text-sm font-semibold text-[#8B3A3A]">Transcript</p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#4A392E]">
+                  {content.transcription}
+                </p>
+              </div>
+            )}
+          </div>
         );
       case 'audio':
         return (
-          <audio 
-            src={content.file_url} 
-            controls 
+          <audio
+            src={content.file_url}
+            controls
             className="w-full mt-2"
           />
         );
@@ -204,9 +216,9 @@ export const ContentDetail = () => {
           <div className="bg-gray-100 rounded-lg p-8 text-center">
             <FiFile className="text-4xl text-primary mx-auto mb-3" />
             <p className="font-medium">PDF Document</p>
-            <a 
-              href={content.file_url} 
-              target="_blank" 
+            <a
+              href={content.file_url}
+              target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline inline-flex items-center gap-2 mt-2"
             >
@@ -256,11 +268,11 @@ export const ContentDetail = () => {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Back button */}
-      <button 
-        onClick={() => navigate(-1)} 
+      <button
+        onClick={() => navigate(adminView ? '/admin/content' : -1)}
         className="flex items-center gap-2 text-gray-600 hover:text-primary transition mb-4"
       >
-        <FiArrowLeft /> Back
+        <FiArrowLeft /> {adminView ? 'Back to content list' : 'Back'}
       </button>
 
       {/* Header */}
@@ -281,7 +293,7 @@ export const ContentDetail = () => {
               {getStatusBadge(content.status, content.verified)}
             </div>
             {content.channel && (
-              <Link 
+              <Link
                 to={`/channel/${content.channel_id}`}
                 className="inline-block mt-2 text-sm text-primary hover:underline"
               >
@@ -302,7 +314,7 @@ export const ContentDetail = () => {
         <Card className="mb-4">
           <h3 className="font-semibold text-lg mb-2">About</h3>
           <p className="text-gray-700 whitespace-pre-wrap">{content.description}</p>
-          
+
           {content.tags && content.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-4">
               {content.tags.map(tag => (
@@ -345,22 +357,28 @@ export const ContentDetail = () => {
       )}
 
       {/* Actions */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <Button onClick={handleLike} disabled={liking} className="flex items-center gap-2">
-          {liked ? <FiHeart className="fill-current" /> : <FiHeart />} Like ({likeCount})
-        </Button>
-        <Button variant="outline" onClick={() => { if (!user) { navigate('/login', { state: { message: 'Please log in to save content.' } }); } else { setSaved(!saved); } }} className="flex items-center gap-2">
-          <FiBookmark className={saved ? 'fill-current' : ''} /> Save
-        </Button>
-        <Button variant="outline" onClick={handleShare} className="flex items-center gap-2">
-          <FiShare /> Share{shareCount > 0 ? ` (${shareCount})` : ''}
-        </Button>
-        {content.file_url && (
-          <Button variant="outline" onClick={handleDownload} className="flex items-center gap-2">
-            <FiDownload /> Download{downloadCount > 0 ? ` (${downloadCount})` : ''}
+      {adminView ? (
+        <div className="mb-6 rounded-xl border border-[#E8D9C3] bg-[#FDF8F0] px-4 py-3 text-sm font-medium text-[#6d2325]">
+          Admin read-only view: actions are disabled while reviewing content.
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-3 mb-6">
+          <Button onClick={handleLike} disabled={liking} className="flex items-center gap-2">
+            {liked ? <FiHeart className="fill-current" /> : <FiHeart />} Like ({likeCount})
           </Button>
-        )}
-      </div>
+          <Button variant="outline" onClick={() => { if (!user) { navigate('/login', { state: { message: 'Please log in to save content.' } }); } else { setSaved(!saved); } }} className="flex items-center gap-2">
+            <FiBookmark className={saved ? 'fill-current' : ''} /> Save
+          </Button>
+          <Button variant="outline" onClick={handleShare} className="flex items-center gap-2">
+            <FiShare /> Share{shareCount > 0 ? ` (${shareCount})` : ''}
+          </Button>
+          {content.file_url && (
+            <Button variant="outline" onClick={handleDownload} className="flex items-center gap-2">
+              <FiDownload /> Download{downloadCount > 0 ? ` (${downloadCount})` : ''}
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Comments */}
       <Comments contentId={content.id} />
