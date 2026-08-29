@@ -110,7 +110,7 @@ class Channel(Base):
         default="active",
         server_default="active",
     )
-    
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -133,8 +133,6 @@ class Channel(Base):
         "User",
         foreign_keys=[created_by_user_id],
     )
-
-    
 
     contributors = relationship(
         "User",
@@ -179,3 +177,29 @@ class Channel(Base):
             return owner.full_name or owner.username or self.palkhi.name
 
         return self.palkhi.name if self.palkhi else None
+
+    @property
+    def emergency_contact_name(self):
+        return self.palkhi.emergency_contact_name if self.palkhi else None
+
+    @property
+    def emergency_contact_phone(self):
+        return self.palkhi.emergency_contact_phone if self.palkhi else None
+
+    @property
+    def emergency_contact_role(self):
+        return self.palkhi.emergency_contact_role if self.palkhi else None
+
+    @property
+    def followers_count(self):
+        return len(self.followers) if self.followers is not None else 0
+
+    @property
+    def owner_name(self):
+        if self.created_by is None:
+            return None
+        return self.created_by.full_name or self.created_by.username
+
+    @property
+    def created_by_name(self):
+        return self.owner_name

@@ -182,8 +182,14 @@ export const EditContentModal = ({ isOpen, onClose, contentId, onSaved }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-4">
+        <div 
+            className="fixed inset-0 z-50 bg-black/20 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={handleClose}
+        >
+            <div 
+                className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-4 border border-[#E8D9C3] shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <div className="flex items-center justify-between gap-3">
                     <h3 className="text-lg font-serif font-bold text-[#2B1B12]">Edit Content</h3>
                     <button
