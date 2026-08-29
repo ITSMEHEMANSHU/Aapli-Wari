@@ -1,20 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from sqlalchemy.orm import Session
 
-from backend.app.db.database import get_db
-from backend.app.core.security import get_current_user_optional
-from backend.app.models.user import User
-from backend.app.ai.rag.service import ask_question, ask_channel_question
+from backend.app.ai.rag.groq_service import groq_chat
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 
 
+class ChatMessage(BaseModel):
+    role: str      # 'user' or 'assistant'
+    content: str
+
+
 class ChatRequest(BaseModel):
     query: str
+    history: Optional[list[ChatMessage]] = None   # conversation history
     channel_id: Optional[str] = None
-    content_id: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
@@ -22,38 +23,19 @@ class ChatResponse(BaseModel):
     sources: list
 
 
+@router.post("", response_model=ChatResponse)
 @router.post("/", response_model=ChatResponse)
-def chat(
-    request: ChatRequest,
-    db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user_optional)
-):
-    """Ask question to AI Assistant"""
-    
+def chat(request: ChatRequest):
+    """Aapli Wari AI — answers only Wari/Palkhi related questions."""
+
     if not request.query or len(request.query.strip()) < 2:
-        raise HTTPException(status_code=400, detail="Query must be at least 2 characters")
-    
-    result = ask_question(
-        query=request.query,
-        channel_id=request.channel_id,
-        content_id=request.content_id,
-        user_id=str(current_user.id) if current_user else None
+        raise HTTPException(status_code=400, detail="Query too short.")
+
+    # Convert history to plain dicts for groq_service
+    history = (
+        [{"role": m.role, "content": m.content} for m in request.history]
+        if request.history else None
     )
-    
-    return ChatResponse(**result)
 
-
-@router.post("/channel/{channel_id}", response_model=ChatResponse)
-def chat_channel(
-    channel_id: str,
-    request: ChatRequest,
-    db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user_optional)
-):
-    """Ask question scoped to a specific channel"""
-    
-    if not request.query or len(request.query.strip()) < 2:
-        raise HTTPException(status_code=400, detail="Query must be at least 2 characters")
-    
-    result = ask_channel_question(request.query, channel_id)
+    result = groq_chat(query=request.query, history=history)
     return ChatResponse(**result)
