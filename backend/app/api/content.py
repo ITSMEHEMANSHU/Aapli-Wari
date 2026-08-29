@@ -25,6 +25,15 @@ import threading
 
 router = APIRouter(prefix="/content", tags=["content"])
 
+ALLOWED_CONTENT_FILE_TYPES = {
+    "video": {"video/mp4", "video/mpeg", "video/quicktime"},
+    "image": {"image/jpeg", "image/png", "image/gif", "image/webp"},
+    "audio": {"audio/mpeg", "audio/wav", "audio/ogg"},
+    "pdf": {"application/pdf"},
+    "manuscript": {"application/pdf", "image/jpeg", "image/png"},
+    "short": {"video/mp4", "video/mpeg", "video/quicktime"},
+}
+
 
 class SuggestionItem(BaseModel):
     id: UUID
@@ -92,6 +101,13 @@ def upload_content(
     db: Session = Depends(get_db),
     current_user: User = Depends(authorize_request),
 ):
+    from backend.app.services.users.user_service import can_contribute
+    if not can_contribute(current_user, db):
+        raise HTTPException(
+            status_code=403,
+            detail="You must apply as a contributor to upload content.",
+        )
+
     content_type_value = content_type.lower()
 
     # ✅ Updated 'article' to 'text' to match your text-only requirement
@@ -220,20 +236,30 @@ def list_content(
     verified_only: bool = Query(False),
     search: Optional[str] = Query(None),
     exclude_short: bool = Query(False),
+    categories: Optional[str] = Query(None), 
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(authorize_request),
 ):
+    # 1. Handle content_type "all" or empty
     content_type_enum = None
-    if content_type:
+    if content_type and content_type.lower() != "all":
         try:
-            content_type_enum = ContentType(content_type.lower())
+            normalized_type = 'text' if content_type.lower() == 'article' else content_type.lower()
+            content_type_enum = ContentType(normalized_type)
         except ValueError:
-            pass
+            raise HTTPException(status_code=400, detail=f"Invalid content type: {content_type}")
 
     if not current_user:
         verified_only = True
+
+    # 2. ✅ Handle categories "all" or empty properly
+    category_list = None
+    if categories and categories.lower() != "all":
+        category_list = [cat.strip() for cat in categories.split(",") if cat.strip() and cat.strip().lower() != "all"]
+        if not category_list:
+            category_list = None
 
     return ContentService.get_content_list(
         db,
@@ -242,6 +268,7 @@ def list_content(
         verified_only=verified_only,
         search_query=search,
         exclude_short=exclude_short,
+        categories=category_list,
         limit=limit,
         offset=offset
     )
@@ -260,6 +287,58 @@ def update_content(
     if content.user_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to update this content")
     return ContentService.update_content(db, content_id, update_data, current_user.id)
+
+
+@router.put("/{content_id}/file", response_model=ContentResponse)
+def replace_content_file(
+    content_id: UUID,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(authorize_request),
+):
+    content = ContentService.get_content(db, content_id)
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found")
+    if content.user_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to update this content")
+
+    allowed_types = ALLOWED_CONTENT_FILE_TYPES.get(content.content_type.value, set())
+    if not allowed_types:
+        raise HTTPException(status_code=400, detail="This content type does not support file replacement")
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type for {content.content_type.value}",
+        )
+
+    max_size = 500 * 1024 * 1024
+    if file.size and file.size > max_size:
+        raise HTTPException(status_code=400, detail="File too large. Max 500MB")
+
+    old_file_url = content.file_url
+    try:
+        new_file_url = ContentService.upload_to_storage(
+            file, folder=f"content/{content.content_type.value}"
+        )
+        file_size = file.size
+        if file_size is None and file.file:
+            file.file.seek(0, 2)
+            file_size = file.file.tell()
+            file.file.seek(0)
+
+        content.file_url = new_file_url
+        content.file_size = file_size
+        db.commit()
+        db.refresh(content)
+    except Exception as exc:
+        db.rollback()
+        if "new_file_url" in locals():
+            ContentService.delete_from_storage(new_file_url)
+        raise HTTPException(status_code=500, detail=f"Failed to replace file: {exc}")
+
+    if old_file_url:
+        ContentService.delete_from_storage(old_file_url)
+    return content
 
 
 @router.delete("/{content_id}")
@@ -305,3 +384,4 @@ def review_content(
         db, content_id, review.decision, current_user.id, review.comments
     )
     return {"message": f"Content {review.decision.value}", "status": updated.status}
+

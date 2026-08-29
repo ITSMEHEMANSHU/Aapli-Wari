@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from datetime import datetime
@@ -89,6 +89,16 @@ class ContentResponse(BaseModel):
     shares_count: int = 0
     downloads_count: int = 0
     is_liked: bool = False
+
+    @field_validator("tags", "categories", "sources", "sections", mode="before")
+    @classmethod
+    def default_missing_lists(cls, value):
+        return value if value is not None else []
+
+    @field_validator("quick_facts", "translations", mode="before")
+    @classmethod
+    def default_missing_dicts(cls, value):
+        return value if value is not None else {}
 
     class Config:
         from_attributes = True

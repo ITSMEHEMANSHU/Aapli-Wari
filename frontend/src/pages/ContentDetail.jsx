@@ -62,7 +62,7 @@ export const ContentDetail = () => {
 
   const handleLike = async () => {
     if (!user) {
-      setError('Please log in to like content.');
+      navigate('/login', { state: { message: 'Please log in to like content.' } });
       return;
     }
     if (liking) return;
@@ -349,7 +349,7 @@ export const ContentDetail = () => {
         <Button onClick={handleLike} disabled={liking} className="flex items-center gap-2">
           {liked ? <FiHeart className="fill-current" /> : <FiHeart />} Like ({likeCount})
         </Button>
-        <Button variant="outline" onClick={() => setSaved(!saved)} className="flex items-center gap-2">
+        <Button variant="outline" onClick={() => { if (!user) { navigate('/login', { state: { message: 'Please log in to save content.' } }); } else { setSaved(!saved); } }} className="flex items-center gap-2">
           <FiBookmark className={saved ? 'fill-current' : ''} /> Save
         </Button>
         <Button variant="outline" onClick={handleShare} className="flex items-center gap-2">

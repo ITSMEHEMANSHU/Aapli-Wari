@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from uuid import UUID, uuid4
-from typing import Optional, List
+from typing import Optional, List, Union
 from datetime import datetime
 import os
 
@@ -98,11 +98,12 @@ class ContentService:
         db: Session,
         user_id: Optional[UUID] = None,
         channel_id: Optional[UUID] = None,
-        content_type: Optional[ContentType] = None,
-        status: Optional[ContentStatus] = None,
+        content_type: Optional[Union[ContentType, str]] = None,
+        status: Optional[Union[ContentStatus, str]] = None,
         verified_only: bool = False,
         search_query: Optional[str] = None,
         exclude_short: bool = False,
+        categories: Optional[Union[List[str], str]] = None,
         limit: int = 20,
         offset: int = 0
     ) -> List[Content]:
@@ -112,14 +113,41 @@ class ContentService:
             query = query.filter(Content.user_id == user_id)
         if channel_id:
             query = query.filter(Content.channel_id == channel_id)
+            
+        # Robustly handle content_type whether passed as Enum or string
         if content_type:
-            query = query.filter(Content.content_type == content_type)
+            if isinstance(content_type, str):
+                try:
+                    content_type = ContentType(content_type)
+                except ValueError:
+                    content_type = None
+            if content_type:
+                query = query.filter(Content.content_type == content_type)
+                
+        # Robustly handle status whether passed as Enum or string
         if status:
-            query = query.filter(Content.status == status)
+            if isinstance(status, str):
+                try:
+                    status = ContentStatus(status)
+                except ValueError:
+                    status = None
+            if status:
+                query = query.filter(Content.status == status)
+                
         if verified_only:
             query = query.filter(Content.verified == True, Content.status == ContentStatus.PUBLISHED)
+            
         if exclude_short:
             query = query.filter(Content.content_type != ContentType.SHORT)
+            
+        # Robustly handle categories whether passed as a List or comma-separated string
+        if categories:
+            if isinstance(categories, str):
+                categories = [c.strip() for c in categories.split(",") if c.strip()]
+            if categories:
+                category_filters = [Content.categories.contains([cat]) for cat in categories]
+                query = query.filter(or_(*category_filters))
+
         if search_query:
             query = query.filter(
                 or_(
