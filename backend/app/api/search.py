@@ -4,7 +4,7 @@ from uuid import UUID
 from typing import Optional
 
 from backend.app.db.database import get_db
-from backend.app.core.security import authorize_request
+from backend.app.core.security import get_current_user
 from backend.app.models.user import User
 from backend.app.services.search.search_service import hybrid_search
 
@@ -21,7 +21,7 @@ def search(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(authorize_request),
+    current_user: Optional[User] = Depends(get_current_user),
 ):
     """
     Hybrid search across all content

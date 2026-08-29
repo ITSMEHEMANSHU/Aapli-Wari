@@ -169,11 +169,20 @@ def login(
     )
 
     if user is None:
-
-        raise HTTPException(
-            status_code=404,
-            detail="Application user profile not found",
-        )
+        # Fallback: check if the user exists by email (to heal data inconsistencies where Supabase ID changed)
+        from sqlalchemy import select, text
+        user = db.scalar(select(User).where(User.email == data.email))
+        
+        if user:
+            # Heal the ID
+            db.execute(text(f"UPDATE users SET id = '{response.user.id}' WHERE email = '{data.email}'"))
+            db.commit()
+            db.refresh(user)
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail="Application user profile not found",
+            )
 
     role = db.get(Role, user.role_id)
 
