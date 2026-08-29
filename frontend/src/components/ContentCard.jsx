@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiEye, FiFile, FiImage, FiMusic, FiVideo } from 'react-icons/fi';
 
@@ -27,7 +27,7 @@ function MediaPreview({ item }) {
   const [imageFailed, setImageFailed] = useState(false);
   if (item.content_type === 'video') return item.file_url ? <video src={item.file_url} className="w-full h-40 object-cover rounded-lg mb-3 bg-black" preload="metadata" muted /> : <div className="w-full h-40 rounded-lg mb-3 bg-gray-100 flex items-center justify-center text-4xl">🎬</div>;
   if (item.content_type === 'audio') return <div className="w-full mb-3"><div className="w-full h-20 rounded-lg bg-[#FBF5EC] flex items-center justify-center text-3xl mb-2">🎵</div><audio src={item.file_url} controls className="w-full" preload="none" /></div>;
-  if (item.content_type === 'image' && item.file_url && !imageFailed) return <img src={item.file_url} alt={item.title} className="w-full h-40 object-cover rounded-lg mb-3" onError={() => setImageFailed(true)} />;
+  if (item.content_type === 'image' && item.file_url && !imageFailed) return <img loading="lazy" src={item.file_url} alt={item.title} className="w-full h-40 object-cover rounded-lg mb-3" onError={() => setImageFailed(true)} />;
   return null;
 }
 

@@ -9,7 +9,7 @@ from fastapi import (
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.app.core.security import authorize_request
+from backend.app.core.security import authorize_request, get_current_user
 from backend.app.core.supabase import supabase
 from backend.app.db.database import get_db
 
@@ -313,7 +313,7 @@ def register_palkhi_pramukh(
 @router.post("/apply-contributor")
 def apply_contributor(
     data: ContributorApplyRequest,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     if current_user is None:
@@ -347,7 +347,7 @@ def apply_contributor(
 @router.post("/apply-palkhi-pramukh")
 def apply_palkhi_pramukh(
     data: PalkhiPramukhApplyRequest,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     if current_user is None:
@@ -385,7 +385,7 @@ def apply_palkhi_pramukh(
     response_model=UserResponse,
 )
 def get_me(
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
 ):
 
     return current_user

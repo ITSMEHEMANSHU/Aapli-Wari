@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiSearch, FiX, FiVideo, FiImage, FiMusic, FiFile } from 'react-icons/fi';
 import { api } from '../../services/api';
@@ -122,7 +122,7 @@ export const SearchBar = () => {
               className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#FBF5EC] transition text-left"
             >
               {item.thumbnail_url ? (
-                <img src={item.thumbnail_url} alt="" className="w-8 h-8 rounded object-cover shrink-0" />
+                <img loading="lazy" src={item.thumbnail_url} alt="" className="w-8 h-8 rounded object-cover shrink-0" />
               ) : (
                 <div className="w-8 h-8 rounded bg-[#F5EADA] flex items-center justify-center shrink-0">
                   {TYPE_ICONS[item.content_type] || <FiFile size={14} />}
