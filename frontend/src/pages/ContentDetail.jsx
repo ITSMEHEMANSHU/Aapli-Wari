@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   FiHeart, 
@@ -177,7 +177,7 @@ export const ContentDetail = () => {
     switch (mediaType) {
       case 'image':
         return (
-          <img 
+          <img loading="lazy" 
             src={content.file_url} 
             alt={content.title}
             className="w-full max-h-[500px] object-contain rounded-lg bg-gray-100"

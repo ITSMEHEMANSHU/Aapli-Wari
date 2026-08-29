@@ -170,6 +170,8 @@ def get_channel(
 
 def list_channels(
     db: Session,
+    limit: int = 100,
+    offset: int = 0,
 ) -> list[Channel]:
 
     return list(
@@ -177,6 +179,8 @@ def list_channels(
             select(Channel)
             .where(Channel.status == "active")
             .order_by(Channel.created_at.desc())
+            .limit(limit)
+            .offset(offset)
         ).all()
     )
 
@@ -192,6 +196,24 @@ def get_channel_with_followers_count(db: Session, channel_id: UUID) -> Channel:
     channel = get_channel(db=db, channel_id=channel_id)
     channel.__dict__["followers_count"] = get_channel_followers_count(db, channel.id)
     return channel
+
+
+def get_follow_status_batch(
+    db: Session,
+    user_id: UUID,
+    channel_ids: list[UUID],
+) -> dict[UUID, bool]:
+    if not channel_ids:
+        return {}
+
+    stmt = select(channel_followers).where(
+        channel_followers.c.user_id == user_id,
+        channel_followers.c.channel_id.in_(channel_ids)
+    )
+    results = db.execute(stmt).all()
+    
+    following_set = {row.channel_id for row in results}
+    return {cid: (cid in following_set) for cid in channel_ids}
 
 
 def create_join_request(

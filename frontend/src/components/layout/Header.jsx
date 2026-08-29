@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { FaChevronDown, FaBars, FaTimes } from 'react-icons/fa';
@@ -56,7 +56,7 @@ export const Header = () => {
     <header className="sticky top-0 z-50 w-full bg-[#F9F1E5] border-b border-[#E8D9C3] shadow-xs backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 min-h-[64px] flex items-center justify-between gap-2 sm:gap-3">
         <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
-          <img
+          <imgloading="lazy" 
             src={cloudinaryUrl(IMAGES.logo, { width: 40, height: 40, crop: 'fit', quality: 'auto' })}
             alt="Aapli Wari Logo"
             className="w-10 h-10 object-contain rounded-[12px]"

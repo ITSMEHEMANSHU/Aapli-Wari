@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaInstagram, FaFacebook, FaTwitter, FaYoutube } from 'react-icons/fa';
 import { FiHeart } from 'react-icons/fi';
@@ -42,7 +42,7 @@ export const Footer = () => {
       <div className="max-w-7xl mx-auto px-6 pt-16 pb-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8">
         <div className="lg:col-span-2">
           <Link to="/" className="inline-flex items-center gap-3 mb-4 group">
-            <img
+            <imgloading="lazy" 
               src={cloudinaryUrl(IMAGES.logo, { width: 44, height: 44, crop: 'fit', quality: 'auto' })}
               alt="Aapli Wari Logo"
               className="w-11 h-11 object-contain rounded-xl shadow-xs group-hover:scale-105 transition-transform duration-300"

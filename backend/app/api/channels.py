@@ -3,6 +3,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+import time
+
+_CHANNEL_CACHE = {}
+CACHE_TTL = 60
+
+def invalidate_channel_cache():
+    global _CHANNEL_CACHE
+    _CHANNEL_CACHE.clear()
 
 from backend.app.core.security import get_current_user
 from backend.app.db.database import get_db
@@ -45,6 +53,7 @@ from backend.app.services.channels.channel_service import (
     remove_contributor,
     set_channel_status,
     update_channel,
+    get_follow_status_batch,
 )
 from backend.app.services.channels.post_service import create_channel_post, list_channel_posts
 
@@ -135,11 +144,13 @@ def create(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return create_channel(
+    channel = create_channel(
         db=db,
         data=data,
         creator=current_user,
     )
+    invalidate_channel_cache()
+    return channel
 
 
 @router.get(
@@ -147,15 +158,48 @@ def create(
     response_model=list[ChannelResponse],
 )
 def list_all(
+    limit: int = 100,
+    offset: int = 0,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    channels = list_channels(db=db)
+    cache_key = f"{limit}:{offset}"
+    now = time.time()
+    
+    cached_data = None
+    if cache_key in _CHANNEL_CACHE:
+        data, timestamp = _CHANNEL_CACHE[cache_key]
+        if now - timestamp < CACHE_TTL:
+            cached_data = data
+            
+    if cached_data is None:
+        channels = list_channels(db=db, limit=limit, offset=offset)
+        cached_data = []
+        for channel in channels:
+            ch = get_channel_with_followers_count(db=db, channel_id=channel.id)
+            # Create a dictionary to cache so we avoid DetachedInstanceError
+            ch_dict = {
+                "id": ch.id,
+                "name": ch.name,
+                "description": ch.description,
+                "status": ch.status,
+                "created_by_user_id": ch.created_by_user_id,
+                "palkhi_id": ch.palkhi_id,
+                "created_at": ch.created_at,
+                "updated_at": ch.updated_at,
+                "followers_count": getattr(ch, "followers_count", 0)
+            }
+            cached_data.append(ch_dict)
+            
+        _CHANNEL_CACHE[cache_key] = (cached_data, now)
+
     result = []
-    for channel in channels:
-        ch = get_channel_with_followers_count(db=db, channel_id=channel.id)
-        ch.__dict__["is_owner"] = bool(current_user and str(ch.created_by_user_id) == str(current_user.id))
-        result.append(ch)
+    for ch_dict in cached_data:
+        # Create a fresh copy to inject user-specific 'is_owner'
+        ch_copy = ch_dict.copy()
+        ch_copy["is_owner"] = bool(current_user and str(ch_copy["created_by_user_id"]) == str(current_user.id))
+        result.append(ch_copy)
+        
     return result
 
 
@@ -190,6 +234,31 @@ def my_join_requests(
         db=db,
         requester=current_user,
     )
+
+
+@router.get(
+    "/follow-status-batch",
+    response_model=dict[UUID, bool],
+)
+def follow_status_batch(
+    ids: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get follow status for multiple channels. ids is a comma-separated list of UUIDs."""
+    channel_ids = []
+    for cid in ids.split(","):
+        cid = cid.strip()
+        if cid:
+            try:
+                channel_ids.append(UUID(cid))
+            except ValueError:
+                pass
+    
+    if not channel_ids:
+        return {}
+        
+    return get_follow_status_batch(db, current_user.id, channel_ids)
 
 
 # =========================================================
@@ -245,11 +314,13 @@ def update(
             detail="Only the channel owner or an administrator can update this channel",
         )
 
-    return update_channel(
+    updated = update_channel(
         db=db,
         channel=channel,
         data=data,
     )
+    invalidate_channel_cache()
+    return updated
 
 
 # =========================================================
@@ -455,6 +526,7 @@ def add_contributor(
         channel=channel,
         contributor_id=data.user_id,
     )
+    invalidate_channel_cache()
 
     return {
         "message": "Contributor assigned successfully",
@@ -490,6 +562,7 @@ def delete_contributor(
         channel=channel,
         contributor_id=user_id,
     )
+    invalidate_channel_cache()
 
     return {
         "message": "Contributor removed successfully",
@@ -521,11 +594,13 @@ def change_status(
             detail="Only the channel owner or an administrator can change channel status",
         )
 
-    return set_channel_status(
+    updated = set_channel_status(
         db=db,
         channel=channel,
         new_status=new_status,
     )
+    invalidate_channel_cache()
+    return updated
 
 
 # =========================================================
@@ -563,6 +638,7 @@ def follow_channel(
         )
     )
     db.commit()
+    invalidate_channel_cache()
     return {"message": "Now following this channel", "is_following": True}
 
 
@@ -589,6 +665,7 @@ def unfollow_channel(
     if result.rowcount == 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not following this channel")
 
+    invalidate_channel_cache()
     return {"message": "Unfollowed channel", "is_following": False}
 
 

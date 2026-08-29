@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+﻿import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../context/LanguageContext';
@@ -529,7 +529,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
           <div className="px-6 pt-6 pb-4 flex flex-col items-center text-center">
             <div className="relative mb-3">
               {channel.avatar_url || channel.image_url ? (
-                <img
+                <imgloading="lazy" 
                   alt={channel.name}
                   className="w-28 h-28 lg:w-32 lg:h-32 rounded-full object-cover border-2 border-[#a13f09] p-1 bg-white shadow-sm"
                   src={channel.avatar_url || channel.image_url}
@@ -937,7 +937,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                       {post.file_url && (
                         <div className="mt-3 rounded-xl overflow-hidden border border-[#dfbfbc]/30 bg-gray-50">
                           {post.content_type === 'image' ? (
-                            <img src={post.file_url} alt={post.title || 'Announcement'} className="w-full max-h-80 object-cover" />
+                            <img loading="lazy" src={post.file_url} alt={post.title || 'Announcement'} className="w-full max-h-80 object-cover" />
                           ) : (
                             <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="p-3 flex items-center gap-2 font-label-md text-xs font-bold text-[#6a020a]">
                               <FiFile size={16} /> {t('channelPage.announcements.viewDoc')}
@@ -1046,7 +1046,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                           {post.file_url && (
                             <div className="mt-2 rounded-xl overflow-hidden border border-[#FFDBCD]">
                               {post.content_type === 'image' && (
-                                <img
+                                <imgloading="lazy" 
                                   src={post.file_url}
                                   alt="Attachment"
                                   className="w-full max-h-72 object-cover rounded-lg cursor-pointer"
@@ -1105,7 +1105,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                           
                           {/* Image Thumbnail if attached */}
                           {post.file_url && post.content_type === 'image' && (
-                            <img
+                            <imgloading="lazy" 
                               src={post.file_url}
                               alt="Attachment"
                               className="w-full max-h-64 object-cover rounded-xl mb-2 border border-[#dfbfbc]/20 cursor-pointer"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FiVideo, FiImage, FiMusic, FiFile, FiSearch, FiEye, FiX } from 'react-icons/fi';
 
@@ -65,7 +65,7 @@ function MediaPreview({ item }) {
 
   if (item.content_type === 'image' && item.file_url && !imgError) {
     return (
-      <img
+      <imgloading="lazy" 
         src={item.file_url}
         alt={item.title}
         className="w-full h-36 sm:h-40 object-cover rounded-[12px] mb-3"
