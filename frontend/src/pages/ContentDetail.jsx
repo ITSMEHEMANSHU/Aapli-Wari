@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -5,6 +6,15 @@ import {
   FiBookmark,
   FiShare,
   FiTag,
+=======
+﻿import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { 
+  FiHeart, 
+  FiBookmark, 
+  FiShare, 
+  FiTag, 
+>>>>>>> c509d5551049bc6c3991793c15449a5982aefd58
   FiArrowLeft,
   FiUser,
   FiCalendar,
@@ -179,8 +189,13 @@ export const ContentDetail = ({ isAdminView = false }) => {
     switch (mediaType) {
       case 'image':
         return (
+<<<<<<< HEAD
           <img
             src={content.file_url}
+=======
+          <img loading="lazy" 
+            src={content.file_url} 
+>>>>>>> c509d5551049bc6c3991793c15449a5982aefd58
             alt={content.title}
             className="w-full max-h-[500px] object-contain rounded-lg bg-gray-100"
           />

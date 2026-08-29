@@ -52,15 +52,6 @@ export const AuthProvider = ({ children }) => {
         const fullUser = await fetchUserWithPermissions();
         setUser(fullUser);
         localStorage.setItem('user', JSON.stringify(fullUser));
-        const currentUser = await api.me();
-        const cachedUser = JSON.parse(localStorage.getItem('user') || '{}');
-        const restoredUser = {
-          ...currentUser,
-          name: currentUser.full_name || currentUser.username || cachedUser.name,
-          role: normalizeRole(cachedUser.role || currentUser.role || ''),
-        };
-        setUser(restoredUser);
-        localStorage.setItem('user', JSON.stringify(restoredUser));
       } catch {
         logout();
       } finally {
@@ -82,19 +73,6 @@ export const AuthProvider = ({ children }) => {
     setUser(fullUser);
     localStorage.setItem('user', JSON.stringify(fullUser));
     return fullUser;
-    const currentUser = await api.me();
-    const storedRole = normalizeRole(response.role || currentUser?.role || '');
-
-    const authenticatedUser = {
-      ...currentUser,
-      name: currentUser.full_name || currentUser.username,
-      role: storedRole,
-    };
-
-    setUser(authenticatedUser);
-    localStorage.setItem('user', JSON.stringify(authenticatedUser));
-
-    return authenticatedUser;
   };
 
   const register = async (userData) => {
@@ -176,20 +154,22 @@ export const AuthProvider = ({ children }) => {
 
   const canContribute = () => {
     if (isAdmin()) return true;
-    return isContributorApplied();
+    return user?.role === 'contributor' || user?.role === 'palkhi_pramukh' || isContributorApplied();
   };
 
   const canCreateChannel = () => {
-    return isAdmin() || normalizeRole(user?.role) === 'palkhi_pramukh' || isPalkhiPramukhApplied();
+    if (isAdmin()) return true;
+    return user?.role === 'palkhi_pramukh' || isPalkhiPramukhApplied();
   };
 
   const canManageChannel = () => {
-    return isAdmin() || normalizeRole(user?.role) === 'palkhi_pramukh' || isPalkhiPramukhApplied();
+    if (isAdmin()) return true;
+    return user?.role === 'palkhi_pramukh' || isPalkhiPramukhApplied();
   };
 
   const canApproveContributors = () => {
     if (isAdmin()) return true;
-    return isPalkhiPramukhApplied();
+    return user?.role === 'palkhi_pramukh' || isPalkhiPramukhApplied();
   };
 
   const isContributor = () => {

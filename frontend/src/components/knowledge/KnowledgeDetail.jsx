@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { FaCheckCircle, FaEdit, FaHistory, FaBookOpen, FaChevronRight } from 'react-icons/fa';
 import { CATEGORIES } from './data/knowledgeData';
 
@@ -29,7 +29,7 @@ export const KnowledgeDetail = ({ item, onOpenSuggest, onOpenHistory }) => {
         <div className="text-lg font-serif text-[#DD6B35] mb-4">{item.vernacularTitle}</div>
 
         {item.fileUrl && item.contentType === 'image' && (
-          <img
+          <imgloading="lazy" 
             src={item.fileUrl}
             alt={item.title}
             className="w-full max-h-[500px] object-contain rounded-lg bg-[#FDF8F0] mb-6"

@@ -540,6 +540,20 @@ export const ChannelPage = ({ isAdminView = false }) => {
         {/* ========================================================================= */}
         {/* LEFT COLUMN: Fixed, Scrollable (Hidden on Mobile, 30% on Desktop)         */}
         {/* ========================================================================= */}
+        <aside className="hidden md:flex flex-col w-[30%] h-full bg-[#fbf2ed] border-r border-[#dfbfbc]/30 relative overflow-y-auto no-scrollbar pb-6 z-10 shadow-[4px_0_12px_rgba(106,2,10,0.02)] shrink-0">
+          
+          {/* Header / Profile Section */}
+          <div className="px-6 pt-6 pb-4 flex flex-col items-center text-center">
+            <div className="relative mb-3">
+              {channel.avatar_url || channel.image_url ? (
+                <img
+loading="lazy" 
+                  alt={channel.name}
+                  className="w-28 h-28 lg:w-32 lg:h-32 rounded-full object-cover border-2 border-[#a13f09] p-1 bg-white shadow-sm"
+                  src={channel.avatar_url || channel.image_url}
+                />
+              ) : (
+                <div className="w-28 h-28 lg:w-32 lg:h-32 rounded-full bg-gradient-to-br from-[#6a020a] to-[#a13f09] flex items-center justify-center text-white text-4xl lg:text-5xl font-headline-lg font-bold shadow-md border-2 border-[#a13f09] p-1 ring-2 ring-white">
         <aside className="w-full lg:w-[32%] xl:w-[30%] bg-white border-b lg:border-b-0 lg:border-r border-[#E8DFC8] flex flex-col overflow-y-auto shrink-0 shadow-sm">
 
           {/* Top back button & Mobile Breadcrumb */}
@@ -918,17 +932,17 @@ export const ChannelPage = ({ isAdminView = false }) => {
                             {post.message || post.description}
                           </p>
 
-                          {post.file_url && (
-                            <div className="mt-3 rounded-xl overflow-hidden border border-gray-100 bg-gray-50">
-                              {post.content_type === 'image' ? (
-                                <img src={post.file_url} alt={post.title || 'Announcement'} className="w-full max-h-80 object-cover" />
-                              ) : (
-                                <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="p-3 flex items-center gap-2 text-xs font-bold text-[#8B1E1E]">
-                                  <FiFile size={16} /> View Attached Document
-                                </a>
-                              )}
-                            </div>
+                      {post.file_url && (
+                        <div className="mt-3 rounded-xl overflow-hidden border border-[#dfbfbc]/30 bg-gray-50">
+                          {post.content_type === 'image' ? (
+                            <img src={post.file_url} alt={post.title || 'Announcement'} className="w-full max-h-80 object-cover" />
+                          ) : (
+                            <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="p-3 flex items-center gap-2 font-label-md text-xs font-bold text-[#6a020a]">
+                              <FiFile size={16} /> {t('channelPage.announcements.viewDoc')}
+                            </a>
                           )}
+                        </div>
+                      )}
 
                           <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
                             <div className="flex items-center gap-2">

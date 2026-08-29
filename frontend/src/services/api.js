@@ -156,6 +156,9 @@ export const api = {
   getFollowStatus: (channelId) =>
     request(`/channels/${channelId}/follow-status`),
 
+  getFollowStatusBatch: (channelIds) =>
+    request('/channels/follow-status-batch', { params: { ids: channelIds.join(',') } }),
+
   // =========================
   // Contributors
   // =========================

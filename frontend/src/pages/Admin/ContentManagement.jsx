@@ -142,7 +142,7 @@ export const ContentManagement = () => {
             <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-all group">
               <div className="relative h-48 bg-[#FDF8F0] overflow-hidden">
                 {item.file_url && item.content_type === 'image' ? (
-                  <img src={item.file_url} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <img loading="lazy" src={item.file_url} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     {typeIcons[item.content_type] || <FiFile className="text-[#8b3a3a] text-4xl" />}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useMemo, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FiCheckCircle,
@@ -27,57 +27,91 @@ export const ChannelList = () => {
   const [followingMap, setFollowingMap] = useState({});
   const [followingLoading, setFollowingLoading] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
+  
+  // Pagination state
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const LIMIT = 20;
 
   // ── Load All Channels ───────────────────────────────────────────
-  useEffect(() => {
-    const loadChannels = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const data = await api.channels();
-        setChannels(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error('Failed to load channels:', err);
-        setError(err.message || 'Failed to load channels');
-      } finally {
-        setLoading(false);
+  const loadChannels = async (currentOffset = 0, append = false) => {
+    try {
+      if (!append) setLoading(true);
+      else setLoadingMore(true);
+      
+      setError('');
+      const data = await api.channels({ limit: LIMIT, offset: currentOffset });
+      
+      const newChannels = Array.isArray(data) ? data : [];
+      
+      if (append) {
+        setChannels(prev => {
+          // Avoid duplicates by checking IDs
+          const existingIds = new Set(prev.map(c => c.id));
+          const uniqueNew = newChannels.filter(c => !existingIds.has(c.id));
+          return [...prev, ...uniqueNew];
+        });
+      } else {
+        setChannels(newChannels);
       }
-    };
+      
+      if (newChannels.length < LIMIT) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
+    } catch (err) {
+      console.error('Failed to load channels:', err);
+      setError(err.message || 'Failed to load channels');
+    } finally {
+      if (!append) setLoading(false);
+      else setLoadingMore(false);
+    }
+  };
 
-    loadChannels();
-  }, [user]);
+  useEffect(() => {
+    loadChannels(0, false);
+  }, [user]); // user is in dep array to reload properly on auth change
+
+  const handleLoadMore = () => {
+    if (loading || loadingMore || !hasMore) return;
+    const newOffset = offset + LIMIT;
+    setOffset(newOffset);
+    loadChannels(newOffset, true);
+  };
 
   // ── Fetch Follow Status For Authenticated Users ─────────────────
   useEffect(() => {
     if (!user || channels.length === 0) return;
 
     const fetchFollowStatuses = async () => {
-      const map = {};
-      await Promise.all(
-        channels.map(async (ch) => {
-          // If the user owns the channel, they don't need follow status
-          const isOwner = ch.is_owner === true || (user && String(ch.created_by_user_id) === String(user.id));
-          if (isOwner) {
-            map[ch.id] = false;
-            return;
-          }
-          try {
-            const data = await api.getFollowStatus(ch.id);
-            map[ch.id] = Boolean(data?.is_following);
-          } catch {
-            map[ch.id] = false;
-          }
-        })
-      );
-      setFollowingMap(map);
+      // Find channels where user is not the owner
+      const channelsToFetch = channels.filter(ch => {
+        const isOwner = ch.is_owner === true || (user && String(ch.created_by_user_id) === String(user.id));
+        return !isOwner;
+      });
+
+      if (channelsToFetch.length === 0) return;
+
+      const idsToFetch = channelsToFetch.map(ch => ch.id).filter(id => followingMap[id] === undefined);
+      if (idsToFetch.length === 0) return;
+
+      try {
+        const statuses = await api.getFollowStatusBatch(idsToFetch);
+        setFollowingMap(prev => ({ ...prev, ...statuses }));
+      } catch (err) {
+        console.error('Failed to load batch follow statuses:', err);
+        // Fallback or ignore
+      }
     };
 
     fetchFollowStatuses();
-  }, [user, channels]);
+  }, [user, channels]); // dependencies ensure it runs when new channels are loaded
 
   // ── Follow / Unfollow Handler ──────────────────────────────────
-  const handleFollowToggle = async (channelId, e) => {
+  const handleFollowToggle = useCallback(async (channelId, e) => {
     e.stopPropagation();
     if (!user) {
       navigate('/login', { state: { from: '/channels' } });
@@ -112,7 +146,7 @@ export const ChannelList = () => {
     } finally {
       setFollowingLoading((prev) => ({ ...prev, [channelId]: false }));
     }
-  };
+  }, [user, followingMap, navigate]);
 
   // ── Handle "Create Channel" Gateway Button ──────────────────────
   const handleCreateChannelClick = () => {
@@ -130,15 +164,15 @@ export const ChannelList = () => {
   };
 
   // ── Computed Channel Groups ─────────────────────────────────────
-  const isChannelOwnedByUser = (ch) => {
+  const isChannelOwnedByUser = useCallback((ch) => {
     if (!user) return false;
     if (ch.is_owner === true) return true;
     if (typeof isOwnerOfChannel === 'function' && isOwnerOfChannel(ch)) return true;
     return String(ch.created_by_user_id) === String(user.id);
-  };
+  }, [user, isOwnerOfChannel]);
 
-  const userOwnedChannels = channels.filter(isChannelOwnedByUser);
-  const otherChannels = channels.filter((ch) => !isChannelOwnedByUser(ch));
+  const userOwnedChannels = useMemo(() => channels.filter(isChannelOwnedByUser), [channels, isChannelOwnedByUser]);
+  const otherChannels = useMemo(() => channels.filter((ch) => !isChannelOwnedByUser(ch)), [channels, isChannelOwnedByUser]);
   const userHasChannel = userOwnedChannels.length > 0;
 
   // ── 1. Loading State ──
@@ -249,12 +283,26 @@ export const ChannelList = () => {
           </div>
         )}
       </section>
+
+      {/* Pagination / Load More */}
+      {hasMore && (
+        <div className="flex justify-center mt-6">
+          <Button 
+            variant="outline" 
+            onClick={handleLoadMore} 
+            disabled={loadingMore}
+            className="text-sm font-semibold px-6 border-[#E8D9C3] text-[#2B1B12]"
+          >
+            {loadingMore ? 'Loading...' : 'Load More Channels'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
 
 /* ── Unified Channel Card Component ── */
-const ChannelCard = ({
+const ChannelCard = memo(({
   channel,
   navigate,
   isOwner = false,
@@ -367,6 +415,6 @@ const ChannelCard = ({
       </div>
     </Card>
   );
-};
+});
 
 export default ChannelList;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FiPlay, FiEye, FiClock, FiHeart, FiShare2 } from 'react-icons/fi';
 import { api } from '../../services/api';
@@ -118,7 +118,7 @@ export const AaplaTheva = () => {
                 {/* Media Preview */}
                 <div className="relative bg-[#FDF8F0] aspect-video overflow-hidden">
                   {short.content_type === 'image' && short.file_url && (
-                    <img 
+                    <img loading="lazy" 
                       src={short.file_url} 
                       alt={short.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

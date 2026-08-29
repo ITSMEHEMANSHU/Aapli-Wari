@@ -55,6 +55,7 @@ function MediaPreview({ item }) {
   if (item.content_type === 'image' && item.file_url && !imgError) {
     return (
       <img
+loading="lazy" 
         src={item.file_url}
         alt={item.title}
         className="w-full aspect-square object-cover rounded-[12px] mb-0 group-hover:brightness-95 transition-all duration-300"
