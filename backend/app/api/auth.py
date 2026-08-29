@@ -19,6 +19,7 @@ from backend.app.models.user import User
 from backend.app.schemas.auth import (
     ContributorApplyRequest,
     LoginRequest,
+    PalkhiPramukhApplyRequest,
     PalkhiPramukhSignupRequest,
     SignupRequest,
     TokenResponse,
@@ -30,6 +31,7 @@ from backend.app.services.users.user_service import (
     create_user,
     get_user_by_id,
     upgrade_to_contributor,
+    upgrade_to_palkhi_pramukh,
 )
 
 
@@ -339,6 +341,42 @@ def apply_contributor(
     return {
         "message": "Contributor registration successful",
         "role": user.role,
+    }
+
+
+@router.post("/apply-palkhi-pramukh")
+def apply_palkhi_pramukh(
+    data: PalkhiPramukhApplyRequest,
+    current_user: User = Depends(authorize_request),
+    db: Session = Depends(get_db),
+):
+    if current_user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+        )
+
+    if not data.palkhi_name or not data.palkhi_name.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Palkhi name is required",
+        )
+
+    user, palkhi = upgrade_to_palkhi_pramukh(
+        db=db,
+        user=current_user,
+        palkhi_name=data.palkhi_name.strip(),
+        palkhi_description=data.palkhi_description.strip() if data.palkhi_description else None,
+    )
+
+    return {
+        "message": "Palkhi Pramukh registration successful",
+        "role": user.role,
+        "palkhi": {
+            "id": str(palkhi.id),
+            "name": palkhi.name,
+            "description": palkhi.description,
+        },
     }
 
 

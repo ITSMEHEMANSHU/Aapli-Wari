@@ -18,6 +18,7 @@ export const ROUTES = {
   SETTINGS: '/settings',
   CONTRIBUTE: '/contribute',
   APPLY_CONTRIBUTOR: '/apply-contributor',
+  APPLY_PALKHI_PRAMUKH: '/apply-palkhi-pramukh',
   ADMIN: '/admin',
   ADMIN_USERS: '/admin/users',
   ADMIN_CHANNELS: '/admin/channels',

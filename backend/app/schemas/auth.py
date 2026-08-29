@@ -45,3 +45,9 @@ class ContributorApplyRequest(BaseModel):
     email: EmailStr
     mobile: str
     consent: bool = True
+
+
+class PalkhiPramukhApplyRequest(BaseModel):
+    palkhi_name: str
+    palkhi_description: str | None = None
+    consent: bool = True

@@ -250,12 +250,26 @@ export const ChannelList = () => {
     );
   }
 
+  const handleCreateChannelClick = () => {
+    if (!user) {
+      navigate('/login', { state: { from: '/channel/create' } });
+      return;
+    }
+    if (user.role === 'palkhi_pramukh' || user.role === 'admin') {
+      navigate('/channel/create');
+    } else {
+      navigate('/apply-palkhi-pramukh', { state: { from: '/channel/create' } });
+    }
+  };
+
   /* ── 6. Normal User View ── */
   return (
     <div className="max-w-5xl mx-auto space-y-8 p-4">
       <HeaderSection 
         title="Palkhi Channels" 
         subtitle="Follow live route updates, announcements, and traditional schedules" 
+        showCreateButton={true}
+        onCreateClick={handleCreateChannelClick}
       />
 
       {channels.length === 0 ? (
@@ -272,10 +286,22 @@ export const ChannelList = () => {
 };
 
 /* ── Common Page Header ── */
-const HeaderSection = ({ title, subtitle }) => (
-  <div className="border-b border-[#E8D9C3] pb-4">
-    <h1 className="text-2xl font-bold text-[#2B1B12]">{title}</h1>
-    <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+const HeaderSection = ({ title, subtitle, showCreateButton = false, onCreateClick }) => (
+  <div className="border-b border-[#E8D9C3] pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 className="text-2xl font-bold text-[#2B1B12]">{title}</h1>
+      <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+    </div>
+    {showCreateButton && (
+      <Button 
+        variant="primary" 
+        size="sm" 
+        className="bg-[#DD6B35] text-white flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+        onClick={onCreateClick}
+      >
+        <FiPlus className="text-sm" /> Create Channel
+      </Button>
+    )}
   </div>
 );
 

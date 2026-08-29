@@ -112,6 +112,14 @@ export const AuthProvider = ({ children }) => {
     return isContributor();
   };
 
+  const isPalkhiPramukh = () => {
+    return ['palkhi_pramukh', 'admin'].includes(user?.role);
+  };
+
+  const canCreateChannel = () => {
+    return isPalkhiPramukh();
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -124,6 +132,8 @@ export const AuthProvider = ({ children }) => {
       hasRole,
       isContributor,
       hasContributePermission,
+      isPalkhiPramukh,
+      canCreateChannel,
       isAuthenticated: !!user
     }}>
       {children}

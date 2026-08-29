@@ -22,6 +22,7 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import OTPVerification from './components/auth/OTPVerification';
 import { ContributorRegistration } from './pages/ContributorRegistration';
+import { PalkhiPramukhRegistration } from './pages/PalkhiPramukhRegistration';
 
 // Public Components
 import Search from './components/public/Search';
@@ -83,6 +84,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/apply-contributor" element={<ContributorRegistration />} />
+              <Route path="/apply-palkhi-pramukh" element={<PalkhiPramukhRegistration />} />
               <Route path="/verify-otp" element={<OTPVerification />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/profile/:id" element={<Profile />} />

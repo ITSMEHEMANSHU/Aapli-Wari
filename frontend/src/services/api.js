@@ -79,6 +79,12 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  applyPalkhiPramukh: (data) =>
+    request('/auth/apply-palkhi-pramukh', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   roles: () => request('/auth/roles'),
 
   me: () => request('/auth/me'),

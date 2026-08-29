@@ -5,7 +5,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from backend.app.models.contributor_profile import ContributorProfile
-from backend.app.models.rbac import Role
+from backend.app.models.palkhi import Palkhi
+from backend.app.models.palkhi_pramukh_profile import PalkhiPramukhProfile
+from backend.app.models.rbac import Role, VerificationStatus
 from backend.app.models.user import User
 
 
@@ -82,3 +84,77 @@ def upgrade_to_contributor(
     db.refresh(user)
 
     return user
+
+
+def upgrade_to_palkhi_pramukh(
+    db: Session,
+    user: User,
+    palkhi_name: str,
+    palkhi_description: str | None = None,
+) -> tuple[User, Palkhi]:
+
+    pramukh_role = db.scalar(
+        select(Role).where(Role.name == "palkhi_pramukh")
+    )
+
+    if pramukh_role is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Role 'palkhi_pramukh' not found in database",
+        )
+
+    # 1. Update user role
+    user.role_id = pramukh_role.id
+    user.role = pramukh_role.name
+
+    # 2. Create or update palkhi_pramukh_profile
+    pramukh_profile = db.get(PalkhiPramukhProfile, user.id)
+    if pramukh_profile is None:
+        pramukh_profile = PalkhiPramukhProfile(
+            user_id=user.id,
+            verification_status="approved",
+        )
+        db.add(pramukh_profile)
+    else:
+        pramukh_profile.verification_status = "approved"
+
+    # 3. Look for approved verification status
+    approved_status = db.scalar(
+        select(VerificationStatus).where(VerificationStatus.name == "approved")
+    )
+    if approved_status is None:
+        approved_status = db.scalar(
+            select(VerificationStatus).where(VerificationStatus.name == "pending")
+        )
+
+    if approved_status is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Verification status 'approved' not found in database",
+        )
+
+    # 4. Check if user already owns a palkhi
+    existing_palkhi = db.scalar(
+        select(Palkhi).where(Palkhi.owner_user_id == user.id)
+    )
+    if existing_palkhi:
+        palkhi = existing_palkhi
+        if palkhi_name and palkhi.name != palkhi_name:
+            palkhi.name = palkhi_name
+        if palkhi_description:
+            palkhi.description = palkhi_description
+        palkhi.verification_status_id = approved_status.id
+    else:
+        palkhi = Palkhi(
+            name=palkhi_name,
+            description=palkhi_description,
+            owner_user_id=user.id,
+            verification_status_id=approved_status.id,
+        )
+        db.add(palkhi)
+
+    db.commit()
+    db.refresh(user)
+    db.refresh(palkhi)
+
+    return user, palkhi
