@@ -330,8 +330,12 @@ export const ChannelPage = ({ isAdminView = false }) => {
     (a, b) => new Date(a.created_at) - new Date(b.created_at)
   );
 
+  const adminFeedPosts = [...posts].sort(
+    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+  );
+
   const canPostChat = !adminView && Boolean(user) && (canContribute?.() || canManageChannel?.() || isOwner || isMember);
-  const canCreateAnnouncement = Boolean(user) && (canManageChannel?.() || isOwner || user?.role === 'admin');
+  const canCreateAnnouncement = !adminView && Boolean(user) && (canManageChannel?.() || isOwner || user?.role === 'admin');
   const hasEmergencyContact = Boolean(channel?.emergency_contact_name || channel?.emergency_contact_phone);
 
   const TABS = [
@@ -752,7 +756,42 @@ export const ChannelPage = ({ isAdminView = false }) => {
                   </div>
                 )}
 
-                {/* Announcements List */}
+                {/* Admins need the complete channel feed, including content and chat posts. */}
+                {adminView ? (
+                  adminFeedPosts.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
+                      <div className="text-5xl mb-3">🪧</div>
+                      <h3 className="text-base font-bold text-[#2B1B12]">No Channel Updates Yet</h3>
+                      <p className="text-xs text-gray-500 mt-1">Posts and uploaded channel content will appear here.</p>
+                    </div>
+                  ) : (
+                    adminFeedPosts.map((post) => (
+                      <article key={`admin-feed-${post.id}`} className="rounded-2xl border border-[#E8DFC8] bg-white p-4 sm:p-5 shadow-xs">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#8B1E1E]">
+                            {post.is_announcement ? 'Official Announcement' : post.content_type ? 'Channel Content' : 'Channel Chat'}
+                          </span>
+                          <span className="text-[11px] font-medium text-gray-400">{timeAgo(post.created_at)}</span>
+                        </div>
+                        {post.title && post.title !== 'Channel Post' && (
+                          <h4 className="text-base font-bold text-[#2B1B12] mb-1.5">{post.title}</h4>
+                        )}
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+                          {post.message || post.description || 'Uploaded channel content'}
+                        </p>
+                        {post.file_url && (
+                          <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-[#8B1E1E]">
+                            <FiFile size={15} /> View attached file
+                          </a>
+                        )}
+                        <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+                          Posted by {post.user?.full_name || post.user?.username || 'Channel user'}
+                        </div>
+                      </article>
+                    ))
+                  )
+                ) : (
+                /* Announcements List */
                 {announcementPosts.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
                     <div className="text-5xl mb-3">🪧</div>
@@ -823,6 +862,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                       </div>
                     </article>
                   ))
+                )}
                 )}
               </div>
             )}
