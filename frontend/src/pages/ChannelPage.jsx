@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../services/api';
 import {
@@ -42,10 +42,12 @@ import Badge from '../components/common/Badge';
 import Loader from '../components/common/Loader';
 import Modal from '../components/common/Modal';
 
-export const ChannelPage = () => {
+export const ChannelPage = ({ isAdminView = false }) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, canContribute, canManageChannel, isPalkhiPramukhApplied } = useAuth();
+  const location = useLocation();
+  const { user, loading: authLoading, canContribute, canManageChannel, isPalkhiPramukhApplied } = useAuth();
+  const adminView = isAdminView || location.pathname.startsWith('/admin/');
   
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -150,12 +152,12 @@ export const ChannelPage = () => {
 
   // Check Follow Status
   useEffect(() => {
-    if (user && channel && !isOwner) {
+    if (!authLoading && user && channel && !isOwner && !adminView) {
       api.getFollowStatus(id)
         .then((data) => setIsFollowing(Boolean(data?.is_following)))
         .catch(() => {});
     }
-  }, [user, channel, isOwner, id]);
+  }, [authLoading, user, channel, isOwner, adminView, id]);
 
   // Pre-fill emergency contact state
   useEffect(() => {
@@ -181,6 +183,7 @@ export const ChannelPage = () => {
   };
 
   const handleFollowToggle = async () => {
+    if (adminView) return;
     if (!user) {
       navigate('/login', { state: { from: `/channel/${id}` } });
       return;
@@ -204,6 +207,7 @@ export const ChannelPage = () => {
   };
 
   const handleJoinChannel = async () => {
+    if (adminView) return;
     if (!user) {
       navigate('/login', { state: { message: 'Please log in to join channels.' } });
       return;
@@ -326,8 +330,12 @@ export const ChannelPage = () => {
     (a, b) => new Date(a.created_at) - new Date(b.created_at)
   );
 
-  const canPostChat = Boolean(user) && (canContribute?.() || canManageChannel?.() || isOwner || isMember);
-  const canCreateAnnouncement = Boolean(user) && (canManageChannel?.() || isOwner || user?.role === 'admin');
+  const adminFeedPosts = [...posts].sort(
+    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+  );
+
+  const canPostChat = !adminView && Boolean(user) && (canContribute?.() || canManageChannel?.() || isOwner || isMember);
+  const canCreateAnnouncement = !adminView && Boolean(user) && (canManageChannel?.() || isOwner || user?.role === 'admin');
   const hasEmergencyContact = Boolean(channel?.emergency_contact_name || channel?.emergency_contact_phone);
 
   const TABS = [
@@ -378,10 +386,10 @@ export const ChannelPage = () => {
           {/* Top back button & Mobile Breadcrumb */}
           <div className="px-5 py-4 border-b border-[#F0E6D8] flex items-center justify-between">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate(adminView ? '/admin/channels' : -1)}
               className="inline-flex items-center text-xs font-semibold text-[#8B1E1E] hover:text-[#DD6B35] transition-colors"
             >
-              <FiArrowLeft className="mr-1.5" size={15} /> All Channels
+              <FiArrowLeft className="mr-1.5" size={15} /> {adminView ? 'Admin Channels' : 'All Channels'}
             </button>
             <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#FBF5EC] text-[#8B1E1E] border border-[#E8D9C3]">
               {channel.type || 'Palkhi Channel'}
@@ -417,7 +425,11 @@ export const ChannelPage = () => {
 
               {/* Action Buttons */}
               <div className="w-full mt-4 flex items-center gap-2">
-                {user && !isOwner ? (
+                {adminView ? (
+                  <div className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#FDF8F0] text-[#6d2325] border border-[#E8D9C3] text-center shadow-sm">
+                    Admin Read-Only View
+                  </div>
+                ) : user && !isOwner ? (
                   <button
                     onClick={handleFollowToggle}
                     disabled={followLoading}
@@ -744,6 +756,42 @@ export const ChannelPage = () => {
                   </div>
                 )}
 
+                {/* Admins need the complete channel feed, including content and chat posts. */}
+                {adminView ? (
+                  adminFeedPosts.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
+                      <div className="text-5xl mb-3">🪧</div>
+                      <h3 className="text-base font-bold text-[#2B1B12]">No Channel Updates Yet</h3>
+                      <p className="text-xs text-gray-500 mt-1">Posts and uploaded channel content will appear here.</p>
+                    </div>
+                  ) : (
+                    adminFeedPosts.map((post) => (
+                      <article key={`admin-feed-${post.id}`} className="rounded-2xl border border-[#E8DFC8] bg-white p-4 sm:p-5 shadow-xs">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#8B1E1E]">
+                            {post.is_announcement ? 'Official Announcement' : post.content_type ? 'Channel Content' : 'Channel Chat'}
+                          </span>
+                          <span className="text-[11px] font-medium text-gray-400">{timeAgo(post.created_at)}</span>
+                        </div>
+                        {post.title && post.title !== 'Channel Post' && (
+                          <h4 className="text-base font-bold text-[#2B1B12] mb-1.5">{post.title}</h4>
+                        )}
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+                          {post.message || post.description || 'Uploaded channel content'}
+                        </p>
+                        {post.file_url && (
+                          <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-[#8B1E1E]">
+                            <FiFile size={15} /> View attached file
+                          </a>
+                        )}
+                        <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+                          Posted by {post.user?.full_name || post.user?.username || 'Channel user'}
+                        </div>
+                      </article>
+                    ))
+                  )
+                ) : (
+                <>
                 {/* Announcements List */}
                 {announcementPosts.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
@@ -815,6 +863,8 @@ export const ChannelPage = () => {
                       </div>
                     </article>
                   ))
+                )}
+                </>
                 )}
               </div>
             )}

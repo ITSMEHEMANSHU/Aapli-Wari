@@ -11,9 +11,8 @@ from backend.app.api import search
 from backend.app.api import engagement
 from backend.app.api import chat
 from backend.app.api import shorts
-
-
 from backend.app.api import amenities
+from backend.app.api import admin
 
 
 
@@ -24,11 +23,14 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
     ],
     allow_credentials=True,
     allow_methods=["*"],

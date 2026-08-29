@@ -110,7 +110,7 @@ export const api = {
 
   // Palkhi & Channels
   myPalkhi: () => request('/channels/palkhis/me'),
-  channels: () => request('/channels'),
+  channels: (params = {}) => request('/channels', { params }),
   myChannelMemberships: () => request('/channels/my-memberships'),
   myJoinRequests: () => request('/channels/my-join-requests'),
   channel: (id) => request(`/channels/${id}`),
@@ -346,6 +346,24 @@ short: (id) =>
 
   // Permissions & Profile Applications
   getMyPermissions: () => request('/users/me/permissions'),
+  // =========================
+// Admin
+// =========================
+
+users: (params = {}) => request('/admin/users', { params }),
+updateUserRole: (userId, role) =>
+  request(`/admin/users/${userId}/role`, {
+    method: 'PATCH',
+    body: JSON.stringify({ role }),
+  }),
+updateUserStatus: (userId, isActive) =>
+  request(`/admin/users/${userId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ is_active: isActive }),
+  }),
+
+  getAdminStats: () => request('/admin/stats'),
+    
 };
 
 export default api;
