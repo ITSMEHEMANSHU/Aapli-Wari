@@ -107,7 +107,7 @@ class ContentService:
         limit: int = 20,
         offset: int = 0
     ) -> List[Content]:
-        query = db.query(Content)
+        query = db.query(Content).options(joinedload(Content.user))
         
         if user_id:
             query = query.filter(Content.user_id == user_id)
@@ -149,16 +149,18 @@ class ContentService:
                 query = query.filter(or_(*category_filters))
 
         if search_query:
-            query = query.filter(
-                or_(
-                    Content.title.ilike(f"%{search_query}%"),
-                    Content.vernacular_title.ilike(f"%{search_query}%"),
-                    Content.description.ilike(f"%{search_query}%"),
-                    Content.tags.contains([search_query])
+            search_value = search_query.strip()
+            if search_value:
+                query = query.filter(
+                    or_(
+                        Content.title.ilike(f"%{search_value}%"),
+                        Content.vernacular_title.ilike(f"%{search_value}%"),
+                        Content.description.ilike(f"%{search_value}%"),
+                        Content.tags.contains([search_value])
+                    )
                 )
-            )
         
-        return query.order_by(Content.created_at.desc()).limit(limit).offset(offset).all()
+        return query.order_by(Content.created_at.desc(), Content.id.desc()).limit(limit).offset(offset).all()
 
     @staticmethod
     def update_content(db: Session, content_id: UUID, update_data: ContentUpdate, user_id: UUID) -> Optional[Content]:

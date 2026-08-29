@@ -102,3 +102,29 @@ export function cardImage(publicId) {
 export function heroImage(publicId) {
   return cloudinaryUrl(publicId, { width: 1600, crop: 'fit', quality: 'auto' });
 }
+
+export function videoUrl(publicId, options = {}) {
+  const { quality = 'auto', format = 'mp4' } = options;
+  const transforms = [`q_${quality}`, `f_${format}`].filter(Boolean).join(',');
+  return `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/${transforms}/${publicId}.${format}`;
+}
+
+export function videoPosterUrl(publicId, options = {}) {
+  const {
+    width = 900,
+    height = 1600,
+    crop = 'fill',
+    quality = 'auto',
+    format = 'jpg',
+  } = options;
+
+  const transforms = [
+    `f_${format}`,
+    `q_${quality}`,
+    width && `w_${width}`,
+    height && `h_${height}`,
+    (width || height) && `c_${crop}`,
+  ].filter(Boolean).join(',');
+
+  return `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/${transforms}/${publicId}.${format}`;
+}

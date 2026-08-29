@@ -6,6 +6,7 @@ from typing import Optional
 from backend.app.db.database import get_db
 from backend.app.core.security import authorize_request
 from backend.app.models.user import User
+from backend.app.services.cache_service import build_cache_key, cache_get, cache_set
 from backend.app.services.search.search_service import hybrid_search
 
 router = APIRouter(prefix="/search", tags=["Search"])
@@ -36,7 +37,21 @@ def search(
     # If user is not authenticated, only show public content
     if not current_user:
         verified_only = True
-    
+
+    cache_key = build_cache_key(
+        'search',
+        q=q.strip(),
+        content_type=content_type,
+        language=language,
+        channel_id=str(channel_id) if channel_id else None,
+        verified_only=verified_only,
+        limit=limit,
+        offset=offset,
+    )
+    cached = cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     results = hybrid_search(
         db=db,
         query=q,
@@ -47,9 +62,11 @@ def search(
         limit=limit,
         offset=offset
     )
-    
-    return {
+
+    payload = {
         "query": q,
         "count": len(results),
         "results": results
     }
+    cache_set(cache_key, payload, ttl=180)
+    return payload

@@ -710,4 +710,4 @@ def update_emergency_contact(
         "emergency_contact_name": palkhi.emergency_contact_name,
         "emergency_contact_phone": palkhi.emergency_contact_phone,
         "emergency_contact_role": palkhi.emergency_contact_role,
-    }
+    }
