@@ -13,13 +13,14 @@ export const Header = () => {
   const { language, setLanguage, t, languageOptions } = useLanguage();
 
   const navLinks = [
-    { label: 'Explore',    to: '/explore' },
-    { label: 'Map',        to: '/map' },
-    { label: 'Channels',   to: '/channels' },
-    { label: 'AI Help',    to: '/ai-assistant' },
-    { label: 'Contribute', to: '/contribute' },
+    { label: t('nav.explore') || 'Explore', to: '/explore' },
+    { label: t('nav.map') || 'Map', to: '/map' },
+    { label: t('nav.channels') || 'Channels', to: '/channels' },
+    { label: 'AI Help', to: '/ai-assistant' },
+    { label: user && !canContribute?.() ? 'Become a Contributor' : (t('nav.contribute') || 'Contribute'), to: '/contribute' },
     { label: 'Aapla Theva', to: '/knowledgepage' },
-  ]
+  ];
+
   const isContributorUser = typeof canContribute === 'function' ? canContribute() : false;
 
   const handleContributeClick = (e) => {
