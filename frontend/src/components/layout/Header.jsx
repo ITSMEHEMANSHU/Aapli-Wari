@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { FaChevronDown, FaBars, FaTimes } from 'react-icons/fa';
 
@@ -8,19 +8,20 @@ import { FaChevronDown, FaBars, FaTimes } from 'react-icons/fa';
  */
 export const Header = () => {
   const { user, isAuthenticated, hasContributePermission } = useAuth();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleContributeClick = (e) => {
-    e.preventDefault();
+    if (e?.preventDefault) e.preventDefault();
     if (!isAuthenticated) {
-      window.location.href = '/login';
+      navigate('/login', { state: { from: '/contribute' } });
       return;
     }
-    if (!hasContributePermission()) {
-      window.location.href = '/apply-contributor';
+    if (hasContributePermission && !hasContributePermission()) {
+      navigate('/apply-contributor', { state: { from: '/contribute' } });
       return;
     }
-    window.location.href = '/contribute';
+    navigate('/contribute');
   };
 
   const navLinks = [
