@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { FaChevronDown, FaBars, FaTimes } from 'react-icons/fa';
 import { IMAGES, cloudinaryUrl } from '../../utils/cloudinary';
 import { useLanguage } from '../../context/LanguageContext';
-import SearchBar from '../common/SearchBar';
+import { ROUTES } from '../../routes';
 
 export const Header = () => {
   const { user, isAuthenticated, canContribute } = useAuth();
@@ -13,12 +13,12 @@ export const Header = () => {
   const { language, setLanguage, t, languageOptions } = useLanguage();
 
   const navLinks = [
-    { label: t('nav.explore') || 'Explore', to: '/explore' },
-    { label: t('nav.map') || 'Map', to: '/map' },
-    { label: t('nav.channels') || 'Channels', to: '/channels' },
-    { label: 'AI Help', to: '/ai-assistant' },
-    { label: user && !canContribute?.() ? 'Become a Contributor' : (t('nav.contribute') || 'Contribute'), to: '/contribute' },
-    { label: 'Aapla Theva', to: '/knowledgepage' },
+    { label: t('nav.explore') || 'Explore', to: ROUTES.EXPLORE },
+    { label: t('nav.map') || 'Map', to: ROUTES.MAP },
+    { label: t('nav.channels') || 'Channels', to: ROUTES.CHANNELS },
+    { label: 'AI Help', to: ROUTES.AI_ASSISTANT },
+    { label: user && !canContribute?.() ? 'Become a Contributor' : (t('nav.contribute') || 'Contribute'), to: ROUTES.CONTRIBUTE },
+    { label: 'Aapla Theva', to: ROUTES.KNOWLEDGE_PAGE },
   ];
 
   const isContributorUser = typeof canContribute === 'function' ? canContribute() : false;
@@ -27,16 +27,16 @@ export const Header = () => {
     if (e?.preventDefault) e.preventDefault();
 
     if (!isAuthenticated) {
-      navigate('/login', { state: { from: '/contribute' } });
+      navigate(ROUTES.LOGIN, { state: { from: ROUTES.CONTRIBUTE } });
       return;
     }
 
     if (!isContributorUser) {
-      navigate('/apply-contributor', { state: { from: '/contribute' } });
+      navigate(ROUTES.APPLY_CONTRIBUTOR, { state: { from: ROUTES.CONTRIBUTE } });
       return;
     }
 
-    navigate('/contribute');
+    navigate(ROUTES.CONTRIBUTE);
   };
 
   // const navLinks = [
@@ -54,7 +54,7 @@ export const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-[#F9F1E5] border-b border-[#E8D9C3] shadow-xs backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 min-h-[64px] flex items-center justify-between gap-2 sm:gap-3">
         <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
           <img
             src={cloudinaryUrl(IMAGES.logo, { width: 40, height: 40, crop: 'fit', quality: 'auto' })}
@@ -68,25 +68,21 @@ export const Header = () => {
           </div>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-1 text-sm font-semibold text-[#2D1B0E]">
+        <nav className="hidden lg:flex items-center gap-1 text-sm font-semibold text-[#2D1B0E] flex-1 justify-center min-w-0">
           {navLinks.map((link) => (
             <Link
               key={link.label}
               to={link.to}
               onClick={link.onClick}
-              className="px-4 py-2 rounded-full hover:text-[#E87A1E] hover:bg-orange-50 transition-all duration-200 whitespace-nowrap"
+              className="px-3 py-2 rounded-full hover:text-[#E87A1E] hover:bg-orange-50 transition-all duration-200 whitespace-nowrap"
             >
               {link.label}
             </Link>
           ))}
         </nav>
 
-        <div className="hidden md:flex flex-1 justify-center px-4">
-          <SearchBar />
-        </div>
-
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="hidden md:flex items-center relative">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto flex-wrap justify-end">
+          <div className="hidden md:flex items-center relative shrink-0">
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
@@ -106,7 +102,7 @@ export const Header = () => {
             <>
               <button
                 onClick={handleContributeClick}
-                className="hidden sm:inline-flex bg-[#E87A1E] hover:bg-[#C8521A] text-white px-4.5 py-2 rounded-xl transition text-sm font-bold shadow-sm active:scale-95 cursor-pointer"
+                className="hidden sm:inline-flex bg-[#E87A1E] hover:bg-[#C8521A] text-white px-3.5 py-2 rounded-xl transition text-sm font-bold shadow-sm active:scale-95 cursor-pointer whitespace-nowrap max-w-[180px] text-center leading-tight"
               >
                 {isContributorUser ? t('nav.contribute') : 'Become a Contributor'}
               </button>
@@ -162,7 +158,7 @@ export const Header = () => {
           )}
 
           <div className="pt-2 border-t border-[#D4A373]/30 flex gap-3 items-center">
-            <div className="relative">
+            <div className="relative shrink-0">
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}

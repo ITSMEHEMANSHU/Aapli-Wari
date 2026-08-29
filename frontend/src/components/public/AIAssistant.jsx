@@ -6,7 +6,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { api } from '../../services/api';
 
-// Error Boundary Class (Untouched)
+// Error Boundary Class
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -103,7 +103,6 @@ const AIAssistantContent = () => {
     }
   }, [messages, loading, scrollToBottom]);
 
-  // Untouched Handlers & Logic
   const handleSend = async (textToSend) => {
     const queryText = textToSend || question;
     if (!queryText.trim() || loading) return;
@@ -268,7 +267,7 @@ const AIAssistantContent = () => {
           </button>
         )}
 
-        {/* Input Form (Kept exactly as original) */}
+        {/* Input Form */}
         <form onSubmit={handleSubmit} className="p-3 sm:p-4 border-t border-[#e5dfd8] bg-[#efe8e0]/80">
           <div className="flex items-center gap-2">
             <Button 
