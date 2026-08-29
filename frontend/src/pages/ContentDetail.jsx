@@ -1,12 +1,3 @@
-<<<<<<< HEAD
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import {
-  FiHeart,
-  FiBookmark,
-  FiShare,
-  FiTag,
-=======
 ﻿import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
@@ -14,7 +5,6 @@ import {
   FiBookmark, 
   FiShare, 
   FiTag, 
->>>>>>> c509d5551049bc6c3991793c15449a5982aefd58
   FiArrowLeft,
   FiUser,
   FiCalendar,
@@ -189,24 +179,29 @@ export const ContentDetail = ({ isAdminView = false }) => {
     switch (mediaType) {
       case 'image':
         return (
-<<<<<<< HEAD
-          <img
-            src={content.file_url}
-=======
           <img loading="lazy" 
             src={content.file_url} 
->>>>>>> c509d5551049bc6c3991793c15449a5982aefd58
             alt={content.title}
             className="w-full max-h-[500px] object-contain rounded-lg bg-gray-100"
           />
         );
       case 'video':
         return (
-          <video
-            src={content.file_url}
-            controls
-            className="w-full max-h-[500px] rounded-lg bg-gray-100"
-          />
+          <div>
+            <video
+              src={content.file_url}
+              controls
+              className="w-full max-h-[500px] rounded-lg bg-gray-100"
+            />
+            {content.transcription && (
+              <div className="mt-4 rounded-lg border border-[#E8D9C3] bg-[#FDF8F0] p-4">
+                <p className="mb-1 text-sm font-semibold text-[#8B3A3A]">Transcript</p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#4A392E]">
+                  {content.transcription}
+                </p>
+              </div>
+            )}
+          </div>
         );
       case 'audio':
         return (
