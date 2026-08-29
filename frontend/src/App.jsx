@@ -31,6 +31,14 @@ import ManageChannel from './components/channel-management/ManageChannel';
 import ContributorManagement from './components/channel-management/ContributorManagement';
 import MapPage from './pages/MapPage';
 
+//Admin
+import AdminLayout from './pages/Admin/AdminLayout';
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import UserManagement from './pages/Admin/UserManagement';
+import ContentManagement from './pages/Admin/ContentManagement';
+import ChannelManagement from './pages/Admin/ChannelManagement';
+import AdminSettings  from './pages/Admin/Settings';
+
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
 
@@ -84,7 +92,15 @@ function App() {
               <Route path="/profile/:id" element={<Profile />} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/contribute" element={<ProtectedRoute><Contribute /></ProtectedRoute>} />
+              <Route path="/admin/*" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="users" element={<UserManagement />} />
+                <Route path="content" element={<ContentManagement />} />
+                <Route path="channels" element={<ChannelManagement />} />
+                <Route path="settings" element={<AdminSettings  />} />
+          </Route>
             </Routes>
+            
           </main>
           <Footer />
         </div>

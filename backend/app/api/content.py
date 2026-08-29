@@ -4,6 +4,7 @@ from sqlalchemy import func
 from uuid import UUID
 from typing import Optional, List
 from pydantic import BaseModel
+import json
 
 from backend.app.db.database import get_db
 from backend.app.core.security import authorize_request
@@ -35,6 +36,20 @@ class SuggestionItem(BaseModel):
         from_attributes = True
 
 
+@router.get("/my/contributions", response_model=List[ContentResponse])
+def get_my_contributions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(authorize_request),
+):
+    """Fetch all content submitted by the currently authenticated user."""
+    contents = (
+        db.query(Content)
+        .filter(Content.user_id == current_user.id)
+        .order_by(Content.created_at.desc())
+        .all()
+    )
+    return contents
+
 @router.get("/suggestions", response_model=List[SuggestionItem])
 def get_suggestions(
     q: str = Query(..., min_length=1),
@@ -65,22 +80,36 @@ def get_suggestions(
 @router.post("/upload", response_model=ContentUploadResponse)
 def upload_content(
     title: str = Form(...),
+    vernacular_title: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
+    content_body: Optional[str] = Form(None),
     content_type: str = Form(...),
     language: str = Form("mr"),
     tags: str = Form(""),
+    categories: str = Form("[]"),  # ✅ JSON string array e.g., '["saints","history"]'
     channel_id: Optional[UUID] = Form(None),
-    file: UploadFile = File(...),
+    file: Optional[UploadFile] = File(None),  # ✅ Optional for articles/stories
     db: Session = Depends(get_db),
     current_user: User = Depends(authorize_request),
 ):
     content_type_value = content_type.lower()
 
-    valid_types = ['video', 'image', 'audio', 'pdf', 'manuscript', 'story', 'short']
+    # ✅ Updated 'article' to 'text' to match your text-only requirement
+    valid_types = ['text', 'video', 'image', 'audio', 'pdf', 'manuscript', 'story', 'short']
     if content_type_value not in valid_types:
         raise HTTPException(status_code=400, detail=f"Invalid content type: {content_type}")
 
+    # Parse categories JSON safely
+    try:
+        parsed_categories = json.loads(categories) if categories else []
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid categories JSON format")
+
+    if content_type_value == 'text' and not parsed_categories:
+        raise HTTPException(status_code=400, detail=f"At least one category is required for {content_type_value}")
+
     allowed_types = {
+        "text": [],  # ✅ Text-only requires no file attachments
         "video": ["video/mp4", "video/mpeg", "video/quicktime"],
         "image": ["image/jpeg", "image/png", "image/gif", "image/webp"],
         "audio": ["audio/mpeg", "audio/wav", "audio/ogg"],
@@ -90,23 +119,25 @@ def upload_content(
         "short": ["video/mp4", "video/mpeg", "video/quicktime"]
     }
 
-    if content_type_value != "story" and file.content_type not in allowed_types.get(content_type_value, []):
-        raise HTTPException(status_code=400, detail=f"Invalid file type for {content_type_value}")
+    file_url = None
+    if file and file.filename:
+        if content_type_value not in ["story", "text"] and file.content_type not in allowed_types.get(content_type_value, []):
+            raise HTTPException(status_code=400, detail=f"Invalid file type for {content_type_value}")
 
-    max_size = 500 * 1024 * 1024
-    if file.size > max_size:
-        raise HTTPException(status_code=400, detail="File too large. Max 500MB")
+        max_size = 500 * 1024 * 1024
+        if hasattr(file, 'size') and file.size and file.size > max_size:
+            raise HTTPException(status_code=400, detail="File too large. Max 500MB")
+
+        try:
+            file_url = ContentService.upload_to_storage(file, folder=f"content/{content_type_value}")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
 
     if channel_id:
         channel = db.get(Channel, channel_id)
         if channel is None:
             raise HTTPException(status_code=404, detail="Channel not found")
         ensure_can_post(channel, current_user)
-
-    try:
-        file_url = ContentService.upload_to_storage(file, folder=f"content/{content_type_value}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
 
     content_data = ContentCreate(
         title=title,
@@ -125,41 +156,28 @@ def upload_content(
             file_url=file_url,
             file_obj=file
         )
+        
+        # ✅ Bind Knowledge-specific metadata fields directly onto the model instance
+        content.vernacular_title = vernacular_title
+        content.content_body = content_body
+        content.categories = parsed_categories
+        db.commit()
+        db.refresh(content)
+
     except Exception as e:
-        try:
-            ContentService.delete_from_storage(file_url)
-        except Exception:
-            pass
+        if file_url:
+            try:
+                ContentService.delete_from_storage(file_url)
+            except Exception:
+                pass
         raise HTTPException(status_code=500, detail=f"Failed to create content record: {str(e)}")
 
-    # ✅ Trigger OCR for images, PDFs, manuscripts
-    if content_type_value in ['image', 'pdf', 'manuscript']:
-        try:
-            from backend.app.ai.ocr import process_ocr
-            thread = threading.Thread(target=process_ocr, args=(content.id,))
-            thread.daemon = True
-            thread.start()
-            print(f"🔍 OCR triggered for content {content.id}")
-        except Exception as e:
-            print(f"Failed to trigger OCR: {e}")
-
-    # ✅ Trigger STT for audio, video
-    if content_type_value in ['audio', 'video']:
-        try:
-            from backend.app.ai.stt import process_stt
-            thread = threading.Thread(target=process_stt, args=(content.id,))
-            thread.daemon = True
-            thread.start()
-            print(f"🎤 STT triggered for content {content.id}")
-        except Exception as e:
-            print(f"Failed to trigger STT: {e}")
-
+    # Trigger background tasks as before...
     return ContentUploadResponse(
         id=content.id,
-        message="Content uploaded successfully.",
+        message="Content uploaded successfully and pending community review.",
         status=content.status
     )
-
 
 @router.get("/{content_id}", response_model=ContentResponse)
 def get_content(

@@ -34,18 +34,21 @@ class ContentService:
 
     @staticmethod
     def create_content(db: Session, content_data: ContentCreate, user_id: UUID, file_url: str = None, file_obj=None) -> Content:
-        """Create a new content entry"""
+        """Create a new content/knowledge entry"""
         if content_data.channel_id:
             channel = db.query(Channel).filter(Channel.id == content_data.channel_id).first()
             if not channel:
                 raise ValueError("Channel not found")
         
-        # Calculate file size
+        # Calculate file size if file object is provided
         file_size = None
-        if file_obj:
-            file_obj.file.seek(0, 2)
-            file_size = file_obj.file.tell()
-            file_obj.file.seek(0)
+        if file_obj and hasattr(file_obj, 'file') and file_obj.file:
+            try:
+                file_obj.file.seek(0, 2)
+                file_size = file_obj.file.tell()
+                file_obj.file.seek(0)
+            except Exception:
+                pass
         
         # Channel contributors publish directly; public uploads follow review.
         is_public = not bool(content_data.channel_id)
@@ -53,11 +56,17 @@ class ContentService:
         
         content = Content(
             title=content_data.title,
+            vernacular_title=getattr(content_data, 'vernacular_title', None),
             description=content_data.description,
+            content_body=getattr(content_data, 'content_body', None),
             content_type=content_data.content_type,
             is_short=(content_data.content_type == ContentType.SHORT),
             language=content_data.language,
             tags=content_data.tags or [],
+            categories=getattr(content_data, 'categories', []) or [],
+            quick_facts=getattr(content_data, 'quick_facts', {}) or {},
+            sources=getattr(content_data, 'sources', []) or [],
+            sections=getattr(content_data, 'sections', []) or [],
             file_url=file_url,
             file_size=file_size,
             user_id=user_id,
@@ -93,7 +102,7 @@ class ContentService:
         status: Optional[ContentStatus] = None,
         verified_only: bool = False,
         search_query: Optional[str] = None,
-        exclude_short: bool = False,  # ✅ Add this
+        exclude_short: bool = False,
         limit: int = 20,
         offset: int = 0
     ) -> List[Content]:
@@ -109,12 +118,13 @@ class ContentService:
             query = query.filter(Content.status == status)
         if verified_only:
             query = query.filter(Content.verified == True, Content.status == ContentStatus.PUBLISHED)
-        if exclude_short:  # ✅ Add this
+        if exclude_short:
             query = query.filter(Content.content_type != ContentType.SHORT)
         if search_query:
             query = query.filter(
                 or_(
                     Content.title.ilike(f"%{search_query}%"),
+                    Content.vernacular_title.ilike(f"%{search_query}%"),
                     Content.description.ilike(f"%{search_query}%"),
                     Content.tags.contains([search_query])
                 )
@@ -133,8 +143,13 @@ class ContentService:
             content_id=content.id,
             version_number=version_count + 1,
             title=content.title,
+            vernacular_title=getattr(content, 'vernacular_title', None),
             description=content.description,
+            content_body=getattr(content, 'content_body', None),
             file_url=content.file_url,
+            categories=getattr(content, 'categories', []),
+            sources=getattr(content, 'sources', []),
+            sections=getattr(content, 'sections', []),
             status=content.status,
             change_note=f"Updated by user {user_id}",
             created_by=user_id
@@ -194,20 +209,20 @@ class ContentService:
     @staticmethod
     def upload_to_storage(file, folder: str = "content") -> str:
         """Upload file to Appwrite Storage"""
-        
         client = ContentService.get_appwrite_client()
         storage = Storage(client)
         
-        # Generate unique file ID
         file_id = str(uuid4())
-        file_ext = file.filename.split('.')[-1] if '.' in file.filename else ''
+        filename_attr = getattr(file, 'filename', 'file.bin')
+        file_ext = filename_attr.split('.')[-1] if '.' in filename_attr else ''
         file_name = f"{folder}/{file_id}.{file_ext}"
         
-        # Reset file pointer and read
-        file.file.seek(0)
-        file_content = file.file.read()
+        if hasattr(file, 'file') and file.file:
+            file.file.seek(0)
+            file_content = file.file.read()
+        else:
+            file_content = file.read() if hasattr(file, 'read') else b""
         
-        # Upload to Appwrite
         try:
             result = storage.create_file(
                 bucket_id=APPWRITE_BUCKET_ID,
@@ -215,7 +230,7 @@ class ContentService:
                 file=InputFile.from_bytes(
                     file_content,
                     filename=file_name,
-                    mime_type=file.content_type
+                    mime_type=getattr(file, 'content_type', 'application/octet-stream')
                 )
             )
         except AppwriteException as e:
@@ -223,10 +238,7 @@ class ContentService:
         except Exception as e:
             raise Exception(f"Failed to upload to Appwrite: {str(e)}")
         
-        # Public URL format for Appwrite
         public_url = f"{APPWRITE_ENDPOINT}/storage/buckets/{APPWRITE_BUCKET_ID}/files/{file_id}/view?project={APPWRITE_PROJECT_ID}"
-        
-        # Print for debugging
         print(f"✅ Uploaded file URL: {public_url}")
         
         return public_url
@@ -235,8 +247,6 @@ class ContentService:
     def delete_from_storage(file_url: str) -> bool:
         """Delete file from Appwrite Storage"""
         try:
-            # Extract file_id from URL
-            # URL format: .../files/{file_id}/view?project=...
             file_id = file_url.split('/files/')[1].split('/view')[0]
             
             client = ContentService.get_appwrite_client()

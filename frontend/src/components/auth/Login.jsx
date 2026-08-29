@@ -25,8 +25,14 @@ export const Login = () => {
     setError('');
 
     try {
-      await login(email, password);
-      navigate('/');
+      const userData = await login(email, password);
+      const normalizedRole = String(userData?.role || '').trim().toLowerCase();
+
+      if (normalizedRole === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err.message || 'Invalid email or password. Please try again.');
     } finally {

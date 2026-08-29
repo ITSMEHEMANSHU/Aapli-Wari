@@ -11,9 +11,8 @@ from backend.app.api import search
 from backend.app.api import engagement
 from backend.app.api import chat
 from backend.app.api import shorts
-
-
 from backend.app.api import amenities
+from backend.app.api import admin
 
 
 
@@ -53,6 +52,8 @@ app.include_router(shorts.router)
 
 
 app.include_router(amenities.router)
+app.include_router(admin.router)
+
 
 
 @app.get("/")
