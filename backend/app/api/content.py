@@ -21,6 +21,7 @@ from backend.app.schemas.content import (
     ContentReviewRequest
 )
 from backend.app.services.content.content_service import ContentService
+from backend.app.services.cache_service import build_cache_key, cache_get, cache_set
 import threading
 
 router = APIRouter(prefix="/content", tags=["content"])
@@ -261,7 +262,23 @@ def list_content(
         if not category_list:
             category_list = None
 
-    return ContentService.get_content_list(
+    cache_key = build_cache_key(
+        'content_list',
+        content_type=content_type_enum.value if content_type_enum else None,
+        language=language,
+        channel_id=str(channel_id) if channel_id else None,
+        verified_only=verified_only,
+        search=search,
+        exclude_short=exclude_short,
+        categories=category_list,
+        limit=limit,
+        offset=offset,
+    )
+    cached = cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    items = ContentService.get_content_list(
         db,
         content_type=content_type_enum,
         channel_id=channel_id,
@@ -272,6 +289,10 @@ def list_content(
         limit=limit,
         offset=offset
     )
+
+    result = [ContentResponse.model_validate(item).model_dump(mode='json') for item in items]
+    cache_set(cache_key, result, ttl=180)
+    return result
 
 
 @router.put("/{content_id}", response_model=ContentResponse)

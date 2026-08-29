@@ -239,7 +239,8 @@ export const Home = () => {
 
           <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-[#E8D9C3]/50 bg-[#1F1008]">
             <div className="relative h-[360px] sm:h-[400px] w-full overflow-hidden">
-              <imgloading="lazy" 
+              <img
+loading="lazy" 
                 src={cardImage(carouselSlides[currentSlide].imageKey)}
                 alt={carouselSlides[currentSlide].title}
                 className={`w-full h-full object-cover transition-all duration-700 ease-in-out ${
