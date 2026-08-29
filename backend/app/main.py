@@ -3,7 +3,6 @@ from backend.app.api import admin
 from backend.app.api import auth
 from backend.app.api import rbac_test
 from backend.app.api import users
-from backend.app.core.security import authorize_request
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.api import channels
 from backend.app.api import content
@@ -41,10 +40,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(admin.router)
-app.include_router(
-    rbac_test.router,
-    dependencies=[Depends(authorize_request)],
-)
+app.include_router(rbac_test.router)
 
 app.include_router(channels.router)
 app.include_router(content.router)

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaSpinner } from 'react-icons/fa';
+import { useSearchParams } from 'react-router-dom';
+import { FaSpinner } from 'react-icons/fa';
 
 import { api } from '../services/api';
 import { KnowledgeHero } from '../components/knowledge/KnowledgeHero';
@@ -31,7 +32,10 @@ const normalizeKnowledgeItem = (item) => ({
 });
 
 export const KnowledgePage = () => {
-  const [activeTab, setActiveTab] = useState('browse');
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(
+    searchParams.get('tab') === 'contribute' ? 'contribute' : 'browse'
+  );
 
   // Real Data States
   const [items, setItems] = useState([]);
@@ -99,8 +103,8 @@ export const KnowledgePage = () => {
     <div className="min-h-screen bg-[#FDF8F0] text-[#2B1B12] font-sans antialiased">
 
       {/* HEADER NAVIGATION BAR */}
-      <header className="sticky top-0 z-30 bg-[#FFFDF9]/90 backdrop-blur-md border-b border-[#E8D9C3] px-4 py-2.5 sm:px-6 flex items-center justify-between">
-        <nav className="flex items-center gap-1.5">
+      <header className="sticky top-0 z-30 bg-[#FFFDF9]/90 backdrop-blur-md border-b border-[#E8D9C3] px-4 py-2.5 sm:px-6 flex items-center justify-between gap-3">
+        <nav className="flex items-center gap-1.5 min-w-0 overflow-x-auto">
           <button
             onClick={() => setActiveTab('browse')}
             className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${activeTab === 'browse' || activeTab === 'detail' ? 'bg-[#DD6B35]/10 text-[#DD6B35]' : 'text-[#4A392E]/70 hover:bg-[#F5EAD9]'}`}
@@ -119,13 +123,13 @@ export const KnowledgePage = () => {
           >
             Community Review <span className="ml-1 px-1.5 bg-[#DD6B35] text-white rounded-full text-[9px]">18</span>
           </button>
-          <button
-            onClick={() => setActiveTab('contribute')}
-            className="ml-1 px-3 py-1 bg-[#DD6B35] hover:bg-[#C85A28] text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm"
-          >
-            <FaPlus className="text-[9px]" /> Contribute
-          </button>
         </nav>
+        <button
+          onClick={() => setActiveTab('contribute')}
+          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#DD6B35] hover:bg-[#C85A28] text-white rounded-lg text-xs font-bold transition shadow-sm"
+        >
+          Contribute
+        </button>
       </header>
 
       {/* BODY */}
