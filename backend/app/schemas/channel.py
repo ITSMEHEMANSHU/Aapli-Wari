@@ -50,6 +50,8 @@ class ChannelResponse(BaseModel):
     emergency_contact_name: str | None = None
     emergency_contact_phone: str | None = None
     emergency_contact_role: str | None = None
+    owner_name: str | None = None
+    is_owner: bool = False
 
 
 class ChannelPostCreate(BaseModel):

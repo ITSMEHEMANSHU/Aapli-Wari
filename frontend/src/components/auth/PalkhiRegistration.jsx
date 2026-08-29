@@ -43,8 +43,8 @@ export const PalkhiRegistration = () => {
         name: formData.name,
         description: formData.description,
       });
-      // After successful palkhi registration, redirect to dashboard or channel creation
-      navigate('/channels');
+      // After successful palkhi registration, redirect to create channel
+      navigate('/channel/create', { replace: true });
     } catch (err) {
       setError(err.message || 'Failed to register Palkhi. Please try again.');
     } finally {

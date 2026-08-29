@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
 import {
   FiArrowLeft,
@@ -20,7 +21,6 @@ import {
   FiUserPlus,
   FiUserCheck,
   FiEdit2,
-  FiInfo,
   FiGrid,
   FiList,
   FiPaperclip,
@@ -32,9 +32,10 @@ import {
   FiMapPin,
   FiAlertTriangle,
   FiShield,
-  FiX
+  FiX,
+  FiSettings,
+  FiStar
 } from 'react-icons/fi';
-import { FaWhatsapp } from 'react-icons/fa';
 import Button from '../components/common/Button';
 import Avatar from '../components/common/Avatar';
 import Card from '../components/common/Card';
@@ -47,8 +48,11 @@ export const ChannelPage = ({ isAdminView = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading: authLoading, canContribute, canManageChannel, isPalkhiPramukhApplied } = useAuth();
+  const { t, language } = useLanguage();
   const adminView = isAdminView || location.pathname.startsWith('/admin/');
-  
+  const canContributePermission = typeof canContribute === 'function' ? canContribute() : false;
+  const canManageChannelPermission = typeof canManageChannel === 'function' ? canManageChannel() : false;
+
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -66,39 +70,84 @@ export const ChannelPage = ({ isAdminView = false }) => {
   const [joinRequestPending, setJoinRequestPending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingPosts, setLoadingPosts] = useState(true);
+  const [notice, setNotice] = useState(null);
 
   // Tab & View States
   const [activeTab, setActiveTab] = useState('announcements'); // 'announcements' | 'chat' | 'map' | 'info'
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Input & Post States
+  // Modals
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+  const [showContributorsModal, setShowContributorsModal] = useState(false);
+
+  // Input & Posting States (Chat & Announcements)
   const [newPost, setNewPost] = useState('');
-  const [postMedia, setPostMedia] = useState(null);
-  const [posting, setPosting] = useState(false);
-
-  // Announcement Form States
   const [newAnnouncement, setNewAnnouncement] = useState('');
   const [announcementPinned, setAnnouncementPinned] = useState(false);
+  const [postMedia, setPostMedia] = useState(null);
+  const [posting, setPosting] = useState(false);
   const [postingAnnouncement, setPostingAnnouncement] = useState(false);
+  const [replyToPost, setReplyToPost] = useState(null);
 
-  // Emergency Contact States
-  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
-  const [emergencyContact, setEmergencyContact] = useState({ name: '', phone: '', role: '' });
+  // Local state for toggle-like system per user
+  const likedPostsStorageKey = user ? `wari_liked_posts_${user.id}` : 'wari_liked_posts_guest';
+  const [likedPostIds, setLikedPostIds] = useState(() => {
+    try {
+      const stored = localStorage.getItem(likedPostsStorageKey);
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Keep track of optimistic reaction delta per post
+  const [reactionMap, setReactionMap] = useState({});
+
+  // Synchronize localStorage when user changes
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(likedPostsStorageKey);
+      setLikedPostIds(stored ? JSON.parse(stored) : {});
+    } catch {
+      setLikedPostIds({});
+    }
+  }, [likedPostsStorageKey]);
+
+  // Emergency contact edit state
+  const [emergencyContact, setEmergencyContact] = useState({
+    name: '',
+    phone: '',
+    role: '',
+  });
   const [savingEmergency, setSavingEmergency] = useState(false);
 
-  // Modal States
-  const [showInfoModal, setShowInfoModal] = useState(false);
-  const [showContributorsModal, setShowContributorsModal] = useState(false);
+  const showNotice = (text, type = 'info') => {
+    setNotice({ text, type });
+  };
+
+  const scrollToBottom = () => {
+    if (activeTab === 'chat') {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   // Auto-scroll chat to bottom
   useEffect(() => {
-    if (activeTab === 'chat' && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    scrollToBottom();
   }, [posts, activeTab]);
+
+  useEffect(() => {
+    if (!notice) return undefined;
+    const timer = setTimeout(() => setNotice(null), 3500);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
   // Fetch Channel & Contributors Data
   useEffect(() => {
     const fetchChannelData = async () => {
+      if (!id) return;
+
       try {
         setLoading(true);
         const channelData = await api.channel(id);
@@ -106,42 +155,42 @@ export const ChannelPage = ({ isAdminView = false }) => {
         setFollowersCount(channelData.followers_count || 0);
 
         if (user && channelData) {
-          const userIsOwner = channelData.created_by_user_id === user.id;
+          const userIsOwner = channelData.is_owner === true || String(channelData.created_by_user_id) === String(user.id);
           setIsOwner(userIsOwner);
 
-          // Check membership
           try {
             const memberships = await api.myChannelMemberships();
             const memberIds = new Set((memberships || []).map((c) => c.id));
             setIsMember(memberIds.has(channelData.id));
           } catch (memErr) {
             console.warn('Could not fetch user memberships:', memErr);
+            setIsMember(false);
           }
 
-          // Check pending join request
-          if (canContribute && canContribute() && !userIsOwner) {
+          if (!userIsOwner && canContributePermission) {
             try {
               const myRequest = await api.myJoinRequest(id);
-              if (myRequest && myRequest.status === 'pending') {
-                setJoinRequestPending(true);
-              }
+              setJoinRequestPending(Boolean(myRequest && myRequest.status === 'pending'));
             } catch {
               setJoinRequestPending(false);
             }
+          } else {
+            setJoinRequestPending(false);
           }
         }
 
-        // Fetch Contributors
         try {
           const contribs = await api.channelContributors(id);
-          setContributors(contribs || []);
+          setContributors(Array.isArray(contribs) ? contribs : []);
         } catch (contribErr) {
           console.warn('Could not fetch channel contributors:', contribErr);
+          setContributors([]);
         }
 
         await fetchPosts();
       } catch (error) {
         console.error('Failed to load channel:', error);
+        showNotice('Unable to load this channel right now. Please try again.', 'error');
       } finally {
         setLoading(false);
       }
@@ -152,10 +201,10 @@ export const ChannelPage = ({ isAdminView = false }) => {
 
   // Check Follow Status
   useEffect(() => {
-    if (!authLoading && user && channel && !isOwner && !adminView) {
+    if (!authLoading && user && channel && !isOwner && !adminView && id) {
       api.getFollowStatus(id)
         .then((data) => setIsFollowing(Boolean(data?.is_following)))
-        .catch(() => {});
+        .catch(() => setIsFollowing(false));
     }
   }, [authLoading, user, channel, isOwner, adminView, id]);
 
@@ -171,12 +220,16 @@ export const ChannelPage = ({ isAdminView = false }) => {
   }, [channel]);
 
   const fetchPosts = async () => {
+    if (!id) return;
+
     try {
       setLoadingPosts(true);
       const channelPosts = await api.channelPosts(id);
-      setPosts(channelPosts || []);
+      setPosts(Array.isArray(channelPosts) ? channelPosts : []);
     } catch (error) {
       console.error('Failed to fetch posts:', error);
+      setPosts([]);
+      showNotice('Unable to load channel updates. Please refresh the page.', 'error');
     } finally {
       setLoadingPosts(false);
     }
@@ -188,19 +241,25 @@ export const ChannelPage = ({ isAdminView = false }) => {
       navigate('/login', { state: { from: `/channel/${id}` } });
       return;
     }
+
     try {
       setFollowLoading(true);
       if (isFollowing) {
         await api.unfollowChannel(id);
-        setIsFollowing(false);
-        setFollowersCount((prev) => Math.max(0, prev - 1));
+        showNotice('You unfollowed this channel.', 'success');
       } else {
         await api.followChannel(id);
-        setIsFollowing(true);
-        setFollowersCount((prev) => prev + 1);
+        showNotice('You are now following this channel.', 'success');
       }
+
+      const refreshedChannel = await api.channel(id);
+      setChannel(refreshedChannel);
+      setFollowersCount(Number(refreshedChannel?.followers_count || 0));
+      const status = await api.getFollowStatus(id);
+      setIsFollowing(Boolean(status?.is_following));
     } catch (err) {
       console.error('Follow toggle failed:', err);
+      showNotice(err?.message || 'Unable to update follow status.', 'error');
     } finally {
       setFollowLoading(false);
     }
@@ -216,134 +275,248 @@ export const ChannelPage = ({ isAdminView = false }) => {
     try {
       await api.joinChannel(id);
       setJoinRequestPending(true);
+      showNotice('Your join request has been sent.', 'success');
     } catch (error) {
       console.error('Failed to join channel:', error);
+      showNotice(error?.message || 'Unable to request channel membership.', 'error');
+    }
+  };
+
+  const handleRemoveContributor = async (contributorId) => {
+    if (!canEditEmergencyContact) return;
+    try {
+      await api.removeChannelContributor(id, contributorId);
+      setContributors((prev) => prev.filter((c) => (c.id || c.user_id) !== contributorId));
+      showNotice('Contributor removed from channel.', 'success');
+    } catch (err) {
+      showNotice(err.message || 'Failed to remove contributor.', 'error');
     }
   };
 
   const handleSaveEmergencyContact = async (e) => {
     if (e) e.preventDefault();
+    const normalizedPhone = emergencyContact.phone.replace(/\s+/g, '').trim();
+
+    if (!normalizedPhone) {
+      showNotice('Please provide a valid emergency phone number.', 'error');
+      return;
+    }
+
     try {
       setSavingEmergency(true);
-      await api.updateEmergencyContact(id, {
-        emergency_contact_name: emergencyContact.name || null,
-        emergency_contact_phone: emergencyContact.phone || null,
-        emergency_contact_role: emergencyContact.role || null,
+      const updatedChannel = await api.updateEmergencyContact(id, {
+        emergency_contact_name: emergencyContact.name.trim() || 'Emergency Coordinator',
+        emergency_contact_phone: normalizedPhone,
+        emergency_contact_role: emergencyContact.role.trim() || 'Pramukh / Seva Head',
       });
-      setChannel((prev) => ({
-        ...prev,
-        emergency_contact_name: emergencyContact.name,
-        emergency_contact_phone: emergencyContact.phone,
-        emergency_contact_role: emergencyContact.role,
-      }));
+
+      setChannel(updatedChannel);
       setShowEmergencyModal(false);
+      showNotice('Emergency helpline saved successfully.', 'success');
     } catch (err) {
       console.error('Failed to save emergency contact:', err);
+      showNotice(err.message || 'Unable to save emergency contact.', 'error');
     } finally {
       setSavingEmergency(false);
     }
   };
 
   const handlePostAnnouncement = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!newAnnouncement.trim()) return;
+
     try {
       setPostingAnnouncement(true);
       await api.createAnnouncement(id, {
         message: newAnnouncement.trim(),
         is_pinned: announcementPinned,
       });
+
       setNewAnnouncement('');
       setAnnouncementPinned(false);
+      showNotice('Official announcement broadcasted successfully.', 'success');
       await fetchPosts();
-    } catch (err) {
-      console.error('Failed to post announcement:', err);
+    } catch (error) {
+      console.error('Failed to post announcement:', error);
+      showNotice(error.message || 'Unable to broadcast announcement.', 'error');
     } finally {
       setPostingAnnouncement(false);
     }
   };
 
   const handlePost = async (e) => {
-    e.preventDefault();
-    if (!newPost.trim() && !postMedia) return;
+    if (e) e.preventDefault();
+    if (adminView) return;
     if (!user) {
-      navigate('/login', { state: { message: 'Please log in to post in channels.' } });
+      navigate('/login', { state: { from: `/channel/${id}` } });
+      return;
+    }
+
+    if (!newPost.trim() && !postMedia) {
+      showNotice('Please enter a message or select an image/document.', 'error');
       return;
     }
 
     try {
       setPosting(true);
-      if (!postMedia) {
-        await api.createChannelPost(id, newPost);
-      } else {
-        const formData = new FormData();
-        const title = newPost.trim() || 'Channel Post';
-        formData.append('title', title.substring(0, 100));
-        formData.append('description', newPost);
-        formData.append('content_type', 
-          postMedia.type.startsWith('image/') ? 'image' :
-          postMedia.type.startsWith('video/') ? 'video' :
-          postMedia.type.startsWith('audio/') ? 'audio' : 'pdf'
-        );
-        formData.append('channel_id', id);
-        formData.append('language', 'en');
-        formData.append('tags', '');
-        formData.append('file', postMedia);
-        await api.uploadContent(formData);
+      let messageContent = newPost.trim();
+
+      if (replyToPost) {
+        const replyTag = `@${replyToPost.user?.full_name || replyToPost.user?.username || 'sevak'}`;
+        messageContent = `${replyTag} ${messageContent}`;
       }
 
-      await fetchPosts();
+      if (postMedia) {
+        const payload = {
+          title: newPost.trim() || `Attachment - ${postMedia.name}`,
+          description: messageContent || `Uploaded ${postMedia.type.startsWith('image') ? 'Photo' : 'Document'}`,
+          content_type: postMedia.type.startsWith('image')
+            ? 'image'
+            : postMedia.type.startsWith('video')
+              ? 'video'
+              : postMedia.type.startsWith('audio')
+                ? 'audio'
+                : 'pdf',
+          channel_id: id,
+          language: 'mr',
+          tags: ['channel-post', channel?.name?.toLowerCase().replace(/\s+/g, '-')].filter(Boolean),
+        };
+
+        await api.uploadContent(payload, postMedia);
+        showNotice('Attachment shared with the channel.', 'success');
+      } else {
+        await api.createChannelPost(id, { message: messageContent });
+      }
+
       setNewPost('');
       setPostMedia(null);
+      setReplyToPost(null);
+      await fetchPosts();
     } catch (error) {
-      console.error('Failed to post message:', error);
+      console.error('Failed to send message:', error);
+      showNotice(error.message || 'Unable to post message.', 'error');
     } finally {
       setPosting(false);
     }
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) setPostMedia(file);
-    e.target.value = '';
-  };
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const timeAgo = (date) => {
-    if (!date) return '';
-    const diff = Math.floor((new Date() - new Date(date)) / 1000);
-    if (diff < 60) return `${diff}s`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-    if (diff < 604800) return `${Math.floor(diff / 86400)}d`;
-    return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-  };
-
-  // Filter and sort items
-  const announcementPosts = [...posts.filter((p) => p.is_announcement)].sort((a, b) => {
-    if (Number(Boolean(b.is_pinned)) !== Number(Boolean(a.is_pinned))) {
-      return Number(Boolean(b.is_pinned)) - Number(Boolean(a.is_pinned));
+    if (file.size > 25 * 1024 * 1024) {
+      showNotice('File size exceeds the 25MB limit.', 'error');
+      return;
     }
-    return new Date(b.created_at) - new Date(a.created_at);
-  });
+    setPostMedia(file);
+    showNotice(`Attached "${file.name}". Click send to share.`, 'info');
+  };
 
-  const chatPosts = [...posts.filter((p) => !p.is_announcement)].sort(
-    (a, b) => new Date(a.created_at) - new Date(b.created_at)
+  const handleToggleLike = (postId) => {
+    const currentLiked = Boolean(likedPostIds[postId]);
+    const nextLiked = !currentLiked;
+
+    const nextLikedMap = { ...likedPostIds, [postId]: nextLiked };
+    setLikedPostIds(nextLikedMap);
+
+    try {
+      localStorage.setItem(likedPostsStorageKey, JSON.stringify(nextLikedMap));
+    } catch (e) {
+      console.warn('Could not persist like state to localStorage', e);
+    }
+
+    setReactionMap((prev) => ({
+      ...prev,
+      [postId]: (prev[postId] || 0) + (nextLiked ? 1 : -1),
+    }));
+
+    if (nextLiked) {
+      api.likeChannelPost?.(id, postId).catch(() => {});
+    }
+  };
+
+  const handleSharePost = async (post) => {
+    const shareText = `🚩 *${channel?.name || 'Aapli Wari Palkhi'}* \n\n${post.message || post.description || ''}\n\nVia Aapli Wari: ${window.location.href}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: channel?.name || 'Aapli Wari Palkhi Update',
+          text: shareText,
+          url: window.location.href,
+        });
+      } catch {
+        // Fallback or user canceled
+      }
+    } else {
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+    }
+  };
+
+  const timeAgo = (dateString) => {
+    if (!dateString) return '';
+    const now = new Date();
+    const date = new Date(dateString);
+    const seconds = Math.floor((now - date) / 1000);
+
+    if (seconds < 60) return language === 'mr' ? 'आत्ताच' : 'Just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return language === 'mr' ? `${minutes} मिनीटांपूर्वी` : `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return language === 'mr' ? `${hours} तासांपूर्वी` : `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return language === 'mr' ? `${days} दिवसांपूर्वी` : `${days}d ago`;
+    return date.toLocaleDateString(language === 'mr' ? 'mr-IN' : 'en-GB', { day: 'numeric', month: 'short' });
+  };
+
+  // ─── Filtered Data Slices ──────────────────────────────────────────────────
+  const announcementPosts = useMemo(
+    () =>
+      [...posts.filter((p) => p.is_announcement)]
+        .filter((post) => {
+          if (!searchQuery.trim()) return true;
+          const text = `${post.message || ''} ${post.description || ''} ${post.title || ''}`.toLowerCase();
+          return text.includes(searchQuery.toLowerCase());
+        })
+        .sort((a, b) => {
+          if (Number(Boolean(b.is_pinned)) !== Number(Boolean(a.is_pinned))) {
+            return Number(Boolean(b.is_pinned)) - Number(Boolean(a.is_pinned));
+          }
+          return new Date(b.created_at) - new Date(a.created_at);
+        }),
+    [posts, searchQuery]
+  );
+
+  const chatPosts = useMemo(
+    () =>
+      [...posts.filter((p) => !p.is_announcement)]
+        .filter((post) => {
+          if (!searchQuery.trim()) return true;
+          const text = `${post.message || ''} ${post.description || ''} ${post.user?.full_name || ''} ${post.user?.username || ''}`.toLowerCase();
+          return text.includes(searchQuery.toLowerCase());
+        })
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at)),
+    [posts, searchQuery]
   );
 
   const adminFeedPosts = [...posts].sort(
     (a, b) => new Date(b.created_at) - new Date(a.created_at)
   );
 
-  const canPostChat = !adminView && Boolean(user) && (canContribute?.() || canManageChannel?.() || isOwner || isMember);
-  const canCreateAnnouncement = !adminView && Boolean(user) && (canManageChannel?.() || isOwner || user?.role === 'admin');
+  // ─── Permission Flags ───────────────────────────────────────────────────────
+  const isAdminUser = user?.role === 'admin';
+  // Chat is open to all authenticated users (Normal users, Contributors, Palkhi Pramukhs, Admins)
+  const canPostChat = !adminView && Boolean(user);
+  // Official Announcements & Emergency Contact editing remain restricted to Owner + Admin
+  const canCreateAnnouncement = !adminView && Boolean(user) && (isOwner || isAdminUser);
+  const canEditEmergencyContact = !adminView && Boolean(user) && (isOwner || isAdminUser);
   const hasEmergencyContact = Boolean(channel?.emergency_contact_name || channel?.emergency_contact_phone);
 
-  const TABS = [
-    { id: 'announcements', label: 'Announcements', icon: '📢' },
-    { id: 'chat', label: 'Chat', icon: '💬' },
-    { id: 'map', label: 'Route Map', icon: '📍' },
-    { id: 'info', label: 'About & Info', icon: 'ℹ️' },
-  ];
+  const TABS = useMemo(() => [
+    { id: 'announcements', label: t('channelPage.tabs.announcements'), icon: '📢' },
+    { id: 'chat', label: t('channelPage.tabs.chat'), icon: '💬' },
+    { id: 'map', label: t('channelPage.tabs.map'), icon: '📍' },
+    { id: 'info', label: t('channelPage.tabs.info'), icon: 'ℹ️' },
+  ], [language]);
 
   if (loading) {
     return (
@@ -387,12 +560,12 @@ export const ChannelPage = ({ isAdminView = false }) => {
           <div className="px-5 py-4 border-b border-[#F0E6D8] flex items-center justify-between">
             <button
               onClick={() => navigate(adminView ? '/admin/channels' : -1)}
-              className="inline-flex items-center text-xs font-semibold text-[#8B1E1E] hover:text-[#DD6B35] transition-colors"
+              className="inline-flex items-center text-xs font-semibold text-[#8B1E1E] hover:text-[#DD6B35] transition-colors cursor-pointer"
             >
-              <FiArrowLeft className="mr-1.5" size={15} /> {adminView ? 'Admin Channels' : 'All Channels'}
+              <FiArrowLeft className="mr-1.5" size={15} /> {adminView ? t('channelPage.backAdmin') : t('channelPage.backAll')}
             </button>
             <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#FBF5EC] text-[#8B1E1E] border border-[#E8D9C3]">
-              {channel.type || 'Palkhi Channel'}
+              {channel.type || t('channelPage.palkhiChannel')}
             </span>
           </div>
 
@@ -417,7 +590,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
               {/* Owner / Palkhi Pramukh subtitle */}
               <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-600 font-medium">
                 <FiShield className="text-[#DD6B35]" />
-                <span>Pramukh:</span>
+                <span>{t('channelPage.pramukh')}</span>
                 <span className="text-[#2B1B12] font-semibold">
                   {channel.owner_name || channel.created_by_name || 'Sant Palkhi Mandal'}
                 </span>
@@ -427,13 +600,13 @@ export const ChannelPage = ({ isAdminView = false }) => {
               <div className="w-full mt-4 flex items-center gap-2">
                 {adminView ? (
                   <div className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#FDF8F0] text-[#6d2325] border border-[#E8D9C3] text-center shadow-sm">
-                    Admin Read-Only View
+                    {t('channelPage.adminViewOnly')}
                   </div>
                 ) : user && !isOwner ? (
                   <button
                     onClick={handleFollowToggle}
                     disabled={followLoading}
-                    className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 ${
+                    className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer ${
                       isFollowing
                         ? 'bg-[#FBF5EC] text-[#8B1E1E] border border-[#DD6B35]/40 hover:bg-red-50'
                         : 'bg-[#DD6B35] text-white hover:bg-[#C85A28] active:scale-[0.98]'
@@ -443,48 +616,46 @@ export const ChannelPage = ({ isAdminView = false }) => {
                       <Loader size="xs" />
                     ) : isFollowing ? (
                       <>
-                        <FiUserCheck size={16} /> Following
+                        <FiUserCheck size={16} /> {t('channelPage.following')}
                       </>
                     ) : (
                       <>
-                        <FiUserPlus size={16} /> + Follow Channel
+                        <FiUserPlus size={16} /> {t('channelPage.followChannel')}
                       </>
                     )}
                   </button>
                 ) : isOwner ? (
-                  <Link
-                    to={`/channel/${id}/manage`}
-                    className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#8B1E1E] text-white hover:bg-[#701616] transition-all text-center flex items-center justify-center gap-2 shadow-sm"
-                  >
-                    <FiEdit2 size={14} /> Manage Channel
-                  </Link>
+                  <div className="flex-1 flex flex-col gap-2">
+                    <div className="py-1.5 px-3 rounded-xl text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200 text-center flex items-center justify-center gap-1.5">
+                      <FiStar size={11} className="text-amber-500" /> {t('channelPage.youAreOwner')}
+                    </div>
+                    <Link
+                      to={`/channel/${id}/manage`}
+                      className="py-2.5 px-4 rounded-xl text-xs font-bold bg-[#8B1E1E] text-white hover:bg-[#701616] transition-all text-center flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <FiSettings size={14} /> {t('channelPage.manageChannel')}
+                    </Link>
+                  </div>
                 ) : (
                   <button
                     onClick={() => navigate('/login', { state: { from: `/channel/${id}` } })}
-                    className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#DD6B35] text-white hover:bg-[#C85A28] transition-all flex items-center justify-center gap-2 shadow-sm"
+                    className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#DD6B35] text-white hover:bg-[#C85A28] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
                   >
-                    <FiUserPlus size={16} /> Follow Channel
+                    <FiUserPlus size={16} /> {t('channelPage.followChannel')}
                   </button>
                 )}
 
-                <button
-                  onClick={() => setShowInfoModal(true)}
-                  className="p-2.5 border border-gray-200 hover:bg-gray-50 rounded-xl text-gray-600 transition-colors"
-                  title="More Details"
-                >
-                  <FiInfo size={16} />
-                </button>
               </div>
             </div>
 
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-2 gap-2 bg-[#FBF5EC] p-3 rounded-2xl border border-[#E8D9C3]">
               <div className="bg-white rounded-xl p-2.5 text-center shadow-2xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">Followers</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">{t('channelPage.followers')}</span>
                 <span className="text-lg font-black text-[#8B1E1E]">{followersCount}</span>
               </div>
               <div className="bg-white rounded-xl p-2.5 text-center shadow-2xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">Updates</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">{t('channelPage.updates')}</span>
                 <span className="text-lg font-black text-[#8B1E1E]">{posts.length}</span>
               </div>
             </div>
@@ -497,15 +668,15 @@ export const ChannelPage = ({ isAdminView = false }) => {
                     <FiAlertTriangle size={13} />
                   </span>
                   <h3 className="text-xs font-extrabold uppercase tracking-wider text-red-900">
-                    Emergency Helpline
+                    {t('channelPage.emergencyHelpline')}
                   </h3>
                 </div>
-                {isOwner && (
+                {canEditEmergencyContact && (
                   <button
                     onClick={() => setShowEmergencyModal(true)}
-                    className="text-[11px] font-bold text-red-700 hover:underline flex items-center gap-1"
+                    className="text-[11px] font-bold text-red-700 hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    <FiEdit2 size={11} /> Edit
+                    <FiEdit2 size={11} /> {t('channelPage.edit')}
                   </button>
                 )}
               </div>
@@ -527,86 +698,25 @@ export const ChannelPage = ({ isAdminView = false }) => {
                       href={`tel:${channel.emergency_contact_phone}`}
                       className="inline-flex items-center justify-center gap-2 w-full mt-2 py-2 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold tracking-wide shadow-sm transition-all active:scale-[0.98]"
                     >
-                      <FiPhone size={14} className="animate-bounce" /> Call {channel.emergency_contact_phone}
+                      <FiPhone size={14} className="animate-bounce" /> {t('channelPage.call')} {channel.emergency_contact_phone}
                     </a>
                   )}
                 </div>
               ) : (
                 <div className="py-2 text-center">
-                  <p className="text-xs text-gray-500 italic">No emergency helpline configured yet.</p>
-                  {isOwner && (
+                  <p className="text-xs text-gray-500 italic">{t('channelPage.noHelpline')}</p>
+                  {canEditEmergencyContact && (
                     <button
                       onClick={() => setShowEmergencyModal(true)}
-                      className="mt-2 text-xs font-bold text-red-700 bg-white border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                      className="mt-2 text-xs font-bold text-red-700 bg-white border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
                     >
-                      + Add Emergency Contact
+                      {t('channelPage.addEmergencyContact')}
                     </button>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Mini Map Placeholder Card */}
-            <div className="bg-white border border-[#E8D9C3] rounded-2xl p-4 shadow-2xs relative group">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
-                  <FiMapPin className="text-[#DD6B35]" /> Live Route & Tents
-                </h4>
-                <span className="text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
-                  Live Track
-                </span>
-              </div>
-              <div className="h-28 rounded-xl bg-[#FBF5EC] border border-dashed border-[#DD6B35]/40 flex flex-col items-center justify-center p-3 text-center">
-                <span className="text-2xl mb-1">🗺️</span>
-                <p className="text-xs font-medium text-[#2B1B12]">Palkhi Route Map</p>
-                <p className="text-[10px] text-gray-500">Live halts, water & medical points</p>
-              </div>
-              <button
-                onClick={() => setActiveTab('map')}
-                className="w-full mt-2.5 py-1.5 rounded-lg text-xs font-semibold text-[#8B1E1E] bg-[#FBF5EC] hover:bg-[#F3E7D3] border border-[#E8D9C3] transition-colors"
-              >
-                Open Route Map →
-              </button>
-            </div>
-
-            {/* Contributors Preview Card */}
-            <div className="bg-white border border-[#E8D9C3] rounded-2xl p-4 shadow-2xs">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
-                  <FiUsers className="text-[#8B1E1E]" /> Contributors ({contributors.length})
-                </h4>
-                <button
-                  onClick={() => setShowContributorsModal(true)}
-                  className="text-[11px] font-bold text-[#8B1E1E] hover:underline"
-                >
-                  View All
-                </button>
-              </div>
-
-              {contributors.length === 0 ? (
-                <p className="text-xs text-gray-400 italic">No assigned contributors yet.</p>
-              ) : (
-                <div className="flex items-center -space-x-2 overflow-hidden py-1">
-                  {contributors.slice(0, 5).map((c, i) => (
-                    <div
-                      key={c.id || i}
-                      className="inline-block ring-2 ring-white rounded-full"
-                      title={c.full_name || c.username}
-                    >
-                      <Avatar
-                        size="sm"
-                        fallback={c.full_name?.[0] || c.username?.[0] || 'V'}
-                      />
-                    </div>
-                  ))}
-                  {contributors.length > 5 && (
-                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[#8B1E1E] text-white text-[10px] font-bold ring-2 ring-white">
-                      +{contributors.length - 5}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
         </aside>
 
@@ -631,56 +741,58 @@ export const ChannelPage = ({ isAdminView = false }) => {
                       <FiCheckCircle className="text-green-500 shrink-0" size={15} />
                     )}
                   </div>
-                  <p className="text-[11px] text-gray-500 truncate">
-                    {contributors.length} Sevaks • {followersCount} Warkari Followers
-                  </p>
                 </div>
               </div>
 
               {/* Action shortcuts */}
               <div className="flex items-center gap-1.5 sm:gap-2">
-                {hasEmergencyContact && (
-                  <a
-                    href={`tel:${channel.emergency_contact_phone}`}
-                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 transition-colors shrink-0"
-                  >
-                    <FiPhone size={13} /> Call Helpline
-                  </a>
+                {/* Owner badge */}
+                {isOwner && (
+                  <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
+                    <FiStar size={10} className="text-amber-500" /> {t('channelPage.youOwnThis')}
+                  </span>
                 )}
                 <button
                   onClick={() => setShowContributorsModal(true)}
-                  className="p-2 hover:bg-gray-100 rounded-xl text-gray-600 transition-colors"
-                  title="Channel Contributors"
+                  className="p-2 hover:bg-gray-100 rounded-xl text-gray-600 transition-colors cursor-pointer"
+                  title={t('channelPage.info.authorizedSevaks')}
                 >
                   <FiUsers size={18} />
                 </button>
-                <button
-                  onClick={() => setShowInfoModal(true)}
-                  className="p-2 hover:bg-gray-100 rounded-xl text-gray-600 transition-colors"
-                  title="Channel Information"
-                >
-                  <FiInfo size={18} />
-                </button>
+                {/* Settings gear — only for Owner / Admin */}
+                {(isOwner || isAdminUser) && !adminView && (
+                  <Link
+                    to={`/channel/${id}/manage`}
+                    className="p-2 hover:bg-[#FBF5EC] rounded-xl text-[#8B1E1E] transition-colors"
+                    title={t('channelPage.manageChannel')}
+                  >
+                    <FiSettings size={18} />
+                  </Link>
+                )}
               </div>
             </div>
 
-            {/* Emergency Ribbon if set (Sticky alert bar) */}
-            {hasEmergencyContact && (
-              <div className="mt-2.5 bg-red-50 border border-red-200 rounded-xl px-3 py-1.5 flex items-center justify-between text-xs text-red-800">
-                <div className="flex items-center gap-2 truncate">
-                  <FiAlertTriangle className="text-red-600 shrink-0" />
-                  <span className="font-semibold truncate">
-                    Helpline: {channel.emergency_contact_name} ({channel.emergency_contact_phone})
-                  </span>
-                </div>
-                <a
-                  href={`tel:${channel.emergency_contact_phone}`}
-                  className="font-bold underline text-red-700 shrink-0 hover:text-red-900 ml-2"
-                >
-                  Call Now
-                </a>
+            {notice && (
+              <div className={`mt-3 rounded-xl border px-3 py-2 text-xs font-semibold ${
+                notice.type === 'success'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border-red-200 bg-red-50 text-red-700'
+              }`}>
+                {notice.text}
               </div>
             )}
+
+            {/* Quick Search Bar */}
+            <div className="mt-3 flex items-center bg-[#FDFBF7] border border-[#E8D9C3] rounded-xl px-3 py-1.5 shadow-2xs">
+              <span className="text-gray-400 mr-2 text-xs">🔍</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder={t('channelPage.searchPlaceholder')}
+                className="w-full bg-transparent text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none"
+              />
+            </div>
 
             {/* Tab Navigation Pill Bar */}
             <div className="flex gap-1 overflow-x-auto no-scrollbar pt-3 mt-1 border-t border-gray-100">
@@ -690,7 +802,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       isActive
                         ? 'bg-[#8B1E1E] text-white shadow-xs'
                         : 'bg-[#FBF5EC] text-gray-700 hover:bg-[#F3E7D3] hover:text-[#2B1B12]'
@@ -723,13 +835,13 @@ export const ChannelPage = ({ isAdminView = false }) => {
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-base">📢</span>
                       <h3 className="text-xs font-black uppercase tracking-wider text-[#8B1E1E]">
-                        Post Official Palkhi Announcement
+                        {t('channelPage.announcements.postTitle')}
                       </h3>
                     </div>
                     <form onSubmit={handlePostAnnouncement} className="space-y-3">
                       <textarea
                         rows={3}
-                        placeholder="Broadcast route changes, meal timings, water points, or important alerts to all warkaris..."
+                        placeholder={t('channelPage.announcements.placeholder')}
                         value={newAnnouncement}
                         onChange={(e) => setNewAnnouncement(e.target.value)}
                         className="w-full p-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#8B1E1E] focus:ring-1 focus:ring-[#8B1E1E]/20 resize-none bg-[#FDFBF7]"
@@ -742,34 +854,34 @@ export const ChannelPage = ({ isAdminView = false }) => {
                             onChange={(e) => setAnnouncementPinned(e.target.checked)}
                             className="w-4 h-4 rounded text-[#8B1E1E] focus:ring-[#8B1E1E] accent-[#8B1E1E]"
                           />
-                          📌 Pin this update to top
+                          {t('channelPage.announcements.pin')}
                         </label>
                         <Button
                           type="submit"
                           disabled={postingAnnouncement || !newAnnouncement.trim()}
                           className="!px-4 !py-1.5 !bg-[#8B1E1E] hover:!bg-[#701616] text-white text-xs font-bold rounded-xl shadow-xs"
                         >
-                          {postingAnnouncement ? 'Broadcasting...' : 'Broadcast Announcement'}
+                          {postingAnnouncement ? t('channelPage.announcements.broadcasting') : t('channelPage.announcements.broadcast')}
                         </Button>
                       </div>
                     </form>
                   </div>
                 )}
 
-                {/* Admins need the complete channel feed, including content and chat posts. */}
+                {/* Admins feed vs User view */}
                 {adminView ? (
                   adminFeedPosts.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
                       <div className="text-5xl mb-3">🪧</div>
-                      <h3 className="text-base font-bold text-[#2B1B12]">No Channel Updates Yet</h3>
-                      <p className="text-xs text-gray-500 mt-1">Posts and uploaded channel content will appear here.</p>
+                      <h3 className="text-base font-bold text-[#2B1B12]">{t('channelPage.announcements.empty')}</h3>
+                      <p className="text-xs text-gray-500 mt-1">{t('channelPage.announcements.emptySub')}</p>
                     </div>
                   ) : (
                     adminFeedPosts.map((post) => (
                       <article key={`admin-feed-${post.id}`} className="rounded-2xl border border-[#E8DFC8] bg-white p-4 sm:p-5 shadow-xs">
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <span className="text-[10px] font-black uppercase tracking-wider text-[#8B1E1E]">
-                            {post.is_announcement ? 'Official Announcement' : post.content_type ? 'Channel Content' : 'Channel Chat'}
+                            {post.is_announcement ? t('channelPage.announcements.badge') : post.content_type ? 'Channel Content' : 'Channel Chat'}
                           </span>
                           <span className="text-[11px] font-medium text-gray-400">{timeAgo(post.created_at)}</span>
                         </div>
@@ -781,7 +893,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                         </p>
                         {post.file_url && (
                           <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-[#8B1E1E]">
-                            <FiFile size={15} /> View attached file
+                            <FiFile size={15} /> {t('channelPage.announcements.viewDoc')}
                           </a>
                         )}
                         <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
@@ -796,9 +908,9 @@ export const ChannelPage = ({ isAdminView = false }) => {
                 {announcementPosts.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
                     <div className="text-5xl mb-3">🪧</div>
-                    <h3 className="text-base font-bold text-[#2B1B12]">No Announcements Yet</h3>
+                    <h3 className="text-base font-bold text-[#2B1B12]">{t('channelPage.announcements.empty')}</h3>
                     <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-                      Official notifications regarding schedule, prasad halts, and Aarti will appear here.
+                      {t('channelPage.announcements.emptySub')}
                     </p>
                   </div>
                 ) : (
@@ -814,11 +926,11 @@ export const ChannelPage = ({ isAdminView = false }) => {
                       <div className="flex items-center justify-between gap-2 mb-3">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="inline-flex items-center gap-1 rounded-md bg-[#8B1E1E] px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
-                            📢 Official Announcement
+                            📢 {t('channelPage.announcements.badge')}
                           </span>
                           {post.is_pinned && (
                             <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-900">
-                              📌 Pinned
+                              {t('channelPage.announcements.pinned')}
                             </span>
                           )}
                         </div>
@@ -839,7 +951,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                             <img src={post.file_url} alt={post.title || 'Announcement'} className="w-full max-h-80 object-cover" />
                           ) : (
                             <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="p-3 flex items-center gap-2 text-xs font-bold text-[#8B1E1E]">
-                              <FiFile size={16} /> View Attached Document
+                              <FiFile size={16} /> {t('channelPage.announcements.viewDoc')}
                             </a>
                           )}
                         </div>
@@ -853,11 +965,28 @@ export const ChannelPage = ({ isAdminView = false }) => {
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <button className="flex items-center gap-1 hover:text-[#8B1E1E]">
-                            <FiHeart size={13} /> {post.likes || 0}
-                          </button>
-                          <button className="flex items-center gap-1 hover:text-[#8B1E1E]">
-                            <FiShare2 size={13} /> Share
+                          {(() => {
+                            const isLiked = Boolean(likedPostIds[post.id]);
+                            const totalLikes = Math.max(0, (post.likes || 0) + (reactionMap[post.id] || 0));
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => handleToggleLike(post.id)}
+                                className={`flex items-center gap-1.5 transition-colors cursor-pointer ${
+                                  isLiked ? 'text-red-600 font-bold' : 'hover:text-[#8B1E1E]'
+                                }`}
+                                title={isLiked ? 'Unlike announcement' : 'Like announcement'}
+                              >
+                                <FiHeart size={13} className={isLiked ? 'fill-red-600 text-red-600' : ''} /> {totalLikes}
+                              </button>
+                            );
+                          })()}
+                          <button
+                            type="button"
+                            className="flex items-center gap-1 hover:text-[#8B1E1E] cursor-pointer"
+                            onClick={() => handleSharePost(post)}
+                          >
+                            <FiShare2 size={13} /> {t('channelPage.announcements.share')}
                           </button>
                         </div>
                       </div>
@@ -877,14 +1006,16 @@ export const ChannelPage = ({ isAdminView = false }) => {
                 ) : chatPosts.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
                     <div className="text-5xl mb-3">💬</div>
-                    <h3 className="text-base font-bold text-[#2B1B12]">Start the Conversation</h3>
+                    <h3 className="text-base font-bold text-[#2B1B12]">{t('channelPage.chat.emptyTitle')}</h3>
                     <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-                      Channel members and authorized sevaks can coordinate updates in real-time here.
+                      {t('channelPage.chat.emptySub')}
                     </p>
                   </div>
                 ) : (
                   chatPosts.map((post) => {
-                    const isMyPost = post.user_id === user?.id || (isOwner && post.user?.role === 'admin');
+                    const isMyPost = Boolean(user) && String(post.user_id) === String(user.id);
+                    const isPostOwner = channel && String(post.user_id) === String(channel.created_by_user_id);
+                    const isContributorPost = post.user?.role === 'contributor';
                     return (
                       <div
                         key={post.id}
@@ -908,9 +1039,20 @@ export const ChannelPage = ({ isAdminView = false }) => {
                             }`}
                           >
                             {!isMyPost && (
-                              <p className="text-[11px] font-bold text-[#DD6B35] mb-1 truncate">
-                                {post.user?.full_name || post.user?.username || 'Sevak'}
-                              </p>
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <p className="text-[11px] font-bold text-[#DD6B35] truncate">
+                                  {post.user?.full_name || post.user?.username || t('channelPage.chat.warkari')}
+                                </p>
+                                {isPostOwner ? (
+                                  <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded-full">
+                                    {t('channelPage.chat.pramukh')}
+                                  </span>
+                                ) : isContributorPost ? (
+                                  <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded-full">
+                                    {t('channelPage.chat.sevak')}
+                                  </span>
+                                ) : null}
+                              </div>
                             )}
 
                             {post.title && post.title !== 'Channel Post' && (
@@ -951,7 +1093,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                                       isMyPost ? 'bg-white/20 text-white' : 'bg-[#FBF5EC] text-[#8B1E1E]'
                                     }`}
                                   >
-                                    <FiFile size={16} /> Attached Document (PDF)
+                                    <FiFile size={16} /> {t('channelPage.chat.attachedPdf')}
                                   </a>
                                 )}
                               </div>
@@ -969,13 +1111,34 @@ export const ChannelPage = ({ isAdminView = false }) => {
 
                           {/* Quick Message Actions */}
                           <div className={`flex items-center gap-3 mt-1 px-1.5 text-[11px] text-gray-500 ${isMyPost ? 'justify-end' : ''}`}>
-                            <button className="flex items-center gap-1 hover:text-[#8B1E1E]">
-                              <FiHeart size={12} /> {post.likes || 0}
+                            {(() => {
+                              const isLiked = Boolean(likedPostIds[post.id]);
+                              const totalLikes = Math.max(0, (post.likes || 0) + (reactionMap[post.id] || 0));
+                              return (
+                                <button
+                                  type="button"
+                                  className={`flex items-center gap-1 transition-colors cursor-pointer ${
+                                    isLiked ? 'text-red-600 font-bold' : 'hover:text-[#8B1E1E]'
+                                  }`}
+                                  onClick={() => handleToggleLike(post.id)}
+                                  title={isLiked ? 'Unlike' : 'Like'}
+                                >
+                                  <FiHeart size={12} className={isLiked ? 'fill-red-600 text-red-600' : ''} /> {totalLikes}
+                                </button>
+                              );
+                            })()}
+                            <button
+                              type="button"
+                              className="flex items-center gap-1 hover:text-[#8B1E1E] cursor-pointer"
+                              onClick={() => setReplyToPost(post)}
+                            >
+                              <FiMessageCircle size={12} /> {t('channelPage.chat.reply')}
                             </button>
-                            <button className="flex items-center gap-1 hover:text-[#8B1E1E]">
-                              <FiMessageCircle size={12} />
-                            </button>
-                            <button className="hover:text-[#8B1E1E]">
+                            <button
+                              type="button"
+                              className="hover:text-[#8B1E1E] cursor-pointer"
+                              onClick={() => handleSharePost(post)}
+                            >
                               <FiShare2 size={12} />
                             </button>
                           </div>
@@ -994,27 +1157,27 @@ export const ChannelPage = ({ isAdminView = false }) => {
                 <div className="w-20 h-20 mx-auto mb-4 bg-orange-100 rounded-full flex items-center justify-center text-4xl text-[#DD6B35] shadow-inner">
                   📍
                 </div>
-                <h3 className="text-xl font-black text-[#2B1B12]">Palkhi Route Map & Halts</h3>
+                <h3 className="text-xl font-black text-[#2B1B12]">{t('channelPage.map.title')}</h3>
                 <p className="text-xs sm:text-sm text-gray-600 mt-2 max-w-md mx-auto leading-relaxed">
-                  Interactive real-time map integration showing GPS live location of Palkhi, Annachhatra (Food) tents, Drinking Water, Medical Vans, and Police checkpoints.
+                  {t('channelPage.map.desc')}
                 </p>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-6 max-w-lg mx-auto">
                   <div className="p-3 bg-[#FBF5EC] rounded-xl text-center border border-[#E8D9C3]">
                     <span className="text-lg">🏕️</span>
-                    <p className="text-[11px] font-bold text-gray-700 mt-1">Night Halts</p>
+                    <p className="text-[11px] font-bold text-gray-700 mt-1">{t('channelPage.map.nightHalts')}</p>
                   </div>
                   <div className="p-3 bg-[#FBF5EC] rounded-xl text-center border border-[#E8D9C3]">
                     <span className="text-lg">🍲</span>
-                    <p className="text-[11px] font-bold text-gray-700 mt-1">Annachhatra</p>
+                    <p className="text-[11px] font-bold text-gray-700 mt-1">{t('channelPage.map.annachhatra')}</p>
                   </div>
                   <div className="p-3 bg-[#FBF5EC] rounded-xl text-center border border-[#E8D9C3]">
                     <span className="text-lg">🚑</span>
-                    <p className="text-[11px] font-bold text-gray-700 mt-1">Medical</p>
+                    <p className="text-[11px] font-bold text-gray-700 mt-1">{t('channelPage.map.medical')}</p>
                   </div>
                   <div className="p-3 bg-[#FBF5EC] rounded-xl text-center border border-[#E8D9C3]">
                     <span className="text-lg">💧</span>
-                    <p className="text-[11px] font-bold text-gray-700 mt-1">Water Tanks</p>
+                    <p className="text-[11px] font-bold text-gray-700 mt-1">{t('channelPage.map.waterTanks')}</p>
                   </div>
                 </div>
 
@@ -1022,7 +1185,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                   onClick={() => navigate('/map')}
                   className="!bg-[#8B1E1E] hover:!bg-[#701616] text-white text-xs font-bold !px-6 !py-2.5 rounded-xl shadow-sm inline-flex items-center gap-2"
                 >
-                  <FiMapPin /> Open Interactive Live Map
+                  <FiMapPin /> {t('channelPage.map.openMap')}
                 </Button>
               </div>
             )}
@@ -1032,10 +1195,10 @@ export const ChannelPage = ({ isAdminView = false }) => {
               <div className="space-y-4 max-w-2xl mx-auto">
                 <div className="bg-white border border-[#E8D9C3] rounded-2xl p-5 shadow-2xs">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
-                    About This Channel
+                    {t('channelPage.info.aboutTitle')}
                   </h3>
                   <p className="text-sm text-gray-800 leading-relaxed">
-                    {channel.description || 'Dedicated channel for Palkhi updates, Aarti schedules, seva details, and warkari pilgrim coordination.'}
+                    {channel.description || t('channelPage.info.aboutDefault')}
                   </p>
                 </div>
 
@@ -1043,28 +1206,28 @@ export const ChannelPage = ({ isAdminView = false }) => {
                 <div className="bg-red-50 border border-red-200 rounded-2xl p-5 shadow-2xs">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-xs font-extrabold uppercase tracking-wider text-red-800 flex items-center gap-1.5">
-                      <FiAlertTriangle /> Palkhi Helpline & Medical Emergency
+                      <FiAlertTriangle /> {t('channelPage.info.helplineTitle')}
                     </h3>
-                    {isOwner && (
+                    {canEditEmergencyContact && (
                       <button
                         onClick={() => setShowEmergencyModal(true)}
-                        className="text-xs font-bold text-red-700 underline"
+                        className="text-xs font-bold text-red-700 underline cursor-pointer"
                       >
-                        Edit Helpline
+                        {t('channelPage.info.editHelpline')}
                       </button>
                     )}
                   </div>
                   <div className="space-y-2 text-sm text-gray-800">
-                    <p><span className="font-semibold text-gray-600">Contact Person:</span> {channel.emergency_contact_name || 'Not specified'}</p>
+                    <p><span className="font-semibold text-gray-600">{t('channelPage.contactPerson')}</span> {channel.emergency_contact_name || t('channelPage.notSpecified')}</p>
                     <p>
-                      <span className="font-semibold text-gray-600">Helpline Phone:</span>{' '}
+                      <span className="font-semibold text-gray-600">{t('channelPage.helplinePhone')}</span>{' '}
                       {channel.emergency_contact_phone ? (
                         <a href={`tel:${channel.emergency_contact_phone}`} className="text-red-700 font-bold underline">
                           {channel.emergency_contact_phone}
                         </a>
-                      ) : 'Not specified'}
+                      ) : t('channelPage.notSpecified')}
                     </p>
-                    <p><span className="font-semibold text-gray-600">Designation / Role:</span> {channel.emergency_contact_role || 'Pramukh / Seva Head'}</p>
+                    <p><span className="font-semibold text-gray-600">{t('channelPage.role')}</span> {channel.emergency_contact_role || 'Pramukh / Seva Head'}</p>
                   </div>
                 </div>
 
@@ -1072,13 +1235,13 @@ export const ChannelPage = ({ isAdminView = false }) => {
                 <div className="bg-white border border-[#E8D9C3] rounded-2xl p-5 shadow-2xs">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                      Authorized Sevaks ({contributors.length})
+                      {t('channelPage.info.authorizedSevaks')} ({contributors.length})
                     </h3>
                     <button
                       onClick={() => setShowContributorsModal(true)}
-                      className="text-xs font-bold text-[#8B1E1E] hover:underline"
+                      className="text-xs font-bold text-[#8B1E1E] hover:underline cursor-pointer"
                     >
-                      View All
+                      {t('channelPage.info.viewAll')}
                     </button>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -1087,7 +1250,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                         <Avatar size="xs" fallback={c.full_name?.[0] || 'S'} />
                         <div className="min-w-0">
                           <p className="text-xs font-bold text-[#2B1B12] truncate">{c.full_name || c.username}</p>
-                          <p className="text-[10px] text-gray-500 truncate">{c.email || 'Verified Sevak'}</p>
+                          <p className="text-[10px] text-gray-500 truncate">{c.email || t('channelPage.info.verifiedSevak')}</p>
                         </div>
                       </div>
                     ))}
@@ -1105,7 +1268,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="p-2.5 text-gray-500 hover:text-[#8B1E1E] hover:bg-[#FBF5EC] rounded-full transition-colors shrink-0"
+                    className="p-2.5 text-gray-500 hover:text-[#8B1E1E] hover:bg-[#FBF5EC] rounded-full transition-colors shrink-0 cursor-pointer"
                     title="Attach Media / Document"
                   >
                     <FiPaperclip size={20} />
@@ -1125,15 +1288,29 @@ export const ChannelPage = ({ isAdminView = false }) => {
                         <button
                           type="button"
                           onClick={() => setPostMedia(null)}
-                          className="text-red-400 hover:text-white"
+                          className="text-red-400 hover:text-white cursor-pointer"
                         >
                           <FiX size={14} />
                         </button>
                       </div>
                     )}
+                    {replyToPost && (
+                      <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-[#E8D9C3] bg-[#FBF5EC] px-2.5 py-1.5 text-[11px] text-[#8B1E1E]">
+                        <span>{t('channelPage.chat.replyingTo')} {replyToPost.user?.full_name || replyToPost.user?.username || t('channelPage.chat.sevak')}</span>
+                        <button type="button" onClick={() => setReplyToPost(null)} className="text-gray-500 hover:text-[#8B1E1E] cursor-pointer">
+                          <FiX size={12} />
+                        </button>
+                      </div>
+                    )}
                     <textarea
                       rows={1}
-                      placeholder={postMedia ? `File attached: ${postMedia.name}` : 'Write a message to channel...'}
+                      placeholder={
+                        replyToPost
+                          ? `${t('channelPage.chat.replyPlaceholder')} ${replyToPost.user?.full_name || replyToPost.user?.username || t('channelPage.chat.sevak')}...`
+                          : postMedia
+                            ? `File attached: ${postMedia.name}`
+                            : t('channelPage.chat.placeholder')
+                      }
                       value={newPost}
                       onChange={(e) => setNewPost(e.target.value)}
                       onKeyDown={(e) => {
@@ -1149,7 +1326,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                   <button
                     type="submit"
                     disabled={posting || (!newPost.trim() && !postMedia)}
-                    className={`p-3 rounded-full shrink-0 transition-all shadow-sm ${
+                    className={`p-3 rounded-full shrink-0 transition-all shadow-sm cursor-pointer ${
                       newPost.trim() || postMedia
                         ? 'bg-[#8B1E1E] text-white hover:bg-[#701616] scale-100'
                         : 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -1159,31 +1336,22 @@ export const ChannelPage = ({ isAdminView = false }) => {
                   </button>
                 </form>
               ) : (
-                <div className="flex items-center justify-between gap-3 py-1">
-                  <div>
-                    <p className="text-xs font-bold text-[#2B1B12]">Contribute to this Channel</p>
-                    <p className="text-[11px] text-gray-500">Become an authorized sevak or request membership to post.</p>
+                <div className="flex items-center justify-between gap-3 py-1.5 px-3 bg-[#FBF5EC] rounded-xl border border-[#E8D9C3]">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">💬</span>
+                    <div>
+                      <p className="text-xs font-bold text-[#2B1B12]">{t('channelPage.chat.joinTitle')}</p>
+                      <p className="text-[11px] text-gray-500">{t('channelPage.chat.joinSub')}</p>
+                    </div>
                   </div>
-                  {canContribute && canContribute() ? (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={handleJoinChannel}
-                      disabled={joinRequestPending}
-                      className="!bg-[#8B1E1E] hover:!bg-[#701616] text-white text-xs font-bold shrink-0"
-                    >
-                      {joinRequestPending ? 'Request Pending' : 'Request to Post'}
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => navigate('/apply-contributor', { state: { from: `/channel/${id}` } })}
-                      className="!bg-[#DD6B35] hover:!bg-[#C85A28] text-white text-xs font-bold shrink-0"
-                    >
-                      Apply as Sevak
-                    </Button>
-                  )}
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => navigate('/login', { state: { from: `/channel/${id}` } })}
+                    className="!bg-[#DD6B35] hover:!bg-[#C85A28] text-white text-xs font-bold shrink-0 shadow-xs"
+                  >
+                    {t('channelPage.chat.signIn')}
+                  </Button>
                 </div>
               )}
             </footer>
@@ -1199,13 +1367,13 @@ export const ChannelPage = ({ isAdminView = false }) => {
       <Modal
         isOpen={showEmergencyModal}
         onClose={() => setShowEmergencyModal(false)}
-        title="🚨 Update Emergency Helpline"
+        title={t('channelPage.modals.emergencyTitle')}
         size="md"
       >
         <form onSubmit={handleSaveEmergencyContact} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">
-              Contact Person / Center Name
+              {t('channelPage.modals.personName')}
             </label>
             <input
               type="text"
@@ -1218,7 +1386,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">
-              Emergency Phone Number
+              {t('channelPage.modals.phone')}
             </label>
             <input
               type="tel"
@@ -1231,7 +1399,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">
-              Designation / Role Description
+              {t('channelPage.modals.roleDesc')}
             </label>
             <input
               type="text"
@@ -1246,16 +1414,16 @@ export const ChannelPage = ({ isAdminView = false }) => {
               type="button"
               variant="outline"
               onClick={() => setShowEmergencyModal(false)}
-              className="flex-1 text-xs"
+              className="flex-1 text-xs cursor-pointer"
             >
-              Cancel
+              {t('channelPage.modals.cancel')}
             </Button>
             <Button
               type="submit"
               disabled={savingEmergency}
-              className="flex-1 !bg-red-600 hover:!bg-red-700 text-white text-xs font-bold"
+              className="flex-1 !bg-red-600 hover:!bg-red-700 text-white text-xs font-bold cursor-pointer"
             >
-              {savingEmergency ? 'Saving...' : 'Save Helpline'}
+              {savingEmergency ? t('channelPage.modals.saving') : t('channelPage.modals.saveHelpline')}
             </Button>
           </div>
         </form>
@@ -1265,7 +1433,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
       <Modal
         isOpen={showInfoModal}
         onClose={() => setShowInfoModal(false)}
-        title="Channel Details"
+        title={t('channelPage.modals.detailsTitle')}
         size="lg"
       >
         <div className="space-y-4 text-sm text-gray-700">
@@ -1275,22 +1443,22 @@ export const ChannelPage = ({ isAdminView = false }) => {
             </div>
             <div>
               <h3 className="text-base font-bold text-[#2B1B12]">{channel.name}</h3>
-              <p className="text-xs text-gray-500">Created: {new Date(channel.created_at).toLocaleDateString('en-GB')}</p>
+              <p className="text-xs text-gray-500">{t('channelPage.modals.created')} {new Date(channel.created_at).toLocaleDateString(language === 'mr' ? 'mr-IN' : 'en-GB')}</p>
             </div>
           </div>
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Description</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">{t('channelPage.modals.descLabel')}</h4>
             <p className="leading-relaxed bg-[#FBF5EC] p-3 rounded-xl border border-[#E8D9C3]">
-              {channel.description || 'Official Palkhi Channel on Aapli Wari Platform.'}
+              {channel.description || t('channelPage.info.aboutDefault')}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 bg-gray-50 rounded-xl border">
-              <span className="text-xs text-gray-500 block">Followers</span>
+              <span className="text-xs text-gray-500 block">{t('channelPage.followers')}</span>
               <span className="text-base font-bold text-[#2B1B12]">{followersCount}</span>
             </div>
             <div className="p-3 bg-gray-50 rounded-xl border">
-              <span className="text-xs text-gray-500 block">Total Updates</span>
+              <span className="text-xs text-gray-500 block">{t('channelPage.modals.totalUpdates')}</span>
               <span className="text-base font-bold text-[#2B1B12]">{posts.length}</span>
             </div>
           </div>
@@ -1301,12 +1469,12 @@ export const ChannelPage = ({ isAdminView = false }) => {
       <Modal
         isOpen={showContributorsModal}
         onClose={() => setShowContributorsModal(false)}
-        title={`All Contributors (${contributors.length})`}
+        title={`${t('channelPage.modals.contributorsTitle')} (${contributors.length})`}
         size="md"
       >
         <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
           {contributors.length === 0 ? (
-            <p className="text-center py-6 text-xs text-gray-500">No contributors listed.</p>
+            <p className="text-center py-6 text-xs text-gray-500">{t('channelPage.modals.noContributors')}</p>
           ) : (
             contributors.map((c) => (
               <div
@@ -1320,11 +1488,22 @@ export const ChannelPage = ({ isAdminView = false }) => {
                     <p className="text-[11px] text-gray-500 truncate">{c.email}</p>
                   </div>
                 </div>
-                {c.id === channel?.created_by_user_id ? (
-                  <Badge variant="primary" className="text-[10px]">Pramukh</Badge>
-                ) : (
-                  <Badge variant="default" className="text-[10px]">Sevak</Badge>
-                )}
+                <div className="flex items-center gap-2">
+                  {c.id === channel?.created_by_user_id ? (
+                    <Badge variant="primary" className="text-[10px]">{t('channelPage.chat.pramukh')}</Badge>
+                  ) : (
+                    <Badge variant="default" className="text-[10px]">{t('channelPage.chat.sevak')}</Badge>
+                  )}
+                  {canEditEmergencyContact && c.id !== channel?.created_by_user_id && (
+                    <button
+                      onClick={() => handleRemoveContributor(c.id || c.user_id)}
+                      className="text-[11px] text-red-600 hover:text-red-800 font-bold p-1 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                      title={t('channelPage.modals.remove')}
+                    >
+                      {t('channelPage.modals.remove')}
+                    </button>
+                  )}
+                </div>
               </div>
             ))
           )}

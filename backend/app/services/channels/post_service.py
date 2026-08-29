@@ -13,10 +13,10 @@ from backend.app.models.user import User
 def ensure_can_post(channel: Channel, user: User) -> None:
     if channel.status != "active":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Channel is inactive")
-    if channel.created_by_user_id != user.id and not any(member.id == user.id for member in channel.contributors):
+    if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the channel owner or an assigned contributor can post",
+            detail="User account is inactive or not authorized",
         )
 
 
