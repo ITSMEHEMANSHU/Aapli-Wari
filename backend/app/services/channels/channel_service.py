@@ -24,34 +24,35 @@ def create_palkhi(
 ) -> Palkhi:
 
     existing = db.scalar(
-        select(Palkhi).where(
-            Palkhi.owner_user_id == owner.id
-        )
+        select(Palkhi).where(Palkhi.owner_user_id == owner.id)
     )
-
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="User already owns a Palkhi",
-        )
+        raise HTTPException(status_code=409, detail="User already owns a Palkhi")
 
-    pending_status = db.scalar(
-        select(VerificationStatus).where(
-            VerificationStatus.name == "pending"
-        )
+    # ✅ Auto-approve: find 'approved' status instead of 'pending'
+    approved_status = db.scalar(
+        select(VerificationStatus).where(VerificationStatus.name == "approved")
     )
 
-    if pending_status is None:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Pending verification status is not configured",
+    if approved_status is None:
+        # If 'approved' not found, fallback to 'pending' or create it
+        pending_status = db.scalar(
+            select(VerificationStatus).where(VerificationStatus.name == "pending")
         )
+        if pending_status is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Verification statuses not configured. Please run seed."
+            )
+        status_to_use = pending_status
+    else:
+        status_to_use = approved_status
 
     palkhi = Palkhi(
         name=data.name,
         description=data.description,
         owner_user_id=owner.id,
-        verification_status_id=pending_status.id,
+        verification_status_id=status_to_use.id,  # ✅ auto-approved
     )
 
     db.add(palkhi)

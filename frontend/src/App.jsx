@@ -29,6 +29,9 @@ import AaplaTheva from './components/public/AaplaTheva';
 import ChannelList from './components/public/ChannelList';
 import ManageChannel from './components/channel-management/ManageChannel';
 import ContributorManagement from './components/channel-management/ContributorManagement';
+import PalkhiRegistration from './components/auth/PalkhiRegistration';
+
+// Inside Routes:
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -52,6 +55,7 @@ function App() {
               <Route path="/explore" element={<Explore />} />
               <Route path="/search" element={<Search />} />
               <Route path="/channels" element={<ChannelList />} />
+              <Route path="/register-palkhi" element={<PalkhiRegistration />} /> 
               <Route  path="/channel/create"  element={<ProtectedRoute><CreateChannel /></ProtectedRoute> }/>
 <Route
   path="/channel/:id/manage"

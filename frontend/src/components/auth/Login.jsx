@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
 
 export const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const authMessage = location.state?.message || '';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,6 +34,7 @@ export const Login = () => {
         <h2 className="text-2xl font-bold text-center text-primary mb-2">Welcome Back</h2>
         <p className="text-center text-gray-600 mb-6">Login to explore Wari heritage</p>
 
+        {authMessage && <div className="bg-blue-100 text-blue-700 p-3 rounded mb-4 text-sm text-center">{authMessage}</div>}
         {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>}
 
         <form onSubmit={handleSubmit}>

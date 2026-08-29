@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
         const restoredUser = {
           ...currentUser,
           name: currentUser.full_name || currentUser.username,
-          role: cachedUser.role,
+          role: currentUser.role || cachedUser.role,
         };
         setUser(restoredUser);
         localStorage.setItem('user', JSON.stringify(restoredUser));
@@ -45,14 +45,36 @@ export const AuthProvider = ({ children }) => {
     const authenticatedUser = {
       ...currentUser,
       name: currentUser.full_name || currentUser.username,
-      role: response.role,
+      role: response.role || currentUser.role,
     };
     setUser(authenticatedUser);
     localStorage.setItem('user', JSON.stringify(authenticatedUser));
     return authenticatedUser;
   };
 
-  const register = async (userData) => api.signup(userData);
+  const register = async (userData) => {
+    const response = await api.signup(userData);
+    if (userData.email && userData.password) {
+      try {
+        await login(userData.email, userData.password);
+      } catch (loginErr) {
+        console.warn('Auto-login after signup failed:', loginErr);
+      }
+    }
+    return response;
+  };
+
+  const registerPalkhiPramukh = async (pramukhData) => {
+    const response = await api.registerPalkhiPramukh(pramukhData);
+    if (pramukhData.email && pramukhData.password) {
+      try {
+        await login(pramukhData.email, pramukhData.password);
+      } catch (loginErr) {
+        console.warn('Auto-login after palkhi pramukh registration failed:', loginErr);
+      }
+    }
+    return response;
+  };
 
   const logout = () => {
     localStorage.removeItem('access_token');
@@ -71,6 +93,7 @@ export const AuthProvider = ({ children }) => {
       loading,
       login,
       register,
+      registerPalkhiPramukh,
       logout,
       hasRole,
       isAuthenticated: !!user

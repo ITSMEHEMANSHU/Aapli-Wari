@@ -201,14 +201,6 @@ export const ChannelList = () => {
     );
   }
 
-  if (!user) {
-    return (
-      <div className="py-10 text-center">
-        Sign in to view channels.
-      </div>
-    );
-  }
-
 
   /*
    * =========================================

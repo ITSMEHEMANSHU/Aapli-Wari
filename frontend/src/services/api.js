@@ -47,7 +47,14 @@ export const api = {
   // =========================
   // Authentication
   // =========================
-
+  // =========================
+// Palkhi
+// =========================
+ createPalkhi: (data) =>
+  request('/channels/palkhis', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
   login: (data) =>
     request('/auth/login', {
       method: 'POST',
@@ -56,6 +63,12 @@ export const api = {
 
   signup: (data) =>
     request('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  registerPalkhiPramukh: (data) =>
+    request('/auth/register-palkhi-pramukh', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -71,6 +84,8 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
+
+
 
   // =========================
   // RBAC test

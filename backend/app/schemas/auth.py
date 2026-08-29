@@ -32,3 +32,11 @@ class TokenResponse(BaseModel):
     user_id: str
 
     role: str
+
+class PalkhiPramukhSignupRequest(BaseModel):
+    username: str | None = None
+    full_name: str
+    email: EmailStr
+    password: str
+    palkhi_name: str
+    palkhi_description: str | None = None

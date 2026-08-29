@@ -127,7 +127,7 @@ const fetchPosts = async () => {
   const handleJoinChannel = async () => {
     try {
       if (!user) {
-        navigate('/login');
+        navigate('/login', { state: { message: 'Please log in to follow channels.' } });
         return;
       }
       
@@ -138,20 +138,22 @@ const fetchPosts = async () => {
       await api.joinChannel(id);
       setJoinRequestPending(true);
       
-      // Show success message or toast
-      
     } catch (error) {
       console.error('Failed to join channel:', error);
     }
   };
 
-// Handle posting
-const handlePost = async (e) => {
-  e.preventDefault();
-  if (!newPost.trim() && !postMedia) return;
-  
-  try {
-    setPosting(true);
+  const handlePost = async (e) => {
+    e.preventDefault();
+    if (!newPost.trim() && !postMedia) return;
+    
+    if (!user) {
+      navigate('/login', { state: { message: 'Please log in to post in channels.' } });
+      return;
+    }
+    
+    try {
+      setPosting(true);
     
     if (!postMedia) {
       await api.createChannelPost(id, newPost);
