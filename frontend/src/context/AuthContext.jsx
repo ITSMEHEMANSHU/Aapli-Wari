@@ -203,7 +203,32 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isPalkhiPramukh = () => {
-    return canCreateChannel();
+    if (!user) return false;
+    if (isAdmin()) return true;
+    return user.role === 'palkhi_pramukh' || isPalkhiPramukhApplied();
+  };
+
+  // Returns true if the current user is the owner of the given channel object or ID
+  const isOwnerOfChannel = (channelOrId, channelsList = []) => {
+    if (!user) return false;
+    if (typeof channelOrId === 'object' && channelOrId !== null) {
+      if (channelOrId.is_owner === true) return true;
+      return String(user.id) === String(channelOrId.created_by_user_id);
+    }
+    if (Array.isArray(channelsList)) {
+      const ch = channelsList.find((c) => String(c.id) === String(channelOrId));
+      if (ch) {
+        if (ch.is_owner === true) return true;
+        return String(user.id) === String(ch.created_by_user_id);
+      }
+    }
+    return false;
+  };
+
+  // Returns true if the user already has created an owned channel
+  const hasChannel = (channelsList = []) => {
+    if (!user || !Array.isArray(channelsList)) return false;
+    return channelsList.some((c) => isOwnerOfChannel(c));
   };
 
   return (
@@ -228,6 +253,8 @@ export const AuthProvider = ({ children }) => {
       isContributor,
       hasContributePermission,
       isPalkhiPramukh,
+      isOwnerOfChannel,
+      hasChannel,
       isAuthenticated: !!user,
       updateUser,
     }}>

@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { FaRobot, FaPaperPlane, FaBook, FaUser, FaExclamationTriangle } from 'react-icons/fa';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { FaRobot, FaPaperPlane, FaBook, FaUser, FaExclamationTriangle, FaArrowDown } from 'react-icons/fa';
 
 import Loader from '../../components/common/Loader';
 import Card from '../../components/common/Card';
@@ -60,15 +60,48 @@ const AIAssistantContent = () => {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const chatEndRef = useRef(null);
+  const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
 
-  const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const scrollContainerRef = useRef(null);
+  const isNearBottomRef = useRef(true);
 
+  // Smooth scroll to bottom
+  const scrollToBottom = useCallback((behavior = 'smooth') => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior
+      });
+      setShowScrollBottomBtn(false);
+    }
+  }, []);
+
+  // Monitor user scroll position (detect if user scrolled up)
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const threshold = 120; // px tolerance to be considered "at bottom"
+    const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    const isAtBottom = distanceToBottom <= threshold;
+
+    isNearBottomRef.current = isAtBottom;
+
+    if (isAtBottom) {
+      setShowScrollBottomBtn(false);
+    } else if (messages.length > 0) {
+      setShowScrollBottomBtn(true);
+    }
+  }, [messages.length]);
+
+  // Handle auto-scrolling when messages change or assistant starts thinking
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, loading]);
+    if (isNearBottomRef.current) {
+      scrollToBottom('smooth');
+    } else if (messages.length > 0) {
+      setShowScrollBottomBtn(true);
+    }
+  }, [messages, loading, scrollToBottom]);
 
   const handleSend = async (textToSend) => {
     const queryText = textToSend || question;
@@ -109,41 +142,45 @@ const AIAssistantContent = () => {
   };
 
   return (
-    <div className="w-full h-[750px] flex flex-col p-2 sm:p-4">
-      <Card className="flex-1 flex flex-col overflow-hidden shadow-md border border-[#3c2a21]/20 rounded-2xl bg-[#faf8f5]">
+    <div className="w-full h-[calc(100dvh-1rem)] sm:h-[calc(100dvh-2rem)] max-h-[920px] flex flex-col p-1.5 sm:p-4">
+      <Card className="flex-1 flex flex-col overflow-hidden shadow-md border border-[#3c2a21]/20 rounded-2xl bg-[#faf8f5] min-h-0 relative">
         
-        {/* Header */}
-        <div className="bg-[#3c2a21] text-[#f5ebe0] px-6 py-4 flex items-center justify-between border-b border-[#2b1e17]">
+        {/* Sticky Header */}
+        <div className="bg-[#3c2a21] text-[#f5ebe0] px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between border-b border-[#2b1e17] shrink-0 z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#d5aea1]/20 flex items-center justify-center border border-[#d5aea1]/30 text-[#e6ccb2]">
-              <FaRobot className="text-xl" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#d5aea1]/20 flex items-center justify-center border border-[#d5aea1]/30 text-[#e6ccb2] shrink-0">
+              <FaRobot className="text-lg sm:text-xl" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-[#f5ebe0]">Wari Heritage Assistant</h2>
+              <h2 className="text-sm sm:text-base font-semibold text-[#f5ebe0]">Wari Heritage Assistant</h2>
               <p className="text-xs text-[#d5aea1]">Ask about culture, Sants, and Palkhi history</p>
             </div>
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-[#fdfbf7]">
+        {/* Messages Container with custom subtle scrollbar & overflow anchor */}
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-4 bg-[#fdfbf7] min-h-0 [overflow-anchor:auto] scroll-smooth [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[#d5aea1]/40 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-[#d5aea1]/70"
+        >
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-6">
-              <div className="p-5 bg-[#efe8e0] rounded-full border border-[#e5dfd8] text-[#3c2a21]">
-                <FaRobot className="text-4xl" />
+            <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-center p-4 sm:p-6 space-y-5">
+              <div className="p-4 sm:p-5 bg-[#efe8e0] rounded-full border border-[#e5dfd8] text-[#3c2a21] shadow-inner">
+                <FaRobot className="text-3xl sm:text-4xl" />
               </div>
               <div className="max-w-md">
-                <h3 className="text-xl font-semibold text-[#3c2a21] mb-1">Welcome to Wari Assistant</h3>
-                <p className="text-sm text-[#6c584c]">Explore centuries of rich spiritual tradition and heritage. Select a topic below or type your question.</p>
+                <h3 className="text-lg sm:text-xl font-semibold text-[#3c2a21] mb-1">Welcome to Wari Assistant</h3>
+                <p className="text-xs sm:text-sm text-[#6c584c]">Explore centuries of rich spiritual tradition and heritage. Select a topic below or type your question.</p>
               </div>
               
-              <div className="flex flex-wrap justify-center gap-2 max-w-3xl">
+              <div className="flex flex-wrap justify-center gap-2 max-w-2xl">
                 {SUGGESTED_PROMPTS.map((prompt, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => handleSend(prompt)}
-                    className="text-xs text-[#3c2a21] bg-[#efe8e0] hover:bg-[#3c2a21] hover:text-[#f5ebe0] transition-all px-4 py-2.5 rounded-full border border-[#d5aea1]/50 font-medium"
+                    className="text-xs text-[#3c2a21] bg-[#efe8e0] hover:bg-[#3c2a21] hover:text-[#f5ebe0] transition-all px-3.5 py-2 rounded-full border border-[#d5aea1]/50 font-medium active:scale-95 shadow-xs"
                   >
                     "{prompt}"
                   </button>
@@ -156,15 +193,15 @@ const AIAssistantContent = () => {
               return (
                 <div
                   key={idx}
-                  className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
+                  className={`flex gap-2.5 sm:gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'} items-start`}
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs shadow-sm ${
+                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 text-xs shadow-xs mt-0.5 ${
                     isUser ? 'bg-[#3c2a21] text-[#f5ebe0]' : 'bg-[#efe8e0] text-[#3c2a21] border border-[#d5aea1]/40'
                   }`}>
                     {isUser ? <FaUser /> : <FaRobot />}
                   </div>
 
-                  <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
+                  <div className={`max-w-[88%] sm:max-w-[80%] md:max-w-[75%] lg:max-w-[70%] rounded-2xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm leading-relaxed shadow-xs break-words overflow-hidden ${
                     isUser 
                       ? 'bg-[#3c2a21] text-[#f5ebe0] rounded-tr-none' 
                       : 'bg-[#efe8e0] text-[#2b1e17] rounded-tl-none border border-[#e5dfd8]'
@@ -173,8 +210,8 @@ const AIAssistantContent = () => {
                     
                     {/* Safe Sources Rendering */}
                     {msg.sources && msg.sources.length > 0 && (
-                      <div className="mt-3 pt-2 border-t border-[#d5aea1]/30 flex flex-wrap items-center gap-1.5 text-xs text-[#6c584c]">
-                        <FaBook className="text-xs text-[#8c6d58]" />
+                      <div className="mt-2.5 pt-2 border-t border-[#d5aea1]/30 flex flex-wrap items-center gap-1.5 text-xs text-[#6c584c]">
+                        <FaBook className="text-xs text-[#8c6d58] shrink-0" />
                         <span className="font-semibold text-[#3c2a21]">Sources:</span>
                         {msg.sources.map((src, sIdx) => {
                           const sourceText = typeof src === 'object' ? (src.title || src.name || src.url || JSON.stringify(src)) : src;
@@ -186,12 +223,12 @@ const AIAssistantContent = () => {
                               href={sourceUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="bg-[#faf8f5] text-[#3c2a21] hover:underline px-2 py-0.5 rounded text-[11px] border border-[#d5aea1]/40"
+                              className="bg-[#faf8f5] text-[#3c2a21] hover:underline px-2 py-0.5 rounded text-[11px] border border-[#d5aea1]/40 break-all"
                             >
                               {sourceText}
                             </a>
                           ) : (
-                            <span key={sIdx} className="bg-[#faf8f5] text-[#3c2a21] px-2 py-0.5 rounded text-[11px] border border-[#d5aea1]/40">
+                            <span key={sIdx} className="bg-[#faf8f5] text-[#3c2a21] px-2 py-0.5 rounded text-[11px] border border-[#d5aea1]/40 break-all">
                               {sourceText}
                             </span>
                           );
@@ -205,18 +242,30 @@ const AIAssistantContent = () => {
           )}
 
           {loading && (
-            <div className="flex gap-3 items-center">
-              <div className="w-8 h-8 rounded-full bg-[#efe8e0] text-[#3c2a21] flex items-center justify-center flex-shrink-0 border border-[#d5aea1]/40 text-xs">
+            <div className="flex gap-2.5 sm:gap-3 items-center">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#efe8e0] text-[#3c2a21] flex items-center justify-center shrink-0 border border-[#d5aea1]/40 text-xs">
                 <FaRobot />
               </div>
-              <div className="bg-[#efe8e0] border border-[#e5dfd8] rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-2">
+              <div className="bg-[#efe8e0] border border-[#e5dfd8] rounded-2xl rounded-tl-none px-3.5 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2">
                 <Loader size="sm" />
                 <span className="text-xs text-[#6c584c]">Assistant is thinking...</span>
               </div>
             </div>
           )}
-          <div ref={chatEndRef} />
         </div>
+
+        {/* Floating "Scroll to Bottom" button (shown only when user has scrolled up) */}
+        {showScrollBottomBtn && (
+          <button
+            type="button"
+            onClick={() => scrollToBottom('smooth')}
+            className="absolute bottom-20 right-6 z-20 flex items-center gap-1.5 px-3 py-1.5 bg-[#3c2a21] text-[#f5ebe0] text-xs font-medium rounded-full shadow-lg border border-[#d5aea1]/40 hover:bg-[#2b1e17] transition-all transform animate-bounce"
+            aria-label="Scroll to latest messages"
+          >
+            <FaArrowDown className="text-[10px]" />
+            <span>Latest message</span>
+          </button>
+        )}
 
         {/* Input Form */}
         <form onSubmit={handleSubmit} className="p-3 sm:p-4 border-t border-[#e5dfd8] bg-[#efe8e0]/80">

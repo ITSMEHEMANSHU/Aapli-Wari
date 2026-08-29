@@ -4,8 +4,14 @@ export const RevisionHistoryModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-5 space-y-4">
+    <div 
+      className="fixed inset-0 z-50 bg-black/20 backdrop-blur-md flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 border border-[#E8D9C3] shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="text-base font-serif font-bold text-[#2B1B12]">Revision History</h3>
         <div className="space-y-2 text-xs">
           <div className="p-3 bg-[#FDF8F0] border border-[#E8D9C3] rounded-xl">

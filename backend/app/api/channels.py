@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from backend.app.core.security import authorize_request
+from backend.app.core.security import get_current_user
 from backend.app.db.database import get_db
 from backend.app.models.channel import Channel, channel_followers
 from backend.app.models.palkhi import Palkhi
@@ -61,7 +61,7 @@ router = APIRouter(
 )
 def posts(
     channel_id: UUID,
-    _: User = Depends(authorize_request),
+    _: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     channel = get_channel(db=db, channel_id=channel_id)
@@ -78,7 +78,7 @@ def posts(
 def create_post(
     channel_id: UUID,
     data: ChannelPostCreate,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     message = data.message.strip()
@@ -98,7 +98,7 @@ def create_post(
 )
 def register_palkhi(
     data: PalkhiCreate,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     return create_palkhi(
@@ -113,7 +113,7 @@ def register_palkhi(
     response_model=PalkhiResponse,
 )
 def my_palkhi(
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     return get_my_palkhi(
@@ -132,7 +132,7 @@ def my_palkhi(
 )
 def create(
     data: ChannelCreate,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     return create_channel(
@@ -147,10 +147,16 @@ def create(
     response_model=list[ChannelResponse],
 )
 def list_all(
-    _: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return list_channels(db=db)
+    channels = list_channels(db=db)
+    result = []
+    for channel in channels:
+        ch = get_channel_with_followers_count(db=db, channel_id=channel.id)
+        ch.__dict__["is_owner"] = bool(current_user and str(ch.created_by_user_id) == str(current_user.id))
+        result.append(ch)
+    return result
 
 
 # =========================================================
@@ -163,7 +169,7 @@ def list_all(
     response_model=list[ChannelResponse],
 )
 def my_channel_memberships(
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     return get_my_channel_memberships(
@@ -177,7 +183,7 @@ def my_channel_memberships(
     response_model=list[ChannelJoinRequestResponse],
 )
 def my_join_requests(
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     return get_my_join_requests(
@@ -196,10 +202,10 @@ def my_join_requests(
 )
 def get(
     channel_id: UUID,
-    _: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    channel = get_channel(
+    channel = get_channel_with_followers_count(
         db=db,
         channel_id=channel_id,
     )
@@ -210,6 +216,7 @@ def get(
             detail="Channel not found",
         )
 
+    channel.__dict__["is_owner"] = bool(current_user and str(channel.created_by_user_id) == str(current_user.id))
     return channel
 
 
@@ -224,7 +231,7 @@ def get(
 def update(
     channel_id: UUID,
     data: ChannelUpdate,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     channel = get_channel(
@@ -232,10 +239,10 @@ def update(
         channel_id=channel_id,
     )
 
-    if channel.created_by_user_id != current_user.id:
+    if channel.created_by_user_id != current_user.id and current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the channel owner can update this channel",
+            detail="Only the channel owner or an administrator can update this channel",
         )
 
     return update_channel(
@@ -255,7 +262,7 @@ def update(
 )
 def request_to_join_channel(
     channel_id: UUID,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     channel = get_channel(
@@ -280,7 +287,7 @@ def request_to_join_channel(
 )
 def get_my_channel_join_request(
     channel_id: UUID,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     channel = get_channel(
@@ -305,7 +312,7 @@ def get_my_channel_join_request(
 )
 def list_join_requests(
     channel_id: UUID,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     channel = get_channel(
@@ -313,10 +320,10 @@ def list_join_requests(
         channel_id=channel_id,
     )
 
-    if channel.created_by_user_id != current_user.id:
+    if channel.created_by_user_id != current_user.id and current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the channel owner can view join requests",
+            detail="Only the channel owner or an administrator can view join requests",
         )
 
     requests = get_channel_join_requests(
@@ -364,7 +371,7 @@ def decide_join_request(
     channel_id: UUID,
     request_id: UUID,
     data: JoinRequestDecision,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     channel = get_channel(
@@ -372,10 +379,10 @@ def decide_join_request(
         channel_id=channel_id,
     )
 
-    if channel.created_by_user_id != current_user.id:
+    if channel.created_by_user_id != current_user.id and current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the channel owner can manage join requests",
+            detail="Only the channel owner or an administrator can manage join requests",
         )
 
     return process_join_request(
@@ -395,7 +402,7 @@ def decide_join_request(
 )
 def contributors(
     channel_id: UUID,
-    _: User = Depends(authorize_request),
+    _: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     channel = get_channel(
@@ -429,7 +436,7 @@ def contributors(
 def add_contributor(
     channel_id: UUID,
     data: ContributorAssignment,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     channel = get_channel(
@@ -437,10 +444,10 @@ def add_contributor(
         channel_id=channel_id,
     )
 
-    if channel.created_by_user_id != current_user.id:
+    if channel.created_by_user_id != current_user.id and current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the channel owner can manage contributors",
+            detail="Only the channel owner or an administrator can manage contributors",
         )
 
     assign_contributor(
@@ -464,7 +471,7 @@ def add_contributor(
 def delete_contributor(
     channel_id: UUID,
     user_id: UUID,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     channel = get_channel(
@@ -472,10 +479,10 @@ def delete_contributor(
         channel_id=channel_id,
     )
 
-    if channel.created_by_user_id != current_user.id:
+    if channel.created_by_user_id != current_user.id and current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the channel owner can manage contributors",
+            detail="Only the channel owner or an administrator can manage contributors",
         )
 
     remove_contributor(
@@ -500,7 +507,7 @@ def delete_contributor(
 def change_status(
     channel_id: UUID,
     new_status: str,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     channel = get_channel(
@@ -508,10 +515,10 @@ def change_status(
         channel_id=channel_id,
     )
 
-    if channel.created_by_user_id != current_user.id:
+    if channel.created_by_user_id != current_user.id and current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the channel owner can change channel status",
+            detail="Only the channel owner or an administrator can change channel status",
         )
 
     return set_channel_status(
@@ -531,7 +538,7 @@ def change_status(
 )
 def follow_channel(
     channel_id: UUID,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Follow a channel (any authenticated user)."""
@@ -565,7 +572,7 @@ def follow_channel(
 )
 def unfollow_channel(
     channel_id: UUID,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Unfollow a channel."""
@@ -591,7 +598,7 @@ def unfollow_channel(
 )
 def get_follow_status(
     channel_id: UUID,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Check if the current user is following a channel."""
@@ -619,16 +626,19 @@ def get_follow_status(
 def create_announcement(
     channel_id: UUID,
     data: AnnouncementCreate,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Create an announcement in a channel (Palkhi Pramukh / channel owner only)."""
+    """Create an announcement in a channel (owner, assigned contributor, or admin)."""
     channel = get_channel(db=db, channel_id=channel_id)
+    is_owner = channel.created_by_user_id == current_user.id
+    is_contributor = current_user.id in {user.id for user in channel.contributors}
+    is_admin = current_user.role == "admin"
 
-    if channel.created_by_user_id != current_user.id:
+    if not (is_owner or is_contributor or is_admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the channel owner can post announcements",
+            detail="Only the channel owner, assigned contributors, or administrators can post announcements",
         )
 
     if channel.status != "active":
@@ -667,16 +677,19 @@ def create_announcement(
 def update_emergency_contact(
     channel_id: UUID,
     data: EmergencyContactUpdate,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Update emergency contact for a channel's Palkhi (owner only)."""
+    """Update emergency contact for a channel's Palkhi (owner, assigned contributor, or admin)."""
     channel = get_channel(db=db, channel_id=channel_id)
+    is_owner = channel.created_by_user_id == current_user.id
+    is_contributor = current_user.id in {user.id for user in channel.contributors}
+    is_admin = current_user.role == "admin"
 
-    if channel.created_by_user_id != current_user.id:
+    if not (is_owner or is_contributor or is_admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the channel owner can update the emergency contact",
+            detail="Only the channel owner, assigned contributors, or administrators can update the emergency contact",
         )
 
     palkhi = db.get(Palkhi, channel.palkhi_id)

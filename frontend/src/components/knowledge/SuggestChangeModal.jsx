@@ -4,8 +4,14 @@ export const SuggestChangeModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-5 space-y-3">
+    <div 
+      className="fixed inset-0 z-50 bg-black/20 backdrop-blur-md flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-2xl max-w-md w-full p-5 space-y-3 border border-[#E8D9C3] shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="text-base font-serif font-bold text-[#2B1B12]">Suggest a Change</h3>
         <div>
           <label className="block text-[10px] font-bold text-[#2B1B12] uppercase mb-1">Reason</label>
