@@ -38,6 +38,7 @@ export const AaplaTheva = () => {
       case 'video': return '🎬';
       case 'image': return '🖼️';
       case 'audio': return '🎵';
+      case 'short': return '🎬';
       case 'story': return '📝';
       default: return '📄';
     }
@@ -56,6 +57,7 @@ export const AaplaTheva = () => {
     { id: 'image', label: 'Images' },
     { id: 'video', label: 'Videos' },
     { id: 'audio', label: 'Audio' },
+    { id: 'short', label: 'Shorts' },
     { id: 'story', label: 'Stories' },
   ];
 

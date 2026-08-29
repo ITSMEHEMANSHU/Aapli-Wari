@@ -15,7 +15,6 @@ export const Header = () => {
     { label: 'Map',        to: '/map' },
     { label: 'Channels',   to: '/channels' },
     { label: 'AI Help',    to: '/ai-assistant' },
-    { label: 'Shorts',     to: '/shorts' },
     { label: 'Contribute', to: '/contribute' },
       { label: 'Shorts', to: '/shorts' },  // ✅ Add
 
