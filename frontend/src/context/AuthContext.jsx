@@ -104,20 +104,44 @@ export const AuthProvider = ({ children }) => {
     return user?.role === role;
   };
 
-  const isContributor = () => {
+  const getCurrentRole = () => {
+    return user?.role || 'guest';
+  };
+
+  const isAdmin = () => {
+    return user?.role === 'admin';
+  };
+
+  const canView = () => {
+    return true;
+  };
+
+  const canContribute = () => {
     return ['contributor', 'palkhi_pramukh', 'admin'].includes(user?.role);
   };
 
-  const hasContributePermission = () => {
-    return isContributor();
-  };
-
-  const isPalkhiPramukh = () => {
+  const canCreateChannel = () => {
     return ['palkhi_pramukh', 'admin'].includes(user?.role);
   };
 
-  const canCreateChannel = () => {
-    return isPalkhiPramukh();
+  const canManageChannel = () => {
+    return ['palkhi_pramukh', 'admin'].includes(user?.role);
+  };
+
+  const canApproveContributors = () => {
+    return ['palkhi_pramukh', 'admin'].includes(user?.role);
+  };
+
+  const isContributor = () => {
+    return canContribute();
+  };
+
+  const hasContributePermission = () => {
+    return canContribute();
+  };
+
+  const isPalkhiPramukh = () => {
+    return canCreateChannel();
   };
 
   return (
@@ -130,10 +154,16 @@ export const AuthProvider = ({ children }) => {
       logout,
       refreshUser,
       hasRole,
+      getCurrentRole,
+      isAdmin,
+      canView,
+      canContribute,
+      canCreateChannel,
+      canManageChannel,
+      canApproveContributors,
       isContributor,
       hasContributePermission,
       isPalkhiPramukh,
-      canCreateChannel,
       isAuthenticated: !!user
     }}>
       {children}

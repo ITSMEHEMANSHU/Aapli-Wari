@@ -26,7 +26,8 @@ import {
   FiPaperclip,
   FiCamera,
   FiMic,
-  FiSmile
+  FiSmile,
+  FiClock
 } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import Button from '../components/common/Button';
@@ -40,7 +41,7 @@ import Modal from '../components/common/Modal';
 export const ChannelPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, canContribute, canManageChannel } = useAuth();
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   
@@ -502,23 +503,40 @@ const fetchPosts = async () => {
               <p className="text-sm font-medium">Join this channel</p>
               <p className="text-xs text-gray-500">Follow to see posts and contribute</p>
             </div>
-            <Button 
-              variant="primary" 
-              size="sm"
-              onClick={handleJoinChannel}
-              disabled={joinRequestPending}
-              className="flex items-center gap-2"
-            >
-              {joinRequestPending ? (
-                <>
-                  <FiClock size={14} /> Request Pending
-                </>
-              ) : (
-                <>
-                  <FiUserPlus size={14} /> Follow
-                </>
-              )}
-            </Button>
+            {canContribute && canContribute() ? (
+              <Button 
+                variant="primary" 
+                size="sm"
+                onClick={handleJoinChannel}
+                disabled={joinRequestPending}
+                className="flex items-center gap-2"
+              >
+                {joinRequestPending ? (
+                  <>
+                    <FiClock size={14} /> Request Pending
+                  </>
+                ) : (
+                  <>
+                    <FiUserPlus size={14} /> Request to Join
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button 
+                variant="primary" 
+                size="sm"
+                onClick={() => {
+                  if (!user) {
+                    navigate('/login', { state: { from: `/channel/${id}` } });
+                  } else {
+                    navigate('/apply-contributor', { state: { from: `/channel/${id}` } });
+                  }
+                }}
+                className="flex items-center gap-2 bg-[#DD6B35] text-white"
+              >
+                <FiUserPlus size={14} /> Become a Contributor to join
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -572,7 +590,7 @@ const fetchPosts = async () => {
 
           {/* Actions */}
           <div className="flex gap-2 pt-4 border-t border-gray-100">
-            {isOwner && (
+            {canManageChannel && canManageChannel() && (isOwner || user?.role === 'admin') && (
               <Link to={`/channel/${id}/manage`} className="flex-1">
                 <Button variant="outline" className="w-full flex items-center justify-center gap-2">
                   <FiEdit2 size={16} /> Manage Channel

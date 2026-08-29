@@ -34,15 +34,7 @@ import ContributorManagement from './components/channel-management/ContributorMa
 import PalkhiRegistration from './components/auth/PalkhiRegistration';
 import MapPage from './pages/MapPage';
 
-function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
-
-  if (loading) {
-    return <div className="p-8 text-center">Verifying session...</div>;
-  }
-
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
-}
+import ProtectedRoute from './components/common/ProtectedRoute';
 
 function App() {
   return (
@@ -58,25 +50,38 @@ function App() {
               <Route path="/search" element={<Search />} />
               <Route path="/channels" element={<ChannelList />} />
               <Route path="/register-palkhi" element={<PalkhiRegistration />} /> 
-              <Route  path="/channel/create"  element={<ProtectedRoute><CreateChannel /></ProtectedRoute> }/>
-<Route
-  path="/channel/:id/manage"
-  element={
-    <ProtectedRoute>
-      <ManageChannel />
-    </ProtectedRoute>
-  }
-/>
-
-<Route
-  path="/channel/:id/contributors"
-  element={
-    <ProtectedRoute>
-      <ContributorManagement />
-    </ProtectedRoute>
-  }
-/>
-<Route path="/contribute" element={<ProtectedRoute><Contribute /></ProtectedRoute>} />
+              <Route 
+                path="/channel/create" 
+                element={
+                  <ProtectedRoute requiredRole={['palkhi_pramukh', 'admin']}>
+                    <CreateChannel />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route
+                path="/channel/:id/manage"
+                element={
+                  <ProtectedRoute requiredRole={['palkhi_pramukh', 'admin']}>
+                    <ManageChannel />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/channel/:id/contributors"
+                element={
+                  <ProtectedRoute requiredRole={['palkhi_pramukh', 'admin']}>
+                    <ContributorManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route 
+                path="/contribute" 
+                element={
+                  <ProtectedRoute requiredRole={['contributor', 'palkhi_pramukh', 'admin']}>
+                    <Contribute />
+                  </ProtectedRoute>
+                } 
+              />
 <Route path="/channel/:id" element={<ChannelPage />} />
               <Route path="/content/:id" element={<ContentDetail />} />
               <Route path="/ai-assistant" element={<AIAssistant />} />

@@ -11,7 +11,7 @@ const TABS = [
 ];
 
 export const Contribute = () => {
-  const { isAuthenticated, loading, isContributor } = useAuth();
+  const { isAuthenticated, loading, canContribute } = useAuth();
   const [searchParams] = useSearchParams();
   const channelId = searchParams.get('channel');
   const contentType = searchParams.get('type');
@@ -30,7 +30,7 @@ export const Contribute = () => {
     return <Navigate to="/login" state={{ from: '/contribute' }} replace />;
   }
 
-  if (!isContributor || !isContributor()) {
+  if (!canContribute || !canContribute()) {
     return <Navigate to="/apply-contributor" state={{ from: '/contribute' }} replace />;
   }
 

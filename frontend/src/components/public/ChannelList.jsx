@@ -206,6 +206,9 @@ export const ChannelList = () => {
         <HeaderSection 
           title="Palkhi Channels" 
           subtitle="Post updates to your assigned channels or request access to join new ones" 
+          showCreateButton={true}
+          createButtonText="Become a Palkhi Pramukh"
+          onCreateClick={handleCreateChannelClick}
         />
 
         {/* Contributor Channels */}
@@ -269,6 +272,7 @@ export const ChannelList = () => {
         title="Palkhi Channels" 
         subtitle="Follow live route updates, announcements, and traditional schedules" 
         showCreateButton={true}
+        createButtonText="Become a Palkhi Pramukh"
         onCreateClick={handleCreateChannelClick}
       />
 
@@ -286,7 +290,13 @@ export const ChannelList = () => {
 };
 
 /* ── Common Page Header ── */
-const HeaderSection = ({ title, subtitle, showCreateButton = false, onCreateClick }) => (
+const HeaderSection = ({ 
+  title, 
+  subtitle, 
+  showCreateButton = false, 
+  createButtonText = "Create Channel",
+  onCreateClick 
+}) => (
   <div className="border-b border-[#E8D9C3] pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div>
       <h1 className="text-2xl font-bold text-[#2B1B12]">{title}</h1>
@@ -299,7 +309,7 @@ const HeaderSection = ({ title, subtitle, showCreateButton = false, onCreateClic
         className="bg-[#DD6B35] text-white flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
         onClick={onCreateClick}
       >
-        <FiPlus className="text-sm" /> Create Channel
+        <FiPlus className="text-sm" /> {createButtonText}
       </Button>
     )}
   </div>

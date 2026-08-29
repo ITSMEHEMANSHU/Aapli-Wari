@@ -5,11 +5,12 @@ import { FaChevronDown, FaBars, FaTimes } from 'react-icons/fa';
 
 /**
  * Header — Clean, High-Contrast Temple Theme
- */
-export const Header = () => {
-  const { user, isAuthenticated, hasContributePermission } = useAuth();
+ */export const Header = () => {
+  const { user, isAuthenticated, canContribute } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isContributorUser = canContribute && canContribute();
 
   const handleContributeClick = (e) => {
     if (e?.preventDefault) e.preventDefault();
@@ -17,7 +18,7 @@ export const Header = () => {
       navigate('/login', { state: { from: '/contribute' } });
       return;
     }
-    if (hasContributePermission && !hasContributePermission()) {
+    if (!isContributorUser) {
       navigate('/apply-contributor', { state: { from: '/contribute' } });
       return;
     }
@@ -29,9 +30,12 @@ export const Header = () => {
     { label: 'Map',        to: '/map' },
     { label: 'Channels',   to: '/channels' },
     { label: 'AI Help',    to: '/ai-assistant' },
-    { label: 'Contribute', to: '/contribute', onClick: handleContributeClick },
-      { label: 'Shorts', to: '/shorts' },  // ✅ Add
-
+    { 
+      label: user && !isContributorUser ? 'Become a Contributor' : 'Contribute', 
+      to: '/contribute', 
+      onClick: handleContributeClick 
+    },
+    { label: 'Shorts', to: '/shorts' },
   ];
 
   return (
@@ -75,7 +79,7 @@ export const Header = () => {
                 onClick={handleContributeClick}
                 className="hidden sm:inline-flex bg-[#E87A1E] hover:bg-[#C8521A] text-white px-4.5 py-2 rounded-xl transition text-sm font-bold shadow-sm active:scale-95 cursor-pointer"
               >
-                Contribute
+                {isContributorUser ? 'Contribute' : 'Become a Contributor'}
               </button>
               <Link
                 to="/profile"
