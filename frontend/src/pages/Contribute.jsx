@@ -12,6 +12,9 @@ const TABS = [
 export const Contribute = () => {
   const [searchParams] = useSearchParams();
   const channelId = searchParams.get('channel');
+  const contentType = searchParams.get('type'); // ✅ Add this
+
+  return <UploadContent preSelectedChannelId={channelId} preSelectedType={contentType} />;
   const defaultTab = searchParams.get('tab') === 'amenity' ? 'amenity' : 'content';
   const [activeTab, setActiveTab] = useState(defaultTab);
 

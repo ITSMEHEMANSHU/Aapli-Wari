@@ -27,6 +27,8 @@ class ContentType(PyEnum):
     PDF = "pdf"
     MANUSCRIPT = "manuscript"
     STORY = "story"
+    SHORT = "short"  # ✅ Add this
+
 
 
 class Content(Base):

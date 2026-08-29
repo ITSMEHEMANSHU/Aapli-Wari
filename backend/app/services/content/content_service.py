@@ -92,10 +92,11 @@ class ContentService:
         status: Optional[ContentStatus] = None,
         verified_only: bool = False,
         search_query: Optional[str] = None,
+        exclude_short: bool = False,  # ✅ Add this
         limit: int = 20,
         offset: int = 0
     ) -> List[Content]:
-        query = db.query(Content).options(joinedload(Content.user))
+        query = db.query(Content)
         
         if user_id:
             query = query.filter(Content.user_id == user_id)
@@ -106,24 +107,15 @@ class ContentService:
         if status:
             query = query.filter(Content.status == status)
         if verified_only:
-            query = query.filter(
-                Content.verified.is_(True),
-                Content.status.in_([
-                    ContentStatus.PUBLISHED,
-                    ContentStatus.PROCESSED,
-                    ContentStatus.APPROVED,
-                    ContentStatus.PROCESSING,
-                ]),
-            )
+            query = query.filter(Content.verified == True, Content.status == ContentStatus.PUBLISHED)
+        if exclude_short:  # ✅ Add this
+            query = query.filter(Content.content_type != ContentType.SHORT)
         if search_query:
-            from sqlalchemy import cast
-            from sqlalchemy.dialects.postgresql import JSONB
             query = query.filter(
                 or_(
                     Content.title.ilike(f"%{search_query}%"),
                     Content.description.ilike(f"%{search_query}%"),
-                    Content.extracted_text.ilike(f"%{search_query}%"),
-                    cast(Content.tags, JSONB).contains(cast(f'["{search_query}"]', JSONB)),
+                    Content.tags.contains([search_query])
                 )
             )
         

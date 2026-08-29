@@ -221,8 +221,11 @@ decideJoinRequest: (channelId, requestId, action) =>
       body: JSON.stringify({ platform }),
     }),
 
+  
     trackDownload: (id) => request(`/engagement/content/${id}/download`),
 
+    chat: (data) =>
+  request('/chat/', {
   // =========================
   // Amenities (Map)
   // =========================
@@ -232,6 +235,16 @@ decideJoinRequest: (channelId, requestId, action) =>
     method: 'POST',
     body: JSON.stringify(data),
   }),
+
+  // =========================
+// Shorts (Aapla Theva)
+// =========================
+
+shorts: (params = {}) =>
+  request('/shorts/', { params }),
+
+short: (id) =>
+  request(`/shorts/${id}`),
 
   deleteAmenity: (id) => request(`/amenities/${id}`, { method: 'DELETE' }),
 
