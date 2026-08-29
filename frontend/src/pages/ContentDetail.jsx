@@ -185,11 +185,21 @@ export const ContentDetail = () => {
         );
       case 'video':
         return (
-          <video 
-            src={content.file_url} 
-            controls 
-            className="w-full max-h-[500px] rounded-lg bg-gray-100"
-          />
+          <div>
+            <video
+              src={content.file_url}
+              controls
+              className="w-full max-h-[500px] rounded-lg bg-gray-100"
+            />
+            {content.transcription && (
+              <div className="mt-4 rounded-lg border border-[#E8D9C3] bg-[#FDF8F0] p-4">
+                <p className="mb-1 text-sm font-semibold text-[#8B3A3A]">Transcript</p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#4A392E]">
+                  {content.transcription}
+                </p>
+              </div>
+            )}
+          </div>
         );
       case 'audio':
         return (

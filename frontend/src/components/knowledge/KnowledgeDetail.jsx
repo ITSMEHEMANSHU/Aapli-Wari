@@ -29,18 +29,29 @@ export const KnowledgeDetail = ({ item, onOpenSuggest, onOpenHistory }) => {
         <div className="text-lg font-serif text-[#DD6B35] mb-4">{item.vernacularTitle}</div>
 
         {item.fileUrl && item.contentType === 'image' && (
-          <imgloading="lazy" 
+          <img
+loading="lazy" 
             src={item.fileUrl}
             alt={item.title}
             className="w-full max-h-[500px] object-contain rounded-lg bg-[#FDF8F0] mb-6"
           />
         )}
         {item.fileUrl && item.contentType === 'video' && (
-          <video
-            src={item.fileUrl}
-            controls
-            className="w-full max-h-[500px] rounded-lg bg-black mb-6"
-          />
+          <div className="mb-6">
+            <video
+              src={item.fileUrl}
+              controls
+              className="w-full max-h-[500px] rounded-lg bg-black"
+            />
+            {item.transcription && (
+              <div className="mt-4 rounded-lg border border-[#E8D9C3] bg-[#FDF8F0] p-4">
+                <p className="mb-1 text-sm font-semibold text-[#8B3A3A]">Transcript</p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#4A392E]">
+                  {item.transcription}
+                </p>
+              </div>
+            )}
+          </div>
         )}
         {item.fileUrl && item.contentType === 'audio' && (
           <audio src={item.fileUrl} controls className="w-full mb-6" />
