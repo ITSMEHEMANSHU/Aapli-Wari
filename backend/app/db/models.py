@@ -20,3 +20,4 @@ from backend.app.models.channel import Channel
 from backend.app.models.channel_post import ChannelPost
 from backend.app.models.content import Content, ContentVersion, ContentReview
 from backend.app.models.engagement import Like, Comment, Share, Download
+from backend.app.models.amenity import Amenity
