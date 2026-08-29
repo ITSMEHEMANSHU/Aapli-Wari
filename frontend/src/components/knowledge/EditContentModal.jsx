@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { CATEGORIES } from './data/knowledgeData';
 import api from '../../services/api';
 
@@ -39,7 +39,7 @@ function ExistingMedia({ item, previewUrl, selectedFile }) {
                 )}
             </div>
             {isImage ? (
-                <img src={source} alt={item.title} className="max-h-64 w-full rounded-lg object-contain bg-black/5" />
+                <img loading="lazy" src={source} alt={item.title} className="max-h-64 w-full rounded-lg object-contain bg-black/5" />
             ) : isVideo ? (
                 <video src={source} controls className="max-h-64 w-full rounded-lg bg-black" />
             ) : isAudio ? (

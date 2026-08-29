@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   FiHeart, 
@@ -91,7 +91,7 @@ export const PostCard = ({ post, user }) => {
         {post.file_url && (
           <div className="mt-3 rounded-lg overflow-hidden bg-gray-100">
             {post.content_type === 'image' && (
-              <img src={post.file_url} alt={post.title} className="w-full max-h-96 object-contain" />
+              <img loading="lazy" src={post.file_url} alt={post.title} className="w-full max-h-96 object-contain" />
             )}
             {post.content_type === 'video' && (
               <video src={post.file_url} controls className="w-full max-h-96" />
