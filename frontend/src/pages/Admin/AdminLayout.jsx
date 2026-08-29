@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { 
+import {
   FiMenu, FiBell, FiUser, FiLogOut, FiChevronDown,
   FiHome, FiUsers, FiFile, FiHash, FiSettings
 } from 'react-icons/fi';
@@ -9,7 +9,7 @@ import Avatar from '../../components/common/Avatar';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 
-const AdminSidebar = ({ isOpen, setIsOpen }) => {
+const AdminSidebar = ({ isOpen, setIsOpen, onLogout }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -27,17 +27,16 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
     <>
       {/* Mobile Backdrop */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside 
-        className={`bg-[#6d2325] text-[#ffdcbd] fixed left-0 top-0 h-full w-[260px] border-r border-[#dac1bf]/20 shadow-2xl flex flex-col py-6 z-50 transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+      <aside
+        className={`bg-[#6d2325] text-[#ffdcbd] fixed left-0 top-0 h-full w-[260px] border-r border-[#dac1bf]/20 shadow-2xl flex flex-col py-6 z-50 transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          }`}
       >
         {/* Brand */}
         <div className="px-6 pb-6 border-b border-[#dac1bf]/20 mb-6 flex items-center justify-between">
@@ -45,7 +44,7 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
             <h1 className="text-2xl font-bold text-[#ffdcbd] tracking-tight">Aapli Wari</h1>
             <p className="text-[#f0bd8b]/80 text-xs font-semibold mt-1 tracking-widest uppercase">Admin</p>
           </div>
-          <button 
+          <button
             onClick={() => setIsOpen(false)}
             className="lg:hidden text-[#ffdcbd] hover:bg-[#8b3a3a] p-1 rounded"
           >
@@ -63,11 +62,10 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
                     navigate(item.path);
                     setIsOpen(false);
                   }}
-                  className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    isActive(item.path)
+                  className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive(item.path)
                       ? 'border-l-4 border-[#ffdcbd] bg-[#7a2d2e]/40 text-[#ffdcbd] font-semibold'
                       : 'text-[#ffb3b0]/80 hover:text-[#ffb3b0] hover:bg-[#7a2d2e]/20'
-                  }`}
+                    }`}
                 >
                   <item.icon className="mr-3 text-[20px]" size={20} />
                   <span>{item.label}</span>
@@ -79,13 +77,13 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
 
         {/* Footer */}
         <div className="px-4 pt-4 border-t border-[#dac1bf]/20">
-          <div className="px-2 pt-2 text-[11px] text-[#ffb3b0]/60 flex items-center justify-between">
-            <span>Aapli Wari v2.4</span>
-            {/* <span className="inline-flex items-center gap-1 text-[#c6f6d5]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#4CAF50] animate-pulse"></span>
-              Live
-            </span> */}
-          </div>
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center justify-center gap-2 bg-[#ba1a1a] hover:bg-[#8b1414] text-[#ffdcbd] px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200"
+          >
+            <FiLogOut size={16} />
+            Logout
+          </button>
         </div>
       </aside>
     </>
@@ -105,7 +103,7 @@ export const AdminLayout = () => {
 
   return (
     <div className="flex h-screen bg-[#FDF8F0] text-[#2D1B0E] overflow-hidden">
-      <AdminSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <AdminSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} onLogout={handleLogout} />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:ml-[260px] h-full overflow-hidden">

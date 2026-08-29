@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { FiVideo, FiImage, FiMusic, FiFile, FiSearch, FiEye, FiX } from 'react-icons/fi';
+import { FiVideo, FiImage, FiSearch, FiEye, FiX, FiHeart } from 'react-icons/fi';
 
 import Button from '../common/Button';
 import Card from '../common/Card';
@@ -9,56 +9,45 @@ import { api } from '../../services/api';
 
 const LIMIT = 20;
 
-// 🎨 Wari Heritage palette — deep terracotta icons instead of generic orange
+// 🎨 Wari Heritage palette — social media focused icons
 const TYPE_ICONS = {
   video: <FiVideo className="text-[#8B3A3A]" />,
   image: <FiImage className="text-[#8B3A3A]" />,
-  audio: <FiMusic className="text-[#8B3A3A]" />,
-  pdf: <FiFile className="text-[#8B3A3A]" />,
-  manuscript: <FiFile className="text-[#8B3A3A]" />,
-  story: <FiFile className="text-[#8B3A3A]" />,
 };
 
 const FILTERS = [
-  { id: 'all', label: 'All', icon: FiSearch },
-  { id: 'image', label: 'Images', icon: FiImage },
-  { id: 'video', label: 'Videos', icon: FiVideo },
-  { id: 'audio', label: 'Audio', icon: FiMusic },
-  { id: 'pdf', label: 'Documents', icon: FiFile },
-  { id: 'story', label: 'Stories', icon: FiFile },
+  { id: 'all', label: 'Discover', icon: FiSearch },
+  { id: 'image', label: 'Photos', icon: FiImage },
+  { id: 'video', label: 'Reels', icon: FiVideo },
 ];
 
 function getStatusBadge(status, verified) {
-  // Logic unchanged — only the visual variant/classNames are themed
-  if (status === 'processing') return <Badge variant="warning" className="bg-[#D4A373]/20 text-[#8B3A3A] border border-[#D4A373]/40">⏳ Processing</Badge>;
-  if (status === 'pending_review') return <Badge variant="warning" className="bg-[#D4A373]/20 text-[#8B3A3A] border border-[#D4A373]/40">⏳ Review</Badge>;
-  if (status === 'rejected') return <Badge variant="danger" className="bg-[#8B3A3A]/10 text-[#8B3A3A] border border-[#8B3A3A]/30">Rejected</Badge>;
-  if (verified) return <Badge variant="success" className="bg-[#2D6A4F]/10 text-[#2D6A4F] border border-[#2D6A4F]/30">✓ Verified</Badge>;
-  if (status === 'approved') return <Badge variant="info" className="bg-[#2D6A4F]/10 text-[#2D6A4F] border border-[#2D6A4F]/30">Approved</Badge>;
-  return <Badge variant="default" className="bg-[#5A4030]/10 text-[#5A4030] border border-[#5A4030]/20">{status}</Badge>;
+  // Simplified for social media - only show verified or processing
+  if (status === 'processing') return <Badge variant="warning" className="bg-[#D4A373]/20 text-[#8B3A3A] border border-[#D4A373]/40 text-xs">⏳</Badge>;
+  if (verified) return <Badge variant="success" className="bg-[#2D6A4F]/20 text-[#2D6A4F] border border-[#2D6A4F]/30 text-xs">✓</Badge>;
+  return null;
 }
 
 function MediaPreview({ item }) {
   const [imgError, setImgError] = useState(false);
 
-  if (item.content_type === 'video') {
-    return item.file_url ? (
-      <video
-        src={item.file_url}
-        className="w-full h-36 sm:h-40 object-cover rounded-[12px] mb-3 bg-black"
-        preload="metadata"
-        muted
-      />
-    ) : (
-      <div className="w-full h-36 sm:h-40 rounded-[12px] mb-3 bg-[#FDF8F0] flex items-center justify-center text-4xl">🎬</div>
-    );
-  }
-
-  if (item.content_type === 'audio') {
+  if (item.content_type === 'video' && item.file_url) {
     return (
-      <div className="w-full mb-3">
-        <div className="w-full h-20 rounded-[12px] bg-[#FDF8F0] flex items-center justify-center text-3xl mb-2">🎵</div>
-        <audio src={item.file_url} controls className="w-full" preload="none" />
+      <div className="relative w-full aspect-[9/16] bg-black rounded-[12px] overflow-hidden mb-0 group">
+        <video
+          src={item.file_url}
+          className="w-full h-full object-cover"
+          preload="metadata"
+          muted
+        />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+          <div className="text-white/0 group-hover:text-white/80 transition-all">▶</div>
+        </div>
+        {item.duration && (
+          <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full font-semibold">
+            {Math.floor(item.duration / 60)}:{String(item.duration % 60).padStart(2, '0')}
+          </div>
+        )}
       </div>
     );
   }
@@ -68,13 +57,17 @@ function MediaPreview({ item }) {
       <img
         src={item.file_url}
         alt={item.title}
-        className="w-full h-36 sm:h-40 object-cover rounded-[12px] mb-3"
+        className="w-full aspect-square object-cover rounded-[12px] mb-0 group-hover:brightness-95 transition-all duration-300"
         onError={() => setImgError(true)}
       />
     );
   }
 
-  return null;
+  return (
+    <div className="w-full aspect-square rounded-[12px] mb-0 bg-[#FDF8F0] flex items-center justify-center text-4xl">
+      {item.content_type === 'video' ? '🎬' : '🖼️'}
+    </div>
+  );
 }
 
 export const ExploreWari = () => {
@@ -103,10 +96,19 @@ export const ExploreWari = () => {
         verified_only: true,
         limit: LIMIT,
         offset: currentOffset,
-        exclude_short: true, // ✅ Exclude shorts from Explore
+        exclude_short: false, // Include reels
       };
 
-      if (filter !== 'all') params.content_type = filter;
+      // Only fetch images and short videos
+      if (filter === 'video') {
+        params.content_type = 'video';
+        params.max_duration = 120; // 2 minutes max
+      } else if (filter === 'image') {
+        params.content_type = 'image';
+      } else {
+        // For 'all', request both but filter on client
+        params.content_type = ['image', 'video'];
+      }
 
       let data;
       let items = [];
@@ -116,16 +118,23 @@ export const ExploreWari = () => {
           ...params,
           q: cleanedQuery,
         });
-        items = data?.results || [];
-        const totalCount = data?.count || 0;
-        setHasMore(items.length === LIMIT && (reset ? items.length < totalCount : true));
+        items = (data?.results || []).filter(item => {
+          // Client-side filter: only images and short videos
+          if (item.content_type !== 'image' && item.content_type !== 'video') return false;
+          if (item.content_type === 'video' && item.duration && item.duration > 120) return false;
+          return true;
+        });
       } else {
         if (cleanedQuery) {
           params.search = cleanedQuery;
         }
         data = await api.contentList(params);
-        items = Array.isArray(data) ? data : [];
-        setHasMore(items.length === LIMIT);
+        items = (Array.isArray(data) ? data : []).filter(item => {
+          // Client-side filter: only images and short videos
+          if (item.content_type !== 'image' && item.content_type !== 'video') return false;
+          if (item.content_type === 'video' && item.duration && item.duration > 120) return false;
+          return true;
+        });
       }
 
       if (reset) {
@@ -135,6 +144,8 @@ export const ExploreWari = () => {
         setContent(prev => [...prev, ...items]);
         setOffset(currentOffset + LIMIT);
       }
+
+      setHasMore(items.length === LIMIT);
     } catch (err) {
       console.error('[Explore] Fetch failed:', err);
       setError(err.message || 'Failed to load content');
@@ -155,45 +166,19 @@ export const ExploreWari = () => {
     setSearchParams({});
   };
 
-  // ✅ Helper to capitalize filter name
-  const getFilterLabel = () => {
-    const found = FILTERS.find(f => f.id === filter);
-    return found ? found.label : filter;
-  };
-
   if (error && !loading) {
     return (
-      <div className="bg-[#FDF8F0] px-3 sm:px-6 py-4 sm:py-6 rounded-[12px]">
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-[#2D1B0E]">
-              {urlSearch ? `Results for "${urlSearch}"` : 'Explore Wari Heritage'}
-            </h1>
-            <p className="text-[#5A4030] text-sm mt-0.5">
-              {urlSearch
-                ? `${content.length} item${content.length !== 1 ? 's' : ''} found`
-                : 'Discover verified knowledge from the Wari community'}
-            </p>
-          </div>
-          {urlSearch && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearSearch}
-              className="flex items-center gap-1 rounded-full border-[#D4A373] text-[#8B3A3A] hover:bg-[#D4A373]/10"
-            >
-              <FiX size={14} /> Clear search
-            </Button>
-          )}
-        </div>
-        <div className="text-center py-12 bg-white rounded-[12px]">
-          <p className="text-[#8B3A3A] font-medium">{error}</p>
+      <div className="bg-white px-3 sm:px-6 py-4 sm:py-6 rounded-[12px]">
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h3 className="text-lg font-bold text-[#2D1B0E] mb-2">Oops! Something went wrong</h3>
+          <p className="text-[#5A4030] mb-6">{error}</p>
           <Button
-            variant="outline"
-            className="mt-4 rounded-full border-[#8B3A3A] text-[#8B3A3A] hover:bg-[#8B3A3A]/5"
+            variant="primary"
+            className="rounded-full bg-[#8B3A3A] hover:bg-[#7a3232] text-white"
             onClick={() => fetchContent(true)}
           >
-            Retry
+            Try Again
           </Button>
         </div>
       </div>
@@ -201,7 +186,7 @@ export const ExploreWari = () => {
   }
 
   return (
-    <div className="bg-[#FDF8F0] px-3 sm:px-6 py-4 sm:py-6 rounded-[12px]">
+    <div className="bg-[#FFF] px-3 sm:px-6 py-4 sm:py-6 rounded-[12px]">
       {/* Local keyframes for fade-in / slide-up and shimmer — styling only */}
       <style>{`
         @keyframes wariFadeSlideUp {
@@ -220,16 +205,14 @@ export const ExploreWari = () => {
         }
       `}</style>
 
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+      {/* Header - Minimal and Social Media Focused */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#2D1B0E]">
-            {urlSearch ? `Results for "${urlSearch}"` : 'Explore Wari Heritage'}
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#2D1B0E]">
+            {urlSearch ? `"${urlSearch}"` : 'Discover'}
           </h1>
-          <p className="text-[#5A4030] text-sm mt-0.5">
-            {urlSearch
-              ? `${content.length} item${content.length !== 1 ? 's' : ''} found`
-              : 'Discover verified knowledge from the Wari community'}
+          <p className="text-[#5A4030] text-xs sm:text-sm mt-1">
+            {content.length > 0 && `${content.length}+ posts`}
           </p>
         </div>
         {urlSearch && (
@@ -239,68 +222,46 @@ export const ExploreWari = () => {
             onClick={handleClearSearch}
             className="flex items-center gap-1 rounded-full border-[#D4A373] text-[#8B3A3A] hover:bg-[#D4A373]/10"
           >
-            <FiX size={14} /> Clear search
+            <FiX size={14} /> Clear
           </Button>
         )}
       </div>
 
-      {/* Type filters — pill-shaped, wrap on mobile, active state = primary color */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      {/* Type filters - Social Media Style Tabs */}
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
         {FILTERS.map(f => (
           <Button
             key={f.id}
             variant={filter === f.id ? 'primary' : 'ghost'}
             onClick={() => setFilter(f.id)}
-            className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-sm transition-all duration-200 ${
-              filter === f.id
-                ? 'bg-[#8B3A3A] text-[#FDF8F0] shadow-[0_4px_20px_rgba(139,58,58,0.08)] hover:bg-[#7a3232]'
-                : 'bg-white text-[#5A4030] border border-[#D4A373]/40 hover:bg-[#D4A373]/10'
-            }`}
+            className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap ${filter === f.id
+                ? 'bg-[#8B3A3A] text-[#FDF8F0] shadow-[0_4px_20px_rgba(139,58,58,0.08)]'
+                : 'bg-[#FDF8F0] text-[#5A4030] border border-[#D4A373]/40 hover:bg-[#D4A373]/5'
+              }`}
             size="sm"
           >
-            <f.icon size={14} /> {f.label}
+            <f.icon size={16} /> {f.label}
           </Button>
         ))}
       </div>
 
-      {/* Content grid */}
+      {/* Content Grid - Social Media Masonry Style */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
-          {Array.from({ length: 8 }).map((_, idx) => (
-            <div
-              key={idx}
-              className="bg-white rounded-[12px] border-l-4 border-l-[#D4A373] shadow-[0_4px_20px_rgba(139,58,58,0.08)] p-3 sm:p-4 overflow-hidden"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-[#FDF8F0] animate-pulse" />
-                  <div className="h-5 w-16 rounded-full bg-[#FDF8F0] animate-pulse" />
-                </div>
-                <div className="h-5 w-16 rounded-full bg-[#FDF8F0] animate-pulse" />
-              </div>
-              <div className="w-full h-36 sm:h-40 rounded-[12px] bg-[#FDF8F0] animate-pulse mb-3" />
-              <div className="h-5 w-3/4 rounded bg-[#FDF8F0] animate-pulse mb-2" />
-              <div className="h-4 w-full rounded bg-[#FDF8F0] animate-pulse mb-1" />
-              <div className="h-4 w-2/3 rounded bg-[#FDF8F0] animate-pulse mb-3" />
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#D4A373]/20">
-                <div className="h-3 w-24 rounded bg-[#FDF8F0] animate-pulse" />
-                <div className="h-3 w-10 rounded bg-[#FDF8F0] animate-pulse" />
-              </div>
-            </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          {Array.from({ length: 12 }).map((_, idx) => (
+            <div key={idx} className="aspect-square bg-[#FDF8F0] rounded-[12px] animate-pulse" />
           ))}
         </div>
       ) : content.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-4xl mb-4">📭</div>
-          <h3 className="text-lg font-medium text-[#2D1B0E]">
-            {urlSearch ? `No results for "${urlSearch}"` : 'No content yet'}
+        <div className="text-center py-16">
+          <div className="text-6xl mb-4">📱</div>
+          <h3 className="text-xl font-bold text-[#2D1B0E] mb-2">
+            {urlSearch ? `No posts for "${urlSearch}"` : 'No posts yet'}
           </h3>
-          <p className="text-[#5A4030] text-sm">
-            {!urlSearch && (filter !== 'all'
-              ? `No ${filter} content available yet.`
-              : 'Be the first to contribute Wari knowledge!')}
+          <p className="text-[#5A4030] mb-6">
+            {filter === 'video' ? 'Be the first to share a Reel!' : 'Be the first to share a photo!'}
           </p>
-          <div className="flex gap-3 justify-center mt-4">
+          <div className="flex gap-3 justify-center flex-wrap">
             {urlSearch && (
               <Button
                 variant="outline"
@@ -310,110 +271,77 @@ export const ExploreWari = () => {
                 Browse All
               </Button>
             )}
-            {/* ✅ Category-specific contribute button */}
-            {filter !== 'all' ? (
-              <Link to={`/contribute?type=${filter}`}>
-                <Button
-                  variant="primary"
-                  className="rounded-full bg-[#8B3A3A] hover:bg-[#7a3232] text-[#FDF8F0] shadow-[0_4px_20px_rgba(139,58,58,0.08)]"
-                >
-                  Contribute {getFilterLabel()} Now
-                </Button>
-              </Link>
-            ) : (
-              <Link to="/contribute">
-                <Button
-                  variant="primary"
-                  className="rounded-full bg-[#8B3A3A] hover:bg-[#7a3232] text-[#FDF8F0] shadow-[0_4px_20px_rgba(139,58,58,0.08)]"
-                >
-                  Contribute Now
-                </Button>
-              </Link>
-            )}
+            <Link to={filter !== 'all' ? `/contribute?type=${filter}` : '/contribute'}>
+              <Button
+                variant="primary"
+                className="rounded-full bg-[#8B3A3A] hover:bg-[#7a3232] text-[#FDF8F0] shadow-[0_4px_20px_rgba(139,58,58,0.08)]"
+              >
+                {filter === 'video' ? 'Share Reel' : 'Share Photo'}
+              </Button>
+            </Link>
           </div>
         </div>
       ) : (
         <>
-          {/* Responsive grid: 1 col mobile → 2 cols tablet → 3-4 cols desktop */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
+          {/* Responsive Grid: 2 cols mobile → 3 cols tablet → 4 cols desktop (Instagram/Pinterest style) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
             {content.map((item, idx) => (
-              <Link key={item.id} to={`/content/${item.id}`} className="block">
-                <Card
-                  className="wari-card-enter group relative h-full bg-white rounded-[12px] border-l-4 border-l-[#D4A373] shadow-[0_4px_20px_rgba(139,58,58,0.08)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(139,58,58,0.16)] cursor-pointer overflow-hidden p-3 sm:p-4"
-                  style={{ animationDelay: `${Math.min(idx, 8) * 60}ms` }}
-                >
-                  {/* Processing overlay — warm, not harsh black */}
-                  {item.status === 'processing' && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#FDF8F0]/95 to-[#D4A373]/30 backdrop-blur-[2px] rounded-[12px] flex flex-col items-center justify-center z-10">
-                      <div className="animate-spin text-2xl mb-2 text-[#8B3A3A]">⏳</div>
-                      <p className="text-xs text-[#5A4030] font-medium">Processing OCR...</p>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      {TYPE_ICONS[item.content_type] || <FiFile className="text-[#8B3A3A]" />}
-                      <Badge variant="default" className="bg-[#5A4030]/10 text-[#5A4030] border border-[#5A4030]/20 rounded-full">
-                        {item.content_type}
-                      </Badge>
-                    </div>
-                    {getStatusBadge(item.status, item.verified)}
+              <Link key={item.id} to={`/content/${item.id}`} className="block group">
+                <div className="wari-card-enter relative w-full aspect-square overflow-hidden rounded-[12px] bg-black" style={{ animationDelay: `${Math.min(idx, 12) * 50}ms` }}>
+                  {/* Media Content */}
+                  <div className="relative w-full h-full">
+                    <MediaPreview item={item} />
                   </div>
 
-                  <MediaPreview item={item} />
+                  {/* Overlay on Hover - Social Media Engagement */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-3 sm:p-4">
 
-                  <h3 className="font-bold text-lg line-clamp-1 text-[#2D1B0E]">{item.title}</h3>
-                  {item.description && (
-                    <p className="text-[#5A4030] text-sm line-clamp-2 mt-1">{item.description}</p>
-                  )}
-                  
-                  {/* Show match type for semantic search results */}
-                  {item.match_type && (
-                    <div className="mt-1.5">
-                      <Badge 
-                        variant="default" 
-                        className={`text-xs rounded-full ${
-                          item.match_type === 'both' 
-                            ? 'bg-[#2D6A4F]/20 text-[#2D6A4F] border-[#2D6A4F]/30' 
-                            : item.match_type === 'semantic'
-                            ? 'bg-[#8B3A3A]/20 text-[#8B3A3A] border-[#8B3A3A]/30'
-                            : 'bg-[#D4A373]/20 text-[#5A4030] border-[#D4A373]/30'
-                        }`}
-                      >
-                        {item.match_type === 'both' ? '🔍 + 🧠' : 
-                         item.match_type === 'semantic' ? '🧠 Semantic' : 
-                         '🔍 Keyword'}
+                    {/* Top: Content Type Badge */}
+                    <div className="flex justify-between items-start">
+                      <Badge variant="default" className="bg-[#8B3A3A] text-white text-xs rounded-full px-2 py-1">
+                        {item.content_type === 'video' ? '🎬 Reel' : '📷 Photo'}
                       </Badge>
+                      {getStatusBadge(item.status, item.verified)}
+                    </div>
+
+                    {/* Bottom: Engagement & Title */}
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-sm text-white line-clamp-2">{item.title}</h3>
+                      <div className="flex items-center justify-between text-xs text-white/80">
+                        <span className="flex items-center gap-1">
+                          <FiHeart size={14} /> {item.likes_count || 0}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <FiEye size={14} /> {item.views_count || 0}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Video Duration Badge */}
+                  {item.content_type === 'video' && item.duration && (
+                    <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full font-semibold z-10">
+                      {Math.floor(item.duration / 60)}:{String(item.duration % 60).padStart(2, '0')}
                     </div>
                   )}
-
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#D4A373]/20">
-                    <span className="text-xs text-[#5A4030]">
-                      {new Date(item.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </span>
-                    <span className="text-xs text-[#8B3A3A] font-medium flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                      <FiEye size={12} /> View
-                    </span>
-                  </div>
-                </Card>
+                </div>
               </Link>
             ))}
           </div>
 
-          {/* Load More — pill shape, warm gradient, shimmer on hover */}
+          {/* Load More Button - Social Media Style */}
           {hasMore && (
-            <div className="flex justify-center mt-8 sm:mt-10">
+            <div className="flex justify-center mt-8 sm:mt-12">
               <Button
-                variant="outline"
                 onClick={() => fetchContent(false)}
                 disabled={loadingMore}
-                className="wari-load-more rounded-full px-8 py-2.5 text-[#FDF8F0] font-medium border-none shadow-[0_4px_20px_rgba(139,58,58,0.08)] transition-all duration-300 hover:scale-105 disabled:opacity-70 disabled:hover:scale-100"
+                className="rounded-full px-8 py-3 text-[#FDF8F0] font-semibold border-none shadow-[0_4px_20px_rgba(139,58,58,0.08)] transition-all duration-300 hover:scale-105 disabled:opacity-70 disabled:hover:scale-100"
                 style={{
                   backgroundImage: 'linear-gradient(90deg, #8B3A3A 0%, #D4A373 50%, #8B3A3A 100%)',
                   backgroundSize: '200% auto',
                 }}
               >
-                {loadingMore ? 'Loading...' : 'Load More'}
+                {loadingMore ? '⏳ Loading...' : '📱 Load More Posts'}
               </Button>
             </div>
           )}
@@ -422,5 +350,6 @@ export const ExploreWari = () => {
     </div>
   );
 };
+
 
 export default ExploreWari;

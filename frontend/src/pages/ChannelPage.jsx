@@ -15,6 +15,10 @@ import {
   FiSettings,
   FiStar,
   FiPaperclip,
+  FiUserPlus,
+  FiUserCheck,
+  FiSend,
+  FiMessageCircle,
 } from 'react-icons/fi';
 import Button from '../components/common/Button';
 import Avatar from '../components/common/Avatar';
@@ -199,7 +203,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
     if (!authLoading && user && channel && !isOwner && !adminView && id) {
       api.getFollowStatus(id)
         .then((data) => setIsFollowing(Boolean(data?.is_following)))
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [authLoading, user, channel, isOwner, adminView, id]);
 
@@ -367,10 +371,10 @@ export const ChannelPage = ({ isAdminView = false }) => {
         const title = newPost.trim() || 'Channel Post';
         formData.append('title', title.substring(0, 100));
         formData.append('description', newPost);
-        formData.append('content_type', 
+        formData.append('content_type',
           postMedia.type.startsWith('image/') ? 'image' :
-          postMedia.type.startsWith('video/') ? 'video' :
-          postMedia.type.startsWith('audio/') ? 'audio' : 'pdf'
+            postMedia.type.startsWith('video/') ? 'video' :
+              postMedia.type.startsWith('audio/') ? 'audio' : 'pdf'
         );
         formData.append('channel_id', id);
         formData.append('language', 'en');
@@ -423,7 +427,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
     }));
 
     if (nextLiked) {
-      api.likeChannelPost?.(id, postId).catch(() => {});
+      api.likeChannelPost?.(id, postId).catch(() => { });
     }
   };
 
@@ -532,12 +536,12 @@ export const ChannelPage = ({ isAdminView = false }) => {
   return (
     <div className="bg-[#F8F4EE] min-h-[calc(100vh-4rem)] flex flex-col justify-between overflow-hidden">
       <div className="max-w-[1600px] w-full mx-auto flex-1 flex flex-col lg:flex-row h-full lg:h-[calc(100vh-4rem)]">
-        
+
         {/* ========================================================================= */}
         {/* LEFT COLUMN: Fixed, Scrollable (Hidden on Mobile, 30% on Desktop)         */}
         {/* ========================================================================= */}
         <aside className="w-full lg:w-[32%] xl:w-[30%] bg-white border-b lg:border-b-0 lg:border-r border-[#E8DFC8] flex flex-col overflow-y-auto shrink-0 shadow-sm">
-          
+
           {/* Top back button & Mobile Breadcrumb */}
           <div className="px-5 py-4 border-b border-[#F0E6D8] flex items-center justify-between">
             <button
@@ -558,7 +562,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                 <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-[#8B1E1E] to-[#DD6B35] flex items-center justify-center text-white text-3xl sm:text-4xl font-black shadow-md border-4 border-white ring-2 ring-[#E8D9C3]">
                   {channel.name?.[0]?.toUpperCase() || 'W'}
                 </div>
-              )}
+              </div>
 
               {channel.status === 'active' && (
                 <div className="absolute bottom-1 right-1 bg-white text-[#6a020a] rounded-full p-1 shadow-sm border border-[#dfbfbc] flex items-center justify-center">
@@ -584,49 +588,48 @@ export const ChannelPage = ({ isAdminView = false }) => {
             </div>
           </div>
 
-              {/* Action Buttons */}
-              <div className="w-full mt-4 flex items-center gap-2">
-                {adminView ? (
-                  <div className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#FDF8F0] text-[#6d2325] border border-[#E8D9C3] text-center shadow-sm">
-                    Admin Read-Only View
-                  </div>
-                ) : user && !isOwner ? (
-                  <button
-                    onClick={handleFollowToggle}
-                    disabled={followLoading}
-                    className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 ${
-                      isFollowing
-                        ? 'bg-[#FBF5EC] text-[#8B1E1E] border border-[#DD6B35]/40 hover:bg-red-50'
-                        : 'bg-[#DD6B35] text-white hover:bg-[#C85A28] active:scale-[0.98]'
-                    }`}
-                  >
-                    {followLoading ? (
-                      <Loader size="xs" />
-                    ) : isFollowing ? (
-                      <>
-                        <FiUserCheck size={16} /> Following
-                      </>
-                    ) : (
-                      <>
-                        <FiUserPlus size={16} /> + Follow Channel
-                      </>
-                    )}
-                  </button>
-                ) : isOwner ? (
-                  <Link
-                    to={`/channel/${id}/manage`}
-                    className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#8B1E1E] text-white hover:bg-[#701616] transition-all text-center flex items-center justify-center gap-2 shadow-sm"
-                  >
-                    <FiEdit2 size={14} /> Manage Channel
-                  </Link>
+          {/* Action Buttons */}
+          <div className="w-full mt-4 flex items-center gap-2">
+            {adminView ? (
+              <div className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#FDF8F0] text-[#6d2325] border border-[#E8D9C3] text-center shadow-sm">
+                Admin Read-Only View
+              </div>
+            ) : user && !isOwner ? (
+              <button
+                onClick={handleFollowToggle}
+                disabled={followLoading}
+                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 ${isFollowing
+                  ? 'bg-[#FBF5EC] text-[#8B1E1E] border border-[#DD6B35]/40 hover:bg-red-50'
+                  : 'bg-[#DD6B35] text-white hover:bg-[#C85A28] active:scale-[0.98]'
+                  }`}
+              >
+                {followLoading ? (
+                  <Loader size="xs" />
+                ) : isFollowing ? (
+                  <>
+                    <FiUserCheck size={16} /> Following
+                  </>
                 ) : (
-                  <button
-                    onClick={() => navigate('/login', { state: { from: `/channel/${id}` } })}
-                    className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#DD6B35] text-white hover:bg-[#C85A28] transition-all flex items-center justify-center gap-2 shadow-sm"
-                  >
-                    <FiUserPlus size={16} /> Follow Channel
-                  </button>
+                  <>
+                    <FiUserPlus size={16} /> + Follow Channel
+                  </>
                 )}
+              </button>
+            ) : isOwner ? (
+              <Link
+                to={`/channel/${id}/manage`}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#8B1E1E] text-white hover:bg-[#701616] transition-all text-center flex items-center justify-center gap-2 shadow-sm"
+              >
+                <FiEdit2 size={14} /> Manage Channel
+              </Link>
+            ) : (
+              <button
+                onClick={() => navigate('/login', { state: { from: `/channel/${id}` } })}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#DD6B35] text-white hover:bg-[#C85A28] transition-all flex items-center justify-center gap-2 shadow-sm"
+              >
+                <FiUserPlus size={16} /> Follow Channel
+              </button>
+            )}
 
             <button
               onClick={() => setActiveTab('map')}
@@ -691,70 +694,10 @@ export const ChannelPage = ({ isAdminView = false }) => {
         </aside>
 
         {/* ========================================================================= */}
-        {/* RIGHT COLUMN: Main Chat Area (100% on Mobile, 70% on Desktop)             */}
-        {/* ========================================================================= */}
-        <main className="flex-1 flex flex-col h-full relative bg-[#ffffff] overflow-hidden">
-          
-          {/* Emergency Alert Banner (Conditional & Dismissible) */}
-          {hasEmergencyContact && showEmergencyBanner && (
-            <div className="bg-[#ba1a1a] text-white px-4 py-2 flex justify-between items-center z-30 shadow-md">
-              <div className="flex items-center gap-2 min-w-0 pr-2">
-                <span className="material-symbols-outlined text-[20px] shrink-0" data-weight="fill">warning</span>
-                <span className="font-label-sm text-xs font-semibold tracking-wide truncate">
-                  Helpline: {channel.emergency_contact_name || 'Emergency Team'} ({channel.emergency_contact_phone})
-                </span>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <a
-                  className="font-label-sm text-xs underline hover:text-white/80 transition-colors font-bold"
-                  href={`tel:${channel.emergency_contact_phone}`}
-                >
-                  Call Help
-                </a>
-                {canEditEmergencyContact && (
-                  <button
-                    aria-label="Edit banner"
-                    onClick={() => setShowEmergencyModal(true)}
-                    className="text-white/80 hover:text-white transition-colors cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">edit</span>
-                  </button>
-                )}
-                <button
-                  aria-label="Close banner"
-                  onClick={() => setShowEmergencyBanner(false)}
-                  className="text-white/80 hover:text-white transition-colors cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[18px]">close</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Top App Bar Header */}
-          <header className="bg-[#fff8f5] border-b border-[#dfbfbc]/40 px-4 py-3 z-20 sticky top-0 flex flex-col w-full shadow-[0_2px_10px_rgba(106,2,10,0.02)]">
-            <div className="flex justify-between items-center w-full">
-              {/* Mobile View: Avatar & Title */}
-              <div className="flex items-center gap-3 md:hidden min-w-0">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6a020a] to-[#a13f09] text-white flex items-center justify-center font-headline-md font-bold text-sm shrink-0 border border-[#a13f09]/40">
-                  {channel.name?.[0]?.toUpperCase() || 'W'}
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="font-headline-md text-base font-bold text-[#6a020a] leading-tight truncate">
-                    {channel.name}
-                  </span>
-                  <span className="font-label-sm text-[11px] text-[#58413f]">Live Community</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </aside>
-
-        {/* ========================================================================= */}
         {/* RIGHT COLUMN (70%) - Main Tab Navigation & WhatsApp-style Interactive Area */}
         {/* ========================================================================= */}
         <main className="w-full lg:w-[68%] xl:w-[70%] flex flex-col bg-[#FDFBF7] h-full overflow-hidden">
-          
+
           {/* Top Sticky Bar */}
           <header className="bg-white/95 backdrop-blur-md border-b border-[#E8D9C3] px-4 py-3 sticky top-0 z-10 shrink-0">
             <div className="flex items-center justify-between gap-3">
@@ -833,20 +776,18 @@ export const ChannelPage = ({ isAdminView = false }) => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      isActive
-                        ? 'bg-[#8B1E1E] text-white shadow-xs'
-                        : 'bg-[#FBF5EC] text-gray-700 hover:bg-[#F3E7D3] hover:text-[#2B1B12]'
-                    }`}
+                    className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${isActive
+                      ? 'bg-[#8B1E1E] text-white shadow-xs'
+                      : 'bg-[#FBF5EC] text-gray-700 hover:bg-[#F3E7D3] hover:text-[#2B1B12]'
+                      }`}
                   >
                     <span className="material-symbols-outlined text-[18px]" data-weight={isActive ? 'fill' : undefined}>
                       {tab.icon}
                     </span>
                     <span>{tab.label}</span>
                     {tab.id === 'announcements' && announcementPosts.length > 0 && (
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                        isActive ? 'bg-white text-[#8B1E1E]' : 'bg-[#DD6B35] text-white'
-                      }`}>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${isActive ? 'bg-white text-[#8B1E1E]' : 'bg-[#DD6B35] text-white'
+                        }`}>
                         {announcementPosts.length}
                       </span>
                     )}
@@ -858,7 +799,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
 
           {/* Tab Content Display Area (Scrollable independently) */}
           <div className="flex-1 overflow-y-auto p-3.5 sm:p-5 space-y-4">
-            
+
             {/* -------------------- TAB 1: ANNOUNCEMENTS -------------------- */}
             {activeTab === 'announcements' && (
               <div className="space-y-4 max-w-2xl w-full mx-auto">
@@ -936,80 +877,79 @@ export const ChannelPage = ({ isAdminView = false }) => {
                     ))
                   )
                 ) : (
-                <>
-                {/* Announcements List */}
-                {announcementPosts.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
-                    <div className="text-5xl mb-3">🪧</div>
-                    <h3 className="text-base font-bold text-[#2B1B12]">No Announcements Yet</h3>
-                    <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-                      Official notifications regarding schedule, prasad halts, and Aarti will appear here.
-                    </p>
-                  </div>
-                ) : (
-                  announcementPosts.map((post) => (
-                    <article
-                      key={`ann-${post.id}`}
-                      className={`rounded-2xl border p-4 sm:p-5 transition-all shadow-xs ${
-                        post.is_pinned
-                          ? 'bg-[#FFFBF2] border-amber-300 ring-1 ring-amber-200'
-                          : 'bg-white border-[#E8DFC8]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="inline-flex items-center gap-1 rounded-md bg-[#8B1E1E] px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
-                            📢 Official Announcement
-                          </span>
-                          {post.is_pinned && (
-                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-900">
-                              📌 Pinned
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[11px] font-medium text-gray-400">{timeAgo(post.created_at)}</span>
+                  <>
+                    {/* Announcements List */}
+                    {announcementPosts.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
+                        <div className="text-5xl mb-3">🪧</div>
+                        <h3 className="text-base font-bold text-[#2B1B12]">No Announcements Yet</h3>
+                        <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
+                          Official notifications regarding schedule, prasad halts, and Aarti will appear here.
+                        </p>
                       </div>
+                    ) : (
+                      announcementPosts.map((post) => (
+                        <article
+                          key={`ann-${post.id}`}
+                          className={`rounded-2xl border p-4 sm:p-5 transition-all shadow-xs ${post.is_pinned
+                            ? 'bg-[#FFFBF2] border-amber-300 ring-1 ring-amber-200'
+                            : 'bg-white border-[#E8DFC8]'
+                            }`}
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-3">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="inline-flex items-center gap-1 rounded-md bg-[#8B1E1E] px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
+                                📢 Official Announcement
+                              </span>
+                              {post.is_pinned && (
+                                <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-900">
+                                  📌 Pinned
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] font-medium text-gray-400">{timeAgo(post.created_at)}</span>
+                          </div>
 
-                      {post.title && post.title !== 'Channel Post' && (
-                        <h4 className="text-base font-bold text-[#2B1B12] mb-1.5">{post.title}</h4>
-                      )}
-
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-                        {post.message || post.description}
-                      </p>
-
-                      {post.file_url && (
-                        <div className="mt-3 rounded-xl overflow-hidden border border-gray-100 bg-gray-50">
-                          {post.content_type === 'image' ? (
-                            <img src={post.file_url} alt={post.title || 'Announcement'} className="w-full max-h-80 object-cover" />
-                          ) : (
-                            <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="p-3 flex items-center gap-2 text-xs font-bold text-[#8B1E1E]">
-                              <FiFile size={16} /> View Attached Document
-                            </a>
+                          {post.title && post.title !== 'Channel Post' && (
+                            <h4 className="text-base font-bold text-[#2B1B12] mb-1.5">{post.title}</h4>
                           )}
-                        </div>
-                      )}
 
-                      <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                        <div className="flex items-center gap-2">
-                          <Avatar size="xs" fallback={post.user?.full_name?.[0] || 'P'} />
-                          <span className="font-bold text-[#2B1B12] text-xs">
-                            {post.user?.full_name || 'Palkhi Pramukh'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <button className="flex items-center gap-1 hover:text-[#8B1E1E]">
-                            <FiHeart size={13} /> {post.likes || 0}
-                          </button>
-                          <button className="flex items-center gap-1 hover:text-[#8B1E1E]">
-                            <FiShare2 size={13} /> Share
-                          </button>
-                        </div>
-                      </div>
-                    </article>
-                  ))
-                )}
-                </>
+                          <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+                            {post.message || post.description}
+                          </p>
+
+                          {post.file_url && (
+                            <div className="mt-3 rounded-xl overflow-hidden border border-gray-100 bg-gray-50">
+                              {post.content_type === 'image' ? (
+                                <img src={post.file_url} alt={post.title || 'Announcement'} className="w-full max-h-80 object-cover" />
+                              ) : (
+                                <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="p-3 flex items-center gap-2 text-xs font-bold text-[#8B1E1E]">
+                                  <FiFile size={16} /> View Attached Document
+                                </a>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                            <div className="flex items-center gap-2">
+                              <Avatar size="xs" fallback={post.user?.full_name?.[0] || 'P'} />
+                              <span className="font-bold text-[#2B1B12] text-xs">
+                                {post.user?.full_name || 'Palkhi Pramukh'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <button className="flex items-center gap-1 hover:text-[#8B1E1E]">
+                                <FiHeart size={13} /> {post.likes || 0}
+                              </button>
+                              <button className="flex items-center gap-1 hover:text-[#8B1E1E]">
+                                <FiShare2 size={13} /> Share
+                              </button>
+                            </div>
+                          </div>
+                        </article>
+                      ))
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -1046,11 +986,10 @@ export const ChannelPage = ({ isAdminView = false }) => {
                         <div className={`max-w-[85%] sm:max-w-[75%] min-w-[140px]`}>
                           {/* Bubble Container */}
                           <div
-                            className={`px-3.5 py-2.5 rounded-2xl shadow-xs text-sm relative ${
-                              isMyPost
-                                ? 'bg-gradient-to-br from-[#8B1E1E] to-[#A42525] text-white rounded-br-xs'
-                                : 'bg-white text-gray-900 border border-[#E8D9C3] rounded-bl-xs'
-                            }`}
+                            className={`px-3.5 py-2.5 rounded-2xl shadow-xs text-sm relative ${isMyPost
+                              ? 'bg-gradient-to-br from-[#8B1E1E] to-[#A42525] text-white rounded-br-xs'
+                              : 'bg-white text-gray-900 border border-[#E8D9C3] rounded-bl-xs'
+                              }`}
                           >
                             {!isMyPost && (
                               <p className="text-[11px] font-bold text-[#DD6B35] mb-1 truncate">
@@ -1092,9 +1031,8 @@ export const ChannelPage = ({ isAdminView = false }) => {
                                     href={post.file_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className={`flex items-center gap-2 p-2.5 rounded-lg text-xs font-semibold ${
-                                      isMyPost ? 'bg-white/20 text-white' : 'bg-[#FBF5EC] text-[#8B1E1E]'
-                                    }`}
+                                    className={`flex items-center gap-2 p-2.5 rounded-lg text-xs font-semibold ${isMyPost ? 'bg-white/20 text-white' : 'bg-[#FBF5EC] text-[#8B1E1E]'
+                                      }`}
                                   >
                                     <FiFile size={16} /> Attached Document (PDF)
                                   </a>
@@ -1103,9 +1041,8 @@ export const ChannelPage = ({ isAdminView = false }) => {
                             )}
 
                             <div
-                              className={`flex items-center justify-end gap-1 mt-1 text-[10px] ${
-                                isMyPost ? 'text-white/70' : 'text-gray-400'
-                              }`}
+                              className={`flex items-center justify-end gap-1 mt-1 text-[10px] ${isMyPost ? 'text-white/70' : 'text-gray-400'
+                                }`}
                             >
                               <span>{timeAgo(post.created_at)}</span>
                               {isMyPost && <FiCheckCircle size={10} className="text-white/80" />}
@@ -1295,11 +1232,10 @@ export const ChannelPage = ({ isAdminView = false }) => {
                   <button
                     type="submit"
                     disabled={posting || (!newPost.trim() && !postMedia)}
-                    className={`p-3 rounded-full shrink-0 transition-all shadow-sm ${
-                      newPost.trim() || postMedia
-                        ? 'bg-[#8B1E1E] text-white hover:bg-[#701616] scale-100'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    }`}
+                    className={`p-3 rounded-full shrink-0 transition-all shadow-sm ${newPost.trim() || postMedia
+                      ? 'bg-[#8B1E1E] text-white hover:bg-[#701616] scale-100'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
                   >
                     {posting ? <Loader size="xs" /> : <FiSend size={16} />}
                   </button>
