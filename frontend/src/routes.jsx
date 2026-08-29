@@ -2,6 +2,7 @@ import React from 'react';
 
 export const ROUTES = {
   HOME: '/',
+  MAP: '/map',
   EXPLORE: '/explore',
   SEARCH: '/search',
   CHANNELS: '/channels',
@@ -10,6 +11,8 @@ export const ROUTES = {
   CREATE_CHANNEL: '/channel/create',
   AI_ASSISTANT: '/ai-assistant',
   SHORTS: '/shorts',
+  KNOWLEDGE_PAGE: '/knowledgepage',
+  KNOWLEDGE_PAGE_LEGACY: '/KnowledgePage',
   LOGIN: '/login',
   REGISTER: '/register',
   VERIFY_OTP: '/verify-otp',
