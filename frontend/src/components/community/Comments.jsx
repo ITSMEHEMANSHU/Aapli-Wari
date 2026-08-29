@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { FaPaperPlane, FaTrashAlt, FaUser } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { addComment, deleteComment, getComments } from '../../services/content';
 
 export const Comments = ({ contentId, postId }) => {
   const resolvedContentId = contentId || postId;
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,10 @@ export const Comments = ({ contentId, postId }) => {
     event.preventDefault();
     const text = newComment.trim();
     if (!text || submitting) return;
+    if (!user) {
+      navigate('/login', { state: { message: 'Please log in to comment.' } });
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   FiUsers, 
   FiCheckCircle, 
@@ -7,7 +8,8 @@ import {
   FiCalendar, 
   FiMapPin,
   FiSend,
-  FiAlertCircle
+  FiAlertCircle,
+  FiLogOut
 } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
 
@@ -17,7 +19,8 @@ import Button from '../components/common/Button';
 import Avatar from '../components/common/Avatar';
 
 export const Profile = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('announcements');
   const [groupNotice, setGroupNotice] = useState('');
   const [attendance] = useState({ present: 320, resting: 15, medical: 2 });
@@ -53,6 +56,11 @@ export const Profile = () => {
     setGroupNotice('');
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-4">
       
@@ -76,12 +84,16 @@ export const Profile = () => {
           </div>
         </div>
 
-        <div className="flex sm:flex-col gap-2 w-full sm:w-auto">
-          <Button variant="outline" className="flex-1 sm:flex-none border-[#E8D9C3] hover:bg-[#FBF5EC]">
+        <div className="flex flex-wrap sm:flex-col gap-2 w-full sm:w-auto">
+          <Button variant="outline" className="flex-1 sm:flex-none border-[#E8D9C3] hover:bg-[#FBF5EC] text-[#2B1B12]">
             Edit Profile
           </Button>
-          <Button variant="primary" className="flex-1 sm:flex-none bg-[#DD6B35] hover:bg-[#C85A28] text-white">
-            Contact Palkhi HQ
+          <Button 
+            variant="danger" 
+            onClick={handleLogout}
+            className="flex-1 sm:flex-none bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 flex items-center justify-center gap-2 cursor-pointer text-sm font-semibold"
+          >
+            <FiLogOut className="text-sm" /> Sign Out
           </Button>
         </div>
       </Card>
