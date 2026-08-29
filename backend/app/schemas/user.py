@@ -20,6 +20,8 @@ class UserResponse(BaseModel):
 
     role_id: UUID
 
+    role: str | None = None
+
     is_active: bool
 
     created_at: datetime

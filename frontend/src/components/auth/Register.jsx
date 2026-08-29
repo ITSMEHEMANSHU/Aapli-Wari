@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { api } from '../../services/api';
 import { 
   FaUser, 
   FaEnvelope, 
   FaLock, 
-  FaUserTag, 
   FaEye, 
   FaEyeSlash, 
   FaArrowRight, 
@@ -22,20 +20,12 @@ export const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: ''
   });
 
-  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  useEffect(() => {
-    api.roles()
-      .then(setRoles)
-      .catch((requestError) => setError(requestError.message));
-  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -64,9 +54,8 @@ export const Register = () => {
         full_name: formData.full_name,
         email: formData.email,
         password: formData.password,
-        role: formData.role,
       });
-      navigate('/verify-otp');
+      navigate('/');
     } catch (requestError) {
       setError(requestError.message || 'Registration failed. Please try again.');
     } finally {
@@ -75,7 +64,7 @@ export const Register = () => {
   };
 
   return (
-    <div className=" flex items-center justify-center  bg-[#FDF8F0] p-4 my-18 sm:p-6">
+    <div className="flex items-center justify-center bg-[#FDF8F0] p-4 my-18 sm:p-6">
       <div className="max-w-4xl w-full bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col md:flex-row border border-[#E8D9C3]">
         
         {/* Left Side Hero */}
@@ -85,9 +74,9 @@ export const Register = () => {
 
           <div className="relative z-10">
             <span className="inline-block px-3 py-1 bg-[#DD6B35]/20 border border-[#DD6B35]/30 text-[#E8A15C] rounded-full text-xs font-semibold uppercase tracking-widest mb-4">
-              Join the Aapli Wari
+              Join Aapli Wari
             </span>
-            <h1 className="text-3xl font-bold tracking-tight leading-tight mb-3 text-white">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight leading-tight mb-3 text-white">
               Walk the path.
             </h1>
             <p className="text-white/70 text-sm leading-relaxed font-light">
@@ -211,33 +200,6 @@ export const Register = () => {
                   >
                     {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Account Role Dropdown */}
-            <div>
-              <label className="block text-xs font-bold text-[#2B1B12] uppercase tracking-wider mb-1.5">
-                Account Type
-              </label>
-              <div className="relative">
-                <FaUserTag className="absolute left-3.5 top-3.5 text-[#4A392E]/40 text-sm pointer-events-none" />
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-8 py-2.5 text-sm bg-[#FBF5EC]/50 border border-[#E8D9C3] text-[#2B1B12] rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#DD6B35]/40 focus:border-[#DD6B35] transition appearance-none cursor-pointer"
-                  required
-                >
-                  <option value="" disabled>Select account type</option>
-                  {roles.map((role) => (
-                    <option key={role.id || role._id || role.name} value={role.name}>
-                      {role.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-3.5 top-3.5 pointer-events-none text-[#4A392E]/40 text-xs">
-                  ▼
                 </div>
               </div>
             </div>

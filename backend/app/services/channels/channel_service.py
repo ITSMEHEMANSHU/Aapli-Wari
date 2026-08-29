@@ -1,10 +1,11 @@
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from backend.app.models.channel import Channel
+from backend.app.models.channel import channel_followers
 from backend.app.models.palkhi import Palkhi
 from backend.app.models.rbac import Role, VerificationStatus
 from backend.app.models.user import User
@@ -24,34 +25,35 @@ def create_palkhi(
 ) -> Palkhi:
 
     existing = db.scalar(
-        select(Palkhi).where(
-            Palkhi.owner_user_id == owner.id
-        )
+        select(Palkhi).where(Palkhi.owner_user_id == owner.id)
     )
-
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="User already owns a Palkhi",
-        )
+        raise HTTPException(status_code=409, detail="User already owns a Palkhi")
 
-    pending_status = db.scalar(
-        select(VerificationStatus).where(
-            VerificationStatus.name == "pending"
-        )
+    # ✅ Auto-approve: find 'approved' status instead of 'pending'
+    approved_status = db.scalar(
+        select(VerificationStatus).where(VerificationStatus.name == "approved")
     )
 
-    if pending_status is None:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Pending verification status is not configured",
+    if approved_status is None:
+        # If 'approved' not found, fallback to 'pending' or create it
+        pending_status = db.scalar(
+            select(VerificationStatus).where(VerificationStatus.name == "pending")
         )
+        if pending_status is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Verification statuses not configured. Please run seed."
+            )
+        status_to_use = pending_status
+    else:
+        status_to_use = approved_status
 
     palkhi = Palkhi(
         name=data.name,
         description=data.description,
         owner_user_id=owner.id,
-        verification_status_id=pending_status.id,
+        verification_status_id=status_to_use.id,  # ✅ auto-approved
     )
 
     db.add(palkhi)
@@ -85,6 +87,12 @@ def create_channel(
     data: ChannelCreate,
     creator: User,
 ) -> Channel:
+    from backend.app.services.users.user_service import can_manage_channel
+    if not can_manage_channel(creator, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must apply as a Palkhi Pramukh to create channels.",
+        )
 
     palkhi = db.get(Palkhi, data.palkhi_id)
 
@@ -171,6 +179,20 @@ def list_channels(
             .order_by(Channel.created_at.desc())
         ).all()
     )
+
+def get_channel_followers_count(db: Session, channel_id) -> int:
+    return db.execute(
+        select(func.count()).select_from(channel_followers).where(
+            channel_followers.c.channel_id == channel_id
+        )
+    ).scalar() or 0
+
+
+def get_channel_with_followers_count(db: Session, channel_id: UUID) -> Channel:
+    channel = get_channel(db=db, channel_id=channel_id)
+    channel.__dict__["followers_count"] = get_channel_followers_count(db, channel.id)
+    return channel
+
 
 def create_join_request(
     db: Session,

@@ -1,24 +1,31 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from backend.app.core.security import authorize_request
 from backend.app.db.database import get_db
+from backend.app.models.channel import Channel, channel_followers
+from backend.app.models.palkhi import Palkhi
 from backend.app.models.user import User
 from backend.app.schemas.channel import (
+    AnnouncementCreate,
     ChannelCreate,
+    ChannelFeedItemResponse,
+    ChannelFollowResponse,
+    ChannelFollowStatusResponse,
+    ChannelJoinRequestDetailResponse,
+    ChannelJoinRequestResponse,
+    ChannelPostCreate,
+    ChannelPostResponse,
     ChannelResponse,
     ChannelUpdate,
     ContributorAssignment,
+    EmergencyContactUpdate,
+    JoinRequestDecision,
     PalkhiCreate,
     PalkhiResponse,
-    ChannelJoinRequestResponse,
-    ChannelJoinRequestDetailResponse,
-    JoinRequestDecision,
-    ChannelPostCreate,
-    ChannelPostResponse,
-    ChannelFeedItemResponse,
 )
 from backend.app.services.channels.channel_service import (
     assign_contributor,
@@ -29,6 +36,7 @@ from backend.app.services.channels.channel_service import (
     get_channel,
     get_channel_contributors,
     get_channel_join_requests,
+    get_channel_with_followers_count,
     get_my_join_request,
     get_my_join_requests,
     get_my_palkhi,
@@ -511,3 +519,182 @@ def change_status(
         channel=channel,
         new_status=new_status,
     )
+
+
+# =========================================================
+# FOLLOW / UNFOLLOW CHANNEL
+# =========================================================
+
+@router.post(
+    "/{channel_id}/follow",
+    response_model=ChannelFollowResponse,
+)
+def follow_channel(
+    channel_id: UUID,
+    current_user: User = Depends(authorize_request),
+    db: Session = Depends(get_db),
+):
+    """Follow a channel (any authenticated user)."""
+    channel = get_channel(db=db, channel_id=channel_id)
+    if channel.status != "active":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Channel is inactive")
+
+    existing = db.execute(
+        select(channel_followers).where(
+            channel_followers.c.channel_id == channel_id,
+            channel_followers.c.user_id == current_user.id,
+        )
+    ).first()
+
+    if existing:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already following this channel")
+
+    db.execute(
+        channel_followers.insert().values(
+            channel_id=channel_id,
+            user_id=current_user.id,
+        )
+    )
+    db.commit()
+    return {"message": "Now following this channel", "is_following": True}
+
+
+@router.delete(
+    "/{channel_id}/follow",
+    response_model=ChannelFollowResponse,
+)
+def unfollow_channel(
+    channel_id: UUID,
+    current_user: User = Depends(authorize_request),
+    db: Session = Depends(get_db),
+):
+    """Unfollow a channel."""
+    get_channel(db=db, channel_id=channel_id)  # validate channel exists
+
+    result = db.execute(
+        channel_followers.delete().where(
+            channel_followers.c.channel_id == channel_id,
+            channel_followers.c.user_id == current_user.id,
+        )
+    )
+    db.commit()
+
+    if result.rowcount == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not following this channel")
+
+    return {"message": "Unfollowed channel", "is_following": False}
+
+
+@router.get(
+    "/{channel_id}/follow-status",
+    response_model=ChannelFollowStatusResponse,
+)
+def get_follow_status(
+    channel_id: UUID,
+    current_user: User = Depends(authorize_request),
+    db: Session = Depends(get_db),
+):
+    """Check if the current user is following a channel."""
+    get_channel(db=db, channel_id=channel_id)  # validate channel exists
+
+    existing = db.execute(
+        select(channel_followers).where(
+            channel_followers.c.channel_id == channel_id,
+            channel_followers.c.user_id == current_user.id,
+        )
+    ).first()
+
+    return {"is_following": existing is not None}
+
+
+# =========================================================
+# ANNOUNCEMENTS
+# =========================================================
+
+@router.post(
+    "/{channel_id}/announcements",
+    response_model=ChannelPostResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_announcement(
+    channel_id: UUID,
+    data: AnnouncementCreate,
+    current_user: User = Depends(authorize_request),
+    db: Session = Depends(get_db),
+):
+    """Create an announcement in a channel (Palkhi Pramukh / channel owner only)."""
+    channel = get_channel(db=db, channel_id=channel_id)
+
+    if channel.created_by_user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the channel owner can post announcements",
+        )
+
+    if channel.status != "active":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Channel is inactive")
+
+    message = data.message.strip()
+    if not message:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Announcement message cannot be empty")
+
+    from backend.app.models.channel_post import ChannelPost
+    post = ChannelPost(
+        channel_id=channel.id,
+        user_id=current_user.id,
+        message=message,
+        is_announcement=True,
+        is_pinned=data.is_pinned,
+    )
+
+    db.add(post)
+    db.commit()
+    db.refresh(post)
+    # Eagerly load user for response
+    db.refresh(post)
+    post.user  # trigger lazy load within session
+
+    return post
+
+
+# =========================================================
+# EMERGENCY CONTACT
+# =========================================================
+
+@router.patch(
+    "/{channel_id}/emergency-contact",
+)
+def update_emergency_contact(
+    channel_id: UUID,
+    data: EmergencyContactUpdate,
+    current_user: User = Depends(authorize_request),
+    db: Session = Depends(get_db),
+):
+    """Update emergency contact for a channel's Palkhi (owner only)."""
+    channel = get_channel(db=db, channel_id=channel_id)
+
+    if channel.created_by_user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the channel owner can update the emergency contact",
+        )
+
+    palkhi = db.get(Palkhi, channel.palkhi_id)
+    if palkhi is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Palkhi not found")
+
+    if data.emergency_contact_name is not None:
+        palkhi.emergency_contact_name = data.emergency_contact_name
+    if data.emergency_contact_phone is not None:
+        palkhi.emergency_contact_phone = data.emergency_contact_phone
+    if data.emergency_contact_role is not None:
+        palkhi.emergency_contact_role = data.emergency_contact_role
+
+    db.commit()
+    db.refresh(palkhi)
+
+    return {
+        "emergency_contact_name": palkhi.emergency_contact_name,
+        "emergency_contact_phone": palkhi.emergency_contact_phone,
+        "emergency_contact_role": palkhi.emergency_contact_role,
+    }

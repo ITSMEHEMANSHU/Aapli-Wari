@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
@@ -10,6 +11,7 @@ import { api } from '../../services/api';
 export const ManageChannel = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated, loading: authLoading, canManageChannel } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -98,6 +100,22 @@ export const ManageChannel = () => {
       setSaving(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="py-10 text-center">
+        Verifying permissions...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!canManageChannel || !canManageChannel()) {
+    return <Navigate to="/channels" replace />;
+  }
 
   if (loading) {
     return (

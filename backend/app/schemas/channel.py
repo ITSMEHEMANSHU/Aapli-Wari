@@ -19,6 +19,9 @@ class PalkhiResponse(BaseModel):
     verification_status_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+    emergency_contact_name: str | None = None
+    emergency_contact_phone: str | None = None
+    emergency_contact_role: str | None = None
 
 
 class ChannelCreate(BaseModel):
@@ -43,10 +46,34 @@ class ChannelResponse(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+    followers_count: int = 0
+    emergency_contact_name: str | None = None
+    emergency_contact_phone: str | None = None
+    emergency_contact_role: str | None = None
 
 
 class ChannelPostCreate(BaseModel):
     message: str
+
+
+class AnnouncementCreate(BaseModel):
+    message: str
+    is_pinned: bool = False
+
+
+class EmergencyContactUpdate(BaseModel):
+    emergency_contact_name: str | None = None
+    emergency_contact_phone: str | None = None
+    emergency_contact_role: str | None = None
+
+
+class ChannelFollowResponse(BaseModel):
+    message: str
+    is_following: bool
+
+
+class ChannelFollowStatusResponse(BaseModel):
+    is_following: bool
 
 
 class ChannelPostUserResponse(BaseModel):
@@ -64,6 +91,8 @@ class ChannelPostResponse(BaseModel):
     channel_id: uuid.UUID
     user_id: uuid.UUID
     message: str
+    is_announcement: bool = False
+    is_pinned: bool = False
     created_at: datetime
     updated_at: datetime
     user: ChannelPostUserResponse
@@ -80,6 +109,8 @@ class ChannelFeedItemResponse(BaseModel):
     file_url: str | None = None
     verified: bool = False
     status: str | None = None
+    is_announcement: bool = False
+    is_pinned: bool = False
     created_at: datetime
     updated_at: datetime
     user: ChannelPostUserResponse
@@ -122,4 +153,4 @@ class ChannelJoinRequestDetailResponse(BaseModel):
 
 
 class JoinRequestDecision(BaseModel):
-    action: str
+    action: str

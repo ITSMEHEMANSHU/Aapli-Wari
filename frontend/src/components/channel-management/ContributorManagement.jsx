@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Navigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
@@ -10,6 +11,7 @@ import { api } from '../../services/api';
 
 export const ContributorManagement = () => {
   const { id } = useParams();
+  const { isAuthenticated, loading: authLoading, canManageChannel } = useAuth();
 
   const [contributors, setContributors] = useState([]);
   const [joinRequests, setJoinRequests] = useState([]);
@@ -134,6 +136,22 @@ export const ContributorManagement = () => {
       setProcessingRequest(null);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="py-10 text-center">
+        Verifying permissions...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!canManageChannel || !canManageChannel()) {
+    return <Navigate to="/channels" replace />;
+  }
 
   return (
     <div className="contributor-management">
