@@ -18,7 +18,7 @@ import {
 } from 'react-icons/fi';
 import { HiSparkles } from 'react-icons/hi';
 
-import { IMAGES, heroImage, cardImage } from '../utils/cloudinary';
+import { IMAGES, heroImage, cardImage, videoUrl, videoPosterUrl } from '../utils/cloudinary';
 import { useLanguage } from '../context/LanguageContext';
 
 const HERO_TYPE = 'image';
@@ -79,20 +79,12 @@ const pillars = [
   { icon: FiGlobe, title: 'Connect', desc: 'A global community of Warkari devotees' },
 ];
 
-const experience = [
-  { title: 'Palkhis', desc: 'Follow the sacred palanquin processions and their routes.', imageKey: IMAGES.palkhis, to: '/explore?type=palkhis' },
-  { title: 'Abhangs & Kirtan', desc: 'Listen, read and feel the divine words of the saints.', imageKey: IMAGES.abhangs, to: '/explore?type=abhangs' },
-  { title: 'Manuscripts', desc: 'Rare texts and ancient wisdom preserved for all.', imageKey: IMAGES.manuscripts, to: '/explore?type=manuscripts' },
-  { title: 'Holy Places', desc: 'Explore sacred locations connected to Wari.', imageKey: IMAGES.holyPlaces, to: '/explore?type=holy-places' },
-  { title: 'Seva & Samaj', desc: 'The stories of selfless service that keeps Wari alive.', imageKey: IMAGES.seva, to: '/explore?type=seva' },
-];
-
 const shorts = [
-  { title: 'Ringan Sohala at Indapur 🚩', views: '125K views', imageKey: IMAGES.palkhis, to: '/shorts/1' },
-  { title: 'Mauli Palkhi Departure Moments ✨', views: '98K views', imageKey: IMAGES.holyPlaces, to: '/shorts/2' },
-  { title: 'Soulful Abhang in Midnight Kirtan 🎶', views: '210K views', imageKey: IMAGES.abhangs, to: '/shorts/3' },
-  { title: 'The Seva of Free Meals (Annadaan) 🍲', views: '75K views', imageKey: IMAGES.seva, to: '/shorts/4' },
-  { title: 'Ancient Manuscripts Preserved 📜', views: '45K views', imageKey: IMAGES.manuscripts, to: '/shorts/5' },
+  { title: 'Ringan Sohala at Indapur 🚩', views: 0, videoId: '2_k5rw5y', posterId: '2_k5rw5y' },
+  { title: 'Mauli Palkhi Departure Moments ✨', views: 0, videoId: '5_xvtqyk', posterId: '5_xvtqyk' },
+  { title: 'Soulful Abhang in Midnight Kirtan 🎶', views: 0, videoId: '3_1_xbsqp6', posterId: '3_1_xbsqp6' },
+  { title: 'The Seva of Free Meals (Annadaan) 🍲', views: 0, videoId: '2_1_hsijyi', posterId: '2_1_hsijyi' },
+  { title: 'Ancient Manuscripts Preserved 📜', views: 0, videoId: '3_mxqflg', posterId: '3_mxqflg' },
 ];
 
 const stats = [
@@ -107,6 +99,8 @@ export const Home = () => {
   const [email, setEmail] = useState('');
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isFading, setIsFading] = useState(false);
+  const [selectedShort, setSelectedShort] = useState(null);
+  const [shortViewMap, setShortViewMap] = useState({});
 
   const text = (key, fallback) => {
     const value = t(key);
@@ -143,6 +137,21 @@ export const Home = () => {
     title: text(`home.pillars.${['discover', 'learn', 'share', 'preserve', 'connect'][idx]}.title`, item.title),
     desc: text(`home.pillars.${['discover', 'learn', 'share', 'preserve', 'connect'][idx]}.desc`, item.desc),
   }));
+
+  const getShortViewCount = (short) => {
+    const shortId = short?.videoId;
+    const count = shortId ? shortViewMap[shortId] ?? short.views ?? 0 : short.views ?? 0;
+    return `${count} view${count === 1 ? '' : 's'}`;
+  };
+
+  const openShortVideo = (short) => {
+    if (!short?.videoId) return;
+    setShortViewMap((prev) => ({
+      ...prev,
+      [short.videoId]: (prev[short.videoId] ?? short.views ?? 0) + 1,
+    }));
+    setSelectedShort(short);
+  };
 
   return (
     <div className="w-full bg-[#FDF8F0] font-['Poppins',sans-serif] antialiased selection:bg-[#E87A1E] selection:text-white">
@@ -324,56 +333,27 @@ export const Home = () => {
 
       <section className="bg-[#F9F1E5] py-16 border-b border-[#E8D9C3]/80 relative z-20">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-            <div>
-              <span className="inline-flex items-center gap-2 text-[#E87A1E] text-xs font-bold tracking-widest uppercase mb-2">
-                ⟿ The Wari Experience
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+            <div className="max-w-4xl">
+              <span className="inline-flex items-center gap-2 text-[#E87A1E] text-xs font-bold tracking-widest uppercase mb-3">
+                ⟿ THE WARI EXPERIENCE
               </span>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#2D1B0E] leading-tight">
+              <h2 className="text-4xl sm:text-6xl lg:text-[5.5rem] font-black text-[#2D1B0E] leading-[0.95] tracking-[-0.06em]">
                 More than a journey,<br />
-                it's a <span className="text-[#E87A1E] italic">way of life</span>.
+                it's a <span className="text-[#E87A1E] italic font-black">way of life.</span>
               </h2>
             </div>
-            <div className="md:max-w-xs">
-              <p className="text-xs sm:text-sm text-[#5A4030] mb-4 leading-relaxed">
+
+            <div className="md:max-w-sm lg:max-w-md md:pb-4">
+              <p className="text-lg sm:text-xl text-[#5A4030] leading-relaxed mb-5 font-medium">
                 From holy abhangs to real-time Palkhi schedules, experience the devotion in one place.
               </p>
               <Link to="/explore">
-                <button className="inline-flex items-center gap-2 border border-[#E87A1E] text-[#E87A1E] hover:bg-[#E87A1E] hover:text-white font-semibold px-5 py-2.5 rounded-xl transition-all duration-300 text-sm active:scale-95 cursor-pointer">
+                <button className="inline-flex items-center gap-2 border border-[#E87A1E] text-[#E87A1E] hover:bg-[#E87A1E] hover:text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300 text-base active:scale-95 cursor-pointer">
                   Start Exploring <FiArrowRight />
                 </button>
               </Link>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-            {experience.map((item, i) => (
-              <Link key={i} to={item.to} className="group block">
-                <div className="h-full rounded-2xl overflow-hidden border border-[#E8D9C3] bg-white hover:border-[#E87A1E]/50 hover:shadow-xl transition-all duration-300 flex flex-col">
-                  <div className="h-44 overflow-hidden bg-[#F5EADA] relative">
-                    <img
-                      src={cardImage(item.imageKey)}
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </div>
-                  <div className="p-5 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-bold text-[#2D1B0E] text-base mb-1.5 group-hover:text-[#E87A1E] transition-colors">
-                        {item.title}
-                      </h3>
-                      <p className="text-xs text-[#5A4030]/80 leading-relaxed mb-4">{item.desc}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#E87A1E] group-hover:translate-x-1 transition-transform duration-200">
-                      <span>Explore</span>
-                      <FiArrowRight size={14} />
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
           </div>
         </div>
       </section>
@@ -401,10 +381,15 @@ export const Home = () => {
 
           <div className="flex sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto pb-4 sm:pb-0 scrollbar-none">
             {shorts.map((short, i) => (
-              <Link key={i} to={short.to} className="group shrink-0 w-44 sm:w-auto block">
+              <button
+                key={i}
+                type="button"
+                onClick={() => openShortVideo(short)}
+                className="group shrink-0 w-44 sm:w-auto block text-left cursor-pointer"
+              >
                 <div className="relative aspect-[9/16] rounded-2xl overflow-hidden border border-[#E8D9C3] bg-[#2D1B0E] shadow-md hover:shadow-xl hover:border-[#E87A1E] hover:-translate-y-1.5 transition-all duration-300">
                   <img
-                    src={cardImage(short.imageKey)}
+                    src={videoPosterUrl(short.posterId || short.videoId, { width: 500, height: 900, crop: 'fill', quality: 'auto', format: 'jpg' })}
                     alt={short.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
                     loading="lazy"
@@ -422,14 +407,36 @@ export const Home = () => {
                     <h3 className="font-semibold text-xs sm:text-sm leading-snug line-clamp-2 mb-1 group-hover:text-orange-200 transition-colors">
                       {short.title}
                     </h3>
-                    <span className="text-[10px] text-white/70 font-medium">{short.views}</span>
+                    <span className="text-[10px] text-white/70 font-medium">{getShortViewCount(short)}</span>
                   </div>
                 </div>
-              </Link>
+              </button>
             ))}
           </div>
         </div>
       </section>
+
+      {selectedShort && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-4xl rounded-3xl overflow-hidden border border-white/10 bg-[#140E0B] shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setSelectedShort(null)}
+              className="absolute right-4 top-4 z-10 rounded-full bg-black/55 border border-white/15 text-white px-3 py-1.5 text-sm font-medium hover:bg-black/80"
+            >
+              Close
+            </button>
+            <video
+              key={selectedShort.videoId}
+              src={videoUrl(selectedShort.videoId, { format: 'mp4' })}
+              controls
+              autoPlay
+              playsInline
+              className="w-full max-h-[80vh] object-contain bg-black"
+            />
+          </div>
+        </div>
+      )}
 
       <section className="max-w-7xl mx-auto px-6 pb-20 pt-16">
         <div className="rounded-3xl bg-gradient-to-r from-[#3D2518] to-[#2B1810] px-10 py-12 sm:py-14">
