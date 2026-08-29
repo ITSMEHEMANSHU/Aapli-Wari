@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../services/api';
 import {
@@ -42,10 +42,12 @@ import Badge from '../components/common/Badge';
 import Loader from '../components/common/Loader';
 import Modal from '../components/common/Modal';
 
-export const ChannelPage = () => {
+export const ChannelPage = ({ isAdminView = false }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, canContribute, canManageChannel, isPalkhiPramukhApplied } = useAuth();
+  const adminView = isAdminView || location.pathname.startsWith('/admin/');
   
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -181,6 +183,7 @@ export const ChannelPage = () => {
   };
 
   const handleFollowToggle = async () => {
+    if (adminView) return;
     if (!user) {
       navigate('/login', { state: { from: `/channel/${id}` } });
       return;
@@ -204,6 +207,7 @@ export const ChannelPage = () => {
   };
 
   const handleJoinChannel = async () => {
+    if (adminView) return;
     if (!user) {
       navigate('/login', { state: { message: 'Please log in to join channels.' } });
       return;
@@ -326,7 +330,7 @@ export const ChannelPage = () => {
     (a, b) => new Date(a.created_at) - new Date(b.created_at)
   );
 
-  const canPostChat = Boolean(user) && (canContribute?.() || canManageChannel?.() || isOwner || isMember);
+  const canPostChat = !adminView && Boolean(user) && (canContribute?.() || canManageChannel?.() || isOwner || isMember);
   const canCreateAnnouncement = Boolean(user) && (canManageChannel?.() || isOwner || user?.role === 'admin');
   const hasEmergencyContact = Boolean(channel?.emergency_contact_name || channel?.emergency_contact_phone);
 
@@ -378,10 +382,10 @@ export const ChannelPage = () => {
           {/* Top back button & Mobile Breadcrumb */}
           <div className="px-5 py-4 border-b border-[#F0E6D8] flex items-center justify-between">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate(adminView ? '/admin/channels' : -1)}
               className="inline-flex items-center text-xs font-semibold text-[#8B1E1E] hover:text-[#DD6B35] transition-colors"
             >
-              <FiArrowLeft className="mr-1.5" size={15} /> All Channels
+              <FiArrowLeft className="mr-1.5" size={15} /> {adminView ? 'Admin Channels' : 'All Channels'}
             </button>
             <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#FBF5EC] text-[#8B1E1E] border border-[#E8D9C3]">
               {channel.type || 'Palkhi Channel'}
@@ -417,7 +421,11 @@ export const ChannelPage = () => {
 
               {/* Action Buttons */}
               <div className="w-full mt-4 flex items-center gap-2">
-                {user && !isOwner ? (
+                {adminView ? (
+                  <div className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#FDF8F0] text-[#6d2325] border border-[#E8D9C3] text-center shadow-sm">
+                    Admin Read-Only View
+                  </div>
+                ) : user && !isOwner ? (
                   <button
                     onClick={handleFollowToggle}
                     disabled={followLoading}

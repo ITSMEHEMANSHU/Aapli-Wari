@@ -110,7 +110,7 @@ export const api = {
 
   // Palkhi & Channels
   myPalkhi: () => request('/channels/palkhis/me'),
-  channels: () => request('/channels'),
+  channels: (params = {}) => request('/channels', { params }),
   myChannelMemberships: () => request('/channels/my-memberships'),
   myJoinRequests: () => request('/channels/my-join-requests'),
   channel: (id) => request(`/channels/${id}`),
@@ -350,31 +350,19 @@ short: (id) =>
 // Admin
 // =========================
 
-users: () => request('/admin/users'),
+users: (params = {}) => request('/admin/users', { params }),
 updateUserRole: (userId, role) =>
   request(`/admin/users/${userId}/role`, {
     method: 'PATCH',
     body: JSON.stringify({ role }),
   }),
-updateUserStatus: (userId, status) =>
+updateUserStatus: (userId, isActive) =>
   request(`/admin/users/${userId}/status`, {
     method: 'PATCH',
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ is_active: isActive }),
   }),
 
-  getAdminStats: () => request('/admin/stats'), // <-- ADD THIS LINE
-
-  users: () => request('/admin/users'),
-  updateUserRole: (userId, role) =>
-    request(`/admin/users/${userId}/role`, {
-      method: 'PATCH',
-      body: JSON.stringify({ role }),
-    }),
-  updateUserStatus: (userId, status) =>
-    request(`/admin/users/${userId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    }),
+  getAdminStats: () => request('/admin/stats'),
     
 };
 

@@ -42,3 +42,5 @@ class StatusUpdateRequest(BaseModel):
 
 class ChannelStatusUpdateRequest(BaseModel):
     status: str  # active or inactive
+
+
