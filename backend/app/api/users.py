@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from backend.app.core.security import authorize_request
+from backend.app.core.security import authorize_request, get_current_user
 from backend.app.db.database import get_db
 from backend.app.models.contributor_profile import ContributorProfile
 from backend.app.models.palkhi_pramukh_profile import PalkhiPramukhProfile
@@ -23,14 +23,14 @@ router = APIRouter(
     response_model=UserResponse,
 )
 def get_my_profile(
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
 ):
     return current_user
 
 
 @router.get("/me/permissions")
 def get_my_permissions(
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     has_contributor_profile = db.query(ContributorProfile).filter(
@@ -58,7 +58,7 @@ def get_my_permissions(
 )
 def update_my_profile(
     data: UserProfileUpdate,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
 

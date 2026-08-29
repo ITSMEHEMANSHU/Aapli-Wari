@@ -313,7 +313,7 @@ def register_palkhi_pramukh(
 @router.post("/apply-contributor")
 def apply_contributor(
     data: ContributorApplyRequest,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     if current_user is None:
@@ -347,7 +347,7 @@ def apply_contributor(
 @router.post("/apply-palkhi-pramukh")
 def apply_palkhi_pramukh(
     data: PalkhiPramukhApplyRequest,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     if current_user is None:
