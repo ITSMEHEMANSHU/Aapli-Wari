@@ -17,6 +17,7 @@ export const Header = () => {
     { label: 'AI Help',    to: '/ai-assistant' },
     { label: 'Shorts',     to: '/shorts' },
     { label: 'Contribute', to: '/contribute' },
+    { label: 'Aapla Theva', to: '/knowledgepage' },
   ];
 
   return (
