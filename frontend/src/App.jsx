@@ -1,44 +1,44 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Navigate, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { useLanguage } from './context/LanguageContext';
 import { useAuth } from './hooks/useAuth';
+import { ROUTES } from './routes';
 
 // Layout
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 
-// Pages
-import Home from './pages/Home';
-import Explore from './pages/Explore';
-import ChannelPage from './pages/ChannelPage';
-import ContentDetail from './pages/ContentDetail';
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
-import Contribute from './pages/Contribute';
-import CreateChannel from './components/channel-management/CreateChannel';
-
-// Auth
-import Login from './components/auth/Login';
-import Register from './components/auth/Register';
-import OTPVerification from './components/auth/OTPVerification';
-
-// Public Components
-import Search from './components/public/Search';
-import AIAssistant from './components/public/AIAssistant';
-import AaplaTheva from './components/public/AaplaTheva';
-import ChannelList from './components/public/ChannelList';
-import ManageChannel from './components/channel-management/ManageChannel';
-import ContributorManagement from './components/channel-management/ContributorManagement';
-import MapPage from './pages/MapPage';
+const Home = lazy(() => import('./pages/Home'));
+const Explore = lazy(() => import('./pages/Explore'));
+const ChannelPage = lazy(() => import('./pages/ChannelPage'));
+const ContentDetail = lazy(() => import('./pages/ContentDetail'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Contribute = lazy(() => import('./pages/Contribute'));
+const KnowledgePage = lazy(() => import('./pages/KnowledgePage'));
+const ContributorRegistration = lazy(() => import('./pages/ContributorRegistration'));
+const PalkhiPramukhRegistration = lazy(() => import('./pages/PalkhiPramukhRegistration'));
+const CreateChannel = lazy(() => import('./components/channel-management/CreateChannel'));
+const Login = lazy(() => import('./components/auth/Login'));
+const Register = lazy(() => import('./components/auth/Register'));
+const OTPVerification = lazy(() => import('./components/auth/OTPVerification'));
+const PalkhiRegistration = lazy(() => import('./components/auth/PalkhiRegistration'));
+const Search = lazy(() => import('./components/public/Search'));
+const AIAssistant = lazy(() => import('./components/public/AIAssistant'));
+const AaplaTheva = lazy(() => import('./components/public/AaplaTheva'));
+const ChannelList = lazy(() => import('./components/public/ChannelList'));
+const ManageChannel = lazy(() => import('./components/channel-management/ManageChannel'));
+const ContributorManagement = lazy(() => import('./components/channel-management/ContributorManagement'));
+const MapPage = lazy(() => import('./pages/MapPage'));
 
 import ProtectedRoute from './components/common/ProtectedRoute';
-//Admin
-import AdminLayout from './pages/Admin/AdminLayout';
-import AdminDashboard from './pages/Admin/AdminDashboard';
-import UserManagement from './pages/Admin/UserManagement';
-import ContentManagement from './pages/Admin/ContentManagement';
-import ChannelManagement from './pages/Admin/ChannelManagement';
-import AdminSettings  from './pages/Admin/Settings';
+const AdminLayout = lazy(() => import('./pages/Admin/AdminLayout'));
+const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
+const UserManagement = lazy(() => import('./pages/Admin/UserManagement'));
+const ContentManagement = lazy(() => import('./pages/Admin/ContentManagement'));
+const ChannelManagement = lazy(() => import('./pages/Admin/ChannelManagement'));
+const AdminSettings = lazy(() => import('./pages/Admin/Settings'));
 
 function AppShell() {
   const { language } = useLanguage();
@@ -51,75 +51,42 @@ function AppShell() {
     <div className="min-h-screen flex flex-col bg-[#FBF5EC]" lang={language}>
       {!isAdminRoute && !loading && <Header />}
       <main className="flex-1 w-full">
-        <Routes>
-          <Route path="/" element={isAdminUser ? <Navigate to="/admin" replace /> : <Home />} />
-          <Route path="/map" element={isAdminUser ? <Navigate to="/admin" replace /> : <MapPage />} />
-          <Route path="/explore" element={isAdminUser ? <Navigate to="/admin" replace /> : <Explore />} />
-          <Route path="/search" element={isAdminUser ? <Navigate to="/admin" replace /> : <Search />} />
-          <Route path="/channels" element={isAdminUser ? <Navigate to="/admin" replace /> : <ChannelList />} />
-          <Route path="/register-palkhi" element={isAdminUser ? <Navigate to="/admin" replace /> : <PalkhiRegistration />} />
-          <Route 
-            path="/channel/create" 
-            element={
-              isAdminUser ? <Navigate to="/admin" replace /> : (
-                <ProtectedRoute requiredRole={['palkhi_pramukh', 'admin']}>
-                  <CreateChannel />
-                </ProtectedRoute>
-              )
-            } 
-          />
-          <Route
-            path="/channel/:id/manage"
-            element={
-              isAdminUser ? <Navigate to="/admin" replace /> : (
-                <ProtectedRoute requiredRole={['palkhi_pramukh', 'admin']}>
-                  <ManageChannel />
-                </ProtectedRoute>
-              )
-            }
-          />
-          <Route
-            path="/channel/:id/contributors"
-            element={
-              isAdminUser ? <Navigate to="/admin" replace /> : (
-                <ProtectedRoute requiredRole={['palkhi_pramukh', 'admin']}>
-                  <ContributorManagement />
-                </ProtectedRoute>
-              )
-            }
-          />
-          <Route 
-            path="/contribute" 
-            element={
-              isAdminUser ? <Navigate to="/admin" replace /> : (
-                <ProtectedRoute requiredRole={['contributor', 'palkhi_pramukh', 'admin']}>
-                  <Contribute />
-                </ProtectedRoute>
-              )
-            } 
-          />
-          <Route path="/channel/:id" element={isAdminUser ? <Navigate to="/admin" replace /> : <ChannelPage />} />
-          <Route path="/content/:id" element={isAdminUser ? <Navigate to="/admin" replace /> : <ContentDetail />} />
-          <Route path="/ai-assistant" element={isAdminUser ? <Navigate to="/admin" replace /> : <AIAssistant />} />
-          <Route path="/shorts" element={isAdminUser ? <Navigate to="/admin" replace /> : <AaplaTheva />} />
-          <Route path="/login" element={isAdminUser ? <Navigate to="/admin" replace /> : <Login />} />
-          <Route path="/register" element={isAdminUser ? <Navigate to="/admin" replace /> : <Register />} />
-          <Route path="/KnowledgePage" element={isAdminUser ? <Navigate to="/admin" replace /> : <KnowledgePage />} />
-          <Route path="/apply-contributor" element={isAdminUser ? <Navigate to="/admin" replace /> : <ContributorRegistration />} />
-          <Route path="/apply-palkhi-pramukh" element={isAdminUser ? <Navigate to="/admin" replace /> : <PalkhiPramukhRegistration />} />
-          <Route path="/verify-otp" element={isAdminUser ? <Navigate to="/admin" replace /> : <OTPVerification />} />
-          <Route path="/profile" element={isAdminUser ? <Navigate to="/admin" replace /> : <ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/profile/:id" element={isAdminUser ? <Navigate to="/admin" replace /> : <Profile />} />
-          <Route path="/settings" element={isAdminUser ? <Navigate to="/admin" replace /> : <ProtectedRoute><Settings /></ProtectedRoute>} />
-          <Route path="/admin/*" element={<ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="users" element={<UserManagement />} />
-            <Route path="content" element={<ContentManagement />} />
-            <Route path="channels" element={<ChannelManagement />} />
-            <Route path="channels/:id" element={<ChannelPage isAdminView />} />
-            <Route path="settings" element={<AdminSettings />} />
-          </Route>
-        </Routes>
+        <Suspense fallback={<div className="min-h-[40vh] flex items-center justify-center text-[#3C2A21]">Loading...</div>}>
+          <Routes>
+            <Route path={ROUTES.HOME} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <Home />} />
+            <Route path={ROUTES.MAP} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <MapPage />} />
+            <Route path={ROUTES.EXPLORE} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <Explore />} />
+            <Route path={ROUTES.SEARCH} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <Search />} />
+            <Route path={ROUTES.CHANNELS} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <ChannelList />} />
+            <Route path="/register-palkhi" element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <PalkhiRegistration />} />
+            <Route path={ROUTES.CREATE_CHANNEL} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : (<ProtectedRoute requiredRole={['palkhi_pramukh', 'admin']}><CreateChannel /></ProtectedRoute>)} />
+            <Route path="/channel/:id/manage" element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : (<ProtectedRoute requiredRole={['palkhi_pramukh', 'admin']}><ManageChannel /></ProtectedRoute>)} />
+            <Route path="/channel/:id/contributors" element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : (<ProtectedRoute requiredRole={['palkhi_pramukh', 'admin']}><ContributorManagement /></ProtectedRoute>)} />
+            <Route path={ROUTES.CONTRIBUTE} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : (<ProtectedRoute requiredRole={['contributor', 'palkhi_pramukh', 'admin']}><Contribute /></ProtectedRoute>)} />
+            <Route path="/channel/:id" element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <ChannelPage />} />
+            <Route path="/content/:id" element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <ContentDetail />} />
+            <Route path={ROUTES.AI_ASSISTANT} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <AIAssistant />} />
+            <Route path={ROUTES.SHORTS} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <AaplaTheva />} />
+            <Route path={ROUTES.LOGIN} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <Login />} />
+            <Route path={ROUTES.REGISTER} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <Register />} />
+            <Route path={ROUTES.KNOWLEDGE_PAGE} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <KnowledgePage />} />
+            <Route path={ROUTES.KNOWLEDGE_PAGE_LEGACY} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <KnowledgePage />} />
+            <Route path={ROUTES.APPLY_CONTRIBUTOR} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <ContributorRegistration />} />
+            <Route path={ROUTES.APPLY_PALKHI_PRAMUKH} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <PalkhiPramukhRegistration />} />
+            <Route path={ROUTES.VERIFY_OTP} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <OTPVerification />} />
+            <Route path={ROUTES.PROFILE} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path={ROUTES.PROFILE_USER} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <Profile />} />
+            <Route path={ROUTES.SETTINGS} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path={ROUTES.ADMIN + '/*'} element={<ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<UserManagement />} />
+              <Route path="content" element={<ContentManagement />} />
+              <Route path="channels" element={<ChannelManagement />} />
+              <Route path="channels/:id" element={<ChannelPage isAdminView />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
+          </Routes>
+        </Suspense>
       </main>
       {!isAdminRoute && !loading && <Footer />}
     </div>
