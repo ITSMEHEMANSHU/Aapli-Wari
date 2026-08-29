@@ -152,7 +152,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
 
   // Check Follow Status
   useEffect(() => {
-    if (user && channel && !isOwner) {
+    if (user && channel && !isOwner && !adminView) {
       api.getFollowStatus(id)
         .then((data) => setIsFollowing(Boolean(data?.is_following)))
         .catch(() => {});
