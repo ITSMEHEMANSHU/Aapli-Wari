@@ -86,6 +86,12 @@ def create_channel(
     data: ChannelCreate,
     creator: User,
 ) -> Channel:
+    from backend.app.services.users.user_service import can_manage_channel
+    if not can_manage_channel(creator, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must apply as a Palkhi Pramukh to create channels.",
+        )
 
     palkhi = db.get(Palkhi, data.palkhi_id)
 

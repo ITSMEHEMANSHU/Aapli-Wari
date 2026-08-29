@@ -74,6 +74,13 @@ def upload_content(
     db: Session = Depends(get_db),
     current_user: User = Depends(authorize_request),
 ):
+    from backend.app.services.users.user_service import can_contribute
+    if not can_contribute(current_user, db):
+        raise HTTPException(
+            status_code=403,
+            detail="You must apply as a contributor to upload content.",
+        )
+
     content_type_value = content_type.lower()
 
     valid_types = ['video', 'image', 'audio', 'pdf', 'manuscript', 'story', 'short']

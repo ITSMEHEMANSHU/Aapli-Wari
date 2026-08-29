@@ -25,16 +25,23 @@ export const ProtectedRoute = ({
     return <Navigate to={redirectTo} state={{ from: location.pathname }} replace />;
   }
 
-  // 2. If requiredRole is specified, verify user has AT LEAST the required permission
+  // 2. If requiredRole is specified, verify user has the required permission
   if (requiredRole) {
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
     
-    // Check if user role is in the allowed list or has admin override
-    const hasPermission = isAdmin() || roles.includes(user.role) || (
-      roles.includes('contributor') && canContribute()
-    ) || (
-      roles.includes('palkhi_pramukh') && canCreateChannel()
-    );
+    const requiresContributor = roles.includes('contributor');
+    const requiresPalkhiPramukh = roles.includes('palkhi_pramukh');
+
+    let hasPermission = isAdmin();
+
+    if (!hasPermission) {
+      if (requiresContributor && canContribute()) {
+        hasPermission = true;
+      }
+      if (requiresPalkhiPramukh && canCreateChannel()) {
+        hasPermission = true;
+      }
+    }
 
     if (!hasPermission) {
       if (fallbackRedirect) {
@@ -42,12 +49,12 @@ export const ProtectedRoute = ({
       }
 
       // If route requires palkhi_pramukh permission
-      if (roles.includes('palkhi_pramukh')) {
+      if (requiresPalkhiPramukh) {
         return <Navigate to="/apply-palkhi-pramukh" state={{ from: location.pathname }} replace />;
       }
 
       // If route requires contributor permission
-      if (roles.includes('contributor')) {
+      if (requiresContributor) {
         return <Navigate to="/apply-contributor" state={{ from: location.pathname }} replace />;
       }
 

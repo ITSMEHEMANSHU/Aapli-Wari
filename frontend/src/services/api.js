@@ -281,9 +281,12 @@ short: (id) =>
 
   // Palkhi live locations
   getPalkhiLocations: () => request('/palkhis/live-locations'),
+
+  // Permissions & Profile Applications
+  getMyPermissions: () => request('/users/me/permissions'),
 };
 
-  export default api;
+export default api;
 
 
 

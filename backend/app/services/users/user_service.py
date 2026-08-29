@@ -158,3 +158,17 @@ def upgrade_to_palkhi_pramukh(
     db.refresh(palkhi)
 
     return user, palkhi
+
+
+def can_contribute(user: User, db: Session) -> bool:
+    if user.role == "admin":
+        return True
+    profile = db.query(ContributorProfile).filter(ContributorProfile.user_id == user.id).first()
+    return profile is not None
+
+
+def can_manage_channel(user: User, db: Session) -> bool:
+    if user.role == "admin":
+        return True
+    profile = db.query(PalkhiPramukhProfile).filter(PalkhiPramukhProfile.user_id == user.id).first()
+    return profile is not None

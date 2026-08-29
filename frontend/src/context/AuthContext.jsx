@@ -7,6 +7,35 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchUserWithPermissions = async () => {
+    const currentUser = await api.me();
+    let permissions = {
+      is_contributor_applied: false,
+      is_palkhi_pramukh_applied: false,
+      can_contribute: currentUser.role === 'admin',
+      can_manage_channel: currentUser.role === 'admin',
+    };
+
+    try {
+      const perms = await api.getMyPermissions();
+      permissions = {
+        ...permissions,
+        ...perms,
+      };
+    } catch (permErr) {
+      console.warn('Failed to fetch permissions:', permErr);
+    }
+
+    const fullUser = {
+      ...currentUser,
+      name: currentUser.full_name || currentUser.username,
+      role: currentUser.role,
+      permissions,
+    };
+
+    return fullUser;
+  };
+
   useEffect(() => {
     const restoreSession = async () => {
       if (!localStorage.getItem('access_token')) {
@@ -15,15 +44,9 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        const currentUser = await api.me();
-        const cachedUser = JSON.parse(localStorage.getItem('user') || '{}');
-        const restoredUser = {
-          ...currentUser,
-          name: currentUser.full_name || currentUser.username,
-          role: currentUser.role || cachedUser.role,
-        };
-        setUser(restoredUser);
-        localStorage.setItem('user', JSON.stringify(restoredUser));
+        const fullUser = await fetchUserWithPermissions();
+        setUser(fullUser);
+        localStorage.setItem('user', JSON.stringify(fullUser));
       } catch {
         logout();
       } finally {
@@ -41,15 +64,10 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('refresh_token', response.refresh_token);
     }
 
-    const currentUser = await api.me();
-    const authenticatedUser = {
-      ...currentUser,
-      name: currentUser.full_name || currentUser.username,
-      role: response.role || currentUser.role,
-    };
-    setUser(authenticatedUser);
-    localStorage.setItem('user', JSON.stringify(authenticatedUser));
-    return authenticatedUser;
+    const fullUser = await fetchUserWithPermissions();
+    setUser(fullUser);
+    localStorage.setItem('user', JSON.stringify(fullUser));
+    return fullUser;
   };
 
   const register = async (userData) => {
@@ -78,16 +96,10 @@ export const AuthProvider = ({ children }) => {
 
   const refreshUser = async () => {
     try {
-      const currentUser = await api.me();
-      const cachedUser = JSON.parse(localStorage.getItem('user') || '{}');
-      const updated = {
-        ...currentUser,
-        name: currentUser.full_name || currentUser.username,
-        role: currentUser.role || cachedUser.role,
-      };
-      setUser(updated);
-      localStorage.setItem('user', JSON.stringify(updated));
-      return updated;
+      const fullUser = await fetchUserWithPermissions();
+      setUser(fullUser);
+      localStorage.setItem('user', JSON.stringify(fullUser));
+      return fullUser;
     } catch (e) {
       console.warn('Failed to refresh user profile:', e);
     }
@@ -116,20 +128,32 @@ export const AuthProvider = ({ children }) => {
     return true;
   };
 
+  const isContributorApplied = () => {
+    return Boolean(user?.permissions?.is_contributor_applied);
+  };
+
+  const isPalkhiPramukhApplied = () => {
+    return Boolean(user?.permissions?.is_palkhi_pramukh_applied);
+  };
+
   const canContribute = () => {
-    return ['contributor', 'palkhi_pramukh', 'admin'].includes(user?.role);
+    if (isAdmin()) return true;
+    return isContributorApplied();
   };
 
   const canCreateChannel = () => {
-    return ['palkhi_pramukh', 'admin'].includes(user?.role);
+    if (isAdmin()) return true;
+    return isPalkhiPramukhApplied();
   };
 
   const canManageChannel = () => {
-    return ['palkhi_pramukh', 'admin'].includes(user?.role);
+    if (isAdmin()) return true;
+    return isPalkhiPramukhApplied();
   };
 
   const canApproveContributors = () => {
-    return ['palkhi_pramukh', 'admin'].includes(user?.role);
+    if (isAdmin()) return true;
+    return isPalkhiPramukhApplied();
   };
 
   const isContributor = () => {
@@ -157,6 +181,8 @@ export const AuthProvider = ({ children }) => {
       getCurrentRole,
       isAdmin,
       canView,
+      isContributorApplied,
+      isPalkhiPramukhApplied,
       canContribute,
       canCreateChannel,
       canManageChannel,
