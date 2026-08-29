@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './hooks/useAuth';
+import { useLanguage } from './context/LanguageContext';
 
 // Layout
 import Header from './components/layout/Header';
@@ -37,10 +38,12 @@ import MapPage from './pages/MapPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 function App() {
+  const { language } = useLanguage();
+
   return (
     <AuthProvider>
       <BrowserRouter>
-        <div className="min-h-screen flex flex-col bg-[#FBF5EC]">
+        <div className="min-h-screen flex flex-col bg-[#FBF5EC]" lang={language}>
           <Header />
           <main className="flex-1 w-full">
             <Routes>
