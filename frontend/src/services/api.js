@@ -116,11 +116,15 @@ export const api = {
   // =========================
   channelPosts: (channelId) => request(`/channels/${channelId}/posts`),
 
-  createChannelPost: (channelId, message) =>
-    request(`/channels/${channelId}/posts`, {
+  createChannelPost: (channelId, messageOrData) => {
+    const payload = typeof messageOrData === 'string'
+      ? { message: messageOrData }
+      : (messageOrData && typeof messageOrData.message === 'string' ? { message: messageOrData.message } : messageOrData);
+    return request(`/channels/${channelId}/posts`, {
       method: 'POST',
-      body: JSON.stringify({ message }),
-    }),
+      body: JSON.stringify(payload),
+    });
+  },
 
   // =========================
   // Announcements

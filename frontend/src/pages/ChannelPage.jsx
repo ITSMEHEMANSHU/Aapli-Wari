@@ -354,7 +354,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
         await api.uploadContent(payload, postMedia);
         showNotice('Attachment shared with the channel.', 'success');
       } else {
-        await api.createChannelPost(id, { message: messageContent });
+        await api.createChannelPost(id, messageContent);
       }
 
       setNewPost('');
@@ -688,52 +688,6 @@ export const ChannelPage = ({ isAdminView = false }) => {
               )}
             </div>
           </div>
-
-          {/* Navigation Links (SideNavBar style mapping) */}
-          <nav className="px-4 mt-auto pt-4">
-            <ul className="flex flex-col gap-1.5">
-              <li>
-                <Link
-                  to="/"
-                  className="flex items-center gap-3 text-[#58413f] px-4 py-2.5 hover:bg-[#efe6e2] rounded-xl transition-all font-label-md text-sm font-medium"
-                >
-                  <span className="material-symbols-outlined text-[20px]">home</span>
-                  <span>Home</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/map"
-                  className="flex items-center gap-3 text-[#58413f] px-4 py-2.5 hover:bg-[#efe6e2] rounded-xl transition-all font-label-md text-sm font-medium"
-                >
-                  <span className="material-symbols-outlined text-[20px]">calendar_month</span>
-                  <span>Schedule</span>
-                </Link>
-              </li>
-              <li>
-                <button
-                  onClick={() => setActiveTab('chat')}
-                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all font-label-md text-sm font-bold text-left cursor-pointer ${
-                    activeTab === 'chat'
-                      ? 'bg-[#fe844c]/20 text-[#6a2500] shadow-[0_2px_4px_rgba(0,0,0,0.03)]'
-                      : 'text-[#58413f] hover:bg-[#efe6e2]'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[20px]" data-weight={activeTab === 'chat' ? 'fill' : undefined}>forum</span>
-                  <span>Community Chat</span>
-                </button>
-              </li>
-              <li>
-                <Link
-                  to={isOwner ? `/channel/${id}/manage` : '/settings'}
-                  className="flex items-center gap-3 text-[#58413f] px-4 py-2.5 hover:bg-[#efe6e2] rounded-xl transition-all font-label-md text-sm font-medium"
-                >
-                  <span className="material-symbols-outlined text-[20px]">settings</span>
-                  <span>Settings</span>
-                </Link>
-              </li>
-            </ul>
-          </nav>
         </aside>
 
         {/* ========================================================================= */}
