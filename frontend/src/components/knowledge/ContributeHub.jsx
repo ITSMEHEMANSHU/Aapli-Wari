@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
-import { FaUpload, FaImage } from 'react-icons/fa';
 import { CATEGORIES } from './data/knowledgeData';
+import api from '../../services/api'; // adjust path as needed
 
 export const ContributeHub = ({ onComplete }) => {
   const [contributionType, setContributionType] = useState(null);
   const [selectedCategories, setSelectedCategories] = useState([]);
-  const [articleImage, setArticleImage] = useState(null);
+  
+  // Form fields
+  const [title, setTitle] = useState('');
+  const [vernacularTitle, setVernacularTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [contentBody, setContentBody] = useState('');
+  const [file, setFile] = useState(null);
+  const [mediaSubType, setMediaSubType] = useState('image'); // default for 'media'
+  const [loading, setLoading] = useState(false);
 
   const toggleCategory = (catId) => {
     setSelectedCategories(prev =>
@@ -13,15 +21,85 @@ export const ContributeHub = ({ onComplete }) => {
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleResetForm = () => {
+    setContributionType(null);
+    setTitle('');
+    setVernacularTitle('');
+    setDescription('');
+    setContentBody('');
+    setSelectedCategories([]);
+    setFile(null);
+    setMediaSubType('image');
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validation
     if (selectedCategories.length === 0) {
       alert('Please select at least one category.');
       return;
     }
-    alert('Submitted successfully for community review!');
-    onComplete();
+
+    // For types that require a file, ensure it's present
+    const fileRequired = ['document', 'media', 'oral'].includes(contributionType);
+    if (fileRequired && !file) {
+      alert('Please select a file to upload.');
+      return;
+    }
+
+    const formData = new FormData();
+
+    // Common fields
+    formData.append('title', title);
+    formData.append('vernacular_title', vernacularTitle || '');
+    formData.append('description', description);
+    formData.append('content_body', contentBody || description);
+    formData.append('categories', JSON.stringify(selectedCategories));
+    formData.append('language', 'mr');
+
+    // Map contribution type → backend content_type
+    let contentType;
+    switch (contributionType) {
+      case 'article':
+        contentType = 'text';
+        break;
+      case 'document':
+        contentType = 'pdf';
+        break;
+      case 'media':
+        // Use the sub‑type chosen by the user
+        contentType = mediaSubType; // 'image', 'video', or 'audio'
+        break;
+      case 'oral':
+        contentType = 'audio';
+        break;
+      default:
+        contentType = 'text';
+    }
+    formData.append('content_type', contentType);
+
+    // Append file if present
+    if (file) {
+      formData.append('file', file);
+    }
+
+    try {
+      setLoading(true);
+      await api.uploadContent(formData);
+      alert('Submitted successfully for community review!');
+      handleResetForm();
+      if (onComplete) onComplete();
+    } catch (err) {
+      console.error('Upload failed:', err);
+      alert(err.message || 'Error uploading content. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Determine if the current type requires a file
+  const requiresFile = ['document', 'media', 'oral'].includes(contributionType);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -35,7 +113,7 @@ export const ContributeHub = ({ onComplete }) => {
           <div onClick={() => setContributionType('article')} className="bg-white border border-[#E8D9C3] p-5 rounded-2xl hover:border-[#DD6B35] cursor-pointer transition shadow-sm">
             <div className="text-xl mb-2">✍️</div>
             <h3 className="font-serif font-bold text-sm text-[#2B1B12]">Write an Article</h3>
-            <p className="text-xs text-[#4A392E]/70 mt-1">Create structured knowledge about any Wari topic.</p>
+            <p className="text-xs text-[#4A392E]/70 mt-1">Create text-based structured knowledge about any Wari topic.</p>
           </div>
 
           <div onClick={() => setContributionType('document')} className="bg-white border border-[#E8D9C3] p-5 rounded-2xl hover:border-[#DD6B35] cursor-pointer transition shadow-sm">
@@ -61,7 +139,7 @@ export const ContributeHub = ({ onComplete }) => {
           <button onClick={() => setContributionType(null)} className="text-xs text-[#DD6B35] font-semibold mb-3">← Back to Options</button>
           
           <h2 className="text-lg font-serif font-bold text-[#2B1B12] mb-4 border-b border-[#F5EAD9] pb-2">
-            {contributionType === 'article' && '✍️ Write an Article'}
+            {contributionType === 'article' && '✍️ Write an Article (Text Only)'}
             {contributionType === 'document' && '📄 Upload Document / PDF'}
             {contributionType === 'media' && '📷 Upload Media'}
             {contributionType === 'oral' && '🎙️ Preserve Oral History'}
@@ -75,13 +153,29 @@ export const ContributeHub = ({ onComplete }) => {
               </label>
               <input 
                 type="text" 
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter title" 
                 className="w-full p-2.5 text-xs bg-[#FBF5EC]/50 border border-[#E8D9C3] rounded-xl focus:outline-none focus:border-[#DD6B35]" 
                 required 
               />
             </div>
 
-            {/* Category Selection */}
+            {/* Vernacular Title */}
+            <div>
+              <label className="block text-xs font-bold uppercase text-[#2B1B12] mb-1">
+                Vernacular Title (Marathi/Local Script)
+              </label>
+              <input 
+                type="text" 
+                value={vernacularTitle}
+                onChange={(e) => setVernacularTitle(e.target.value)}
+                placeholder="स्थानिक भाषेत शीर्षक (उदा. अभंग/वारी माहिती)" 
+                className="w-full p-2.5 text-xs bg-[#FBF5EC]/50 border border-[#E8D9C3] rounded-xl focus:outline-none focus:border-[#DD6B35]" 
+              />
+            </div>
+
+            {/* Categories */}
             <div>
               <label className="block text-xs font-bold uppercase text-[#2B1B12] mb-1">
                 Select Categories <span className="text-red-500">*</span>
@@ -108,54 +202,74 @@ export const ContributeHub = ({ onComplete }) => {
               </div>
             </div>
 
-            {/* Content / Description */}
+            {/* Description */}
             <div>
               <label className="block text-xs font-bold uppercase text-[#2B1B12] mb-1">
-                {contributionType === 'article' ? 'Article Body' : 'Description'} <span className="text-red-500">*</span>
+                Short Description <span className="text-red-500">*</span>
               </label>
               <textarea 
-                rows="5" 
-                placeholder={contributionType === 'article' ? 'Write full article details...' : 'Describe the file contents...'} 
+                rows="2" 
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Provide a brief summary..." 
                 className="w-full p-2.5 text-xs bg-[#FBF5EC]/50 border border-[#E8D9C3] rounded-xl focus:outline-none focus:border-[#DD6B35]" 
                 required
-              ></textarea>
+              />
             </div>
 
-            {/* File Upload for Non-Articles */}
-            {contributionType !== 'article' && (
+            {/* Article Body (only for article) */}
+            {contributionType === 'article' && (
               <div>
                 <label className="block text-xs font-bold uppercase text-[#2B1B12] mb-1">
-                  Upload File <span className="text-red-500">*</span>
+                  Article Body <span className="text-red-500">*</span>
                 </label>
-                <div className="border-2 border-dashed border-[#E8D9C3] rounded-2xl p-5 text-center bg-[#FDF8F0]/50 hover:bg-[#FDF8F0] transition cursor-pointer">
-                  <FaUpload className="mx-auto text-lg text-[#DD6B35] mb-1" />
-                  <span className="text-xs font-semibold text-[#2B1B12]">Drag & drop file here or click to browse</span>
-                </div>
+                <textarea 
+                  rows="6" 
+                  value={contentBody}
+                  onChange={(e) => setContentBody(e.target.value)}
+                  placeholder="Write full text details of your article here..." 
+                  className="w-full p-2.5 text-xs bg-[#FBF5EC]/50 border border-[#E8D9C3] rounded-xl focus:outline-none focus:border-[#DD6B35]" 
+                  required
+                />
               </div>
             )}
 
-            {/* Optional Cover/Header Image for Articles */}
-            {contributionType === 'article' && (
+            {/* File upload for types that need it */}
+            {requiresFile && (
               <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="text-xs font-bold uppercase text-[#2B1B12]">Header Image</label>
-                  <span className="text-[10px] text-[#DD6B35] font-semibold uppercase">Optional</span>
-                </div>
-                <label className="flex items-center gap-3 p-3 border border-dashed border-[#E8D9C3] bg-[#FDF8F0]/30 hover:bg-[#FDF8F0] rounded-xl cursor-pointer transition">
-                  <FaImage className="text-lg text-[#DD6B35]" />
-                  <div className="flex-1 text-xs">
-                    <div className="font-semibold text-[#2B1B12]">
-                      {articleImage ? articleImage.name : 'Upload cover photo for article'}
-                    </div>
-                    <div className="text-[10px] text-[#4A392E]/60">Supported formats: JPG, PNG, WEBP (Max 5MB)</div>
-                  </div>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={(e) => setArticleImage(e.target.files[0] || null)} 
-                  />
+                <label className="block text-xs font-bold uppercase text-[#2B1B12] mb-1">
+                  {contributionType === 'document' ? 'PDF File' :
+                   contributionType === 'oral' ? 'Audio File' :
+                   'Media File'} <span className="text-red-500">*</span>
                 </label>
+                
+                {/* Sub-type selector for 'media' */}
+                {contributionType === 'media' && (
+                  <select
+                    value={mediaSubType}
+                    onChange={(e) => setMediaSubType(e.target.value)}
+                    className="w-full p-2.5 text-xs bg-[#FBF5EC]/50 border border-[#E8D9C3] rounded-xl focus:outline-none focus:border-[#DD6B35] mb-2"
+                  >
+                    <option value="image">🖼️ Image</option>
+                    <option value="video">🎥 Video</option>
+                    <option value="audio">🎵 Audio</option>
+                  </select>
+                )}
+
+                <input
+                  type="file"
+                  accept={
+                    contributionType === 'document' ? '.pdf' :
+                    contributionType === 'oral' ? 'audio/*' :
+                    mediaSubType === 'image' ? 'image/*' :
+                    mediaSubType === 'video' ? 'video/*' :
+                    'audio/*'
+                  }
+                  onChange={(e) => setFile(e.target.files[0])}
+                  className="w-full p-2.5 text-xs bg-[#FBF5EC]/50 border border-[#E8D9C3] rounded-xl focus:outline-none focus:border-[#DD6B35]"
+                  required
+                />
+                {file && <p className="text-xs text-gray-500 mt-1">Selected: {file.name}</p>}
               </div>
             )}
 
@@ -164,10 +278,18 @@ export const ContributeHub = ({ onComplete }) => {
             </div>
 
             <div className="flex gap-2 pt-2">
-              <button type="submit" className="px-5 py-2.5 bg-[#DD6B35] hover:bg-[#C85A28] text-white text-xs font-bold rounded-xl shadow transition">
-                Submit for Review
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="px-5 py-2.5 bg-[#DD6B35] hover:bg-[#C85A28] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow transition"
+              >
+                {loading ? 'Submitting...' : 'Submit for Review'}
               </button>
-              <button type="button" onClick={() => setContributionType(null)} className="px-5 py-2.5 bg-[#F5EAD9] hover:bg-[#E8D9C3] text-[#4A392E] text-xs font-bold rounded-xl transition">
+              <button 
+                type="button" 
+                onClick={() => setContributionType(null)} 
+                className="px-5 py-2.5 bg-[#F5EAD9] hover:bg-[#E8D9C3] text-[#4A392E] text-xs font-bold rounded-xl transition"
+              >
                 Cancel
               </button>
             </div>

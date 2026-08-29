@@ -28,6 +28,24 @@ export const KnowledgeDetail = ({ item, onOpenSuggest, onOpenHistory }) => {
         <h1 className="text-3xl font-serif font-bold text-[#2B1B12] mb-1">{item.title}</h1>
         <div className="text-lg font-serif text-[#DD6B35] mb-4">{item.vernacularTitle}</div>
 
+        {item.fileUrl && item.contentType === 'image' && (
+          <img
+            src={item.fileUrl}
+            alt={item.title}
+            className="w-full max-h-[500px] object-contain rounded-lg bg-[#FDF8F0] mb-6"
+          />
+        )}
+        {item.fileUrl && item.contentType === 'video' && (
+          <video
+            src={item.fileUrl}
+            controls
+            className="w-full max-h-[500px] rounded-lg bg-black mb-6"
+          />
+        )}
+        {item.fileUrl && item.contentType === 'audio' && (
+          <audio src={item.fileUrl} controls className="w-full mb-6" />
+        )}
+
         <div className="flex flex-wrap items-center gap-4 text-xs text-[#4A392E]/70 py-2.5 border-y border-[#F5EAD9] mb-6">
           <span>Last reviewed: <strong>{item.updatedDate}</strong></span>
           <span>•</span>

@@ -16,7 +16,7 @@ export const CATEGORIES = [
 export const CONTENT_TYPES = [
   { id: 'article', label: 'Article', icon: '✍️' },
   { id: 'pdf', label: 'Document / PDF', icon: '📄' },
-  { id: 'photo', label: 'Photo', icon: '📷' },
+  { id: 'image', label: 'Photo', icon: '📷' },
   { id: 'video', label: 'Video', icon: '🎥' },
   { id: 'audio', label: 'Audio', icon: '🎙️' },
   { id: 'story', label: 'Story', icon: '👥' }
