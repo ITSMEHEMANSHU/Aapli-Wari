@@ -15,10 +15,6 @@ import {
   FiSettings,
   FiStar,
   FiPaperclip,
-  FiUserPlus,
-  FiUserCheck,
-  FiSend,
-  FiMessageCircle,
 } from 'react-icons/fi';
 import Button from '../components/common/Button';
 import Avatar from '../components/common/Avatar';
@@ -144,15 +140,6 @@ export const ChannelPage = ({ isAdminView = false }) => {
         setChannel(channelData);
         setFollowersCount(channelData.followers_count || 0);
 
-        if (adminView) {
-          setIsOwner(false);
-          setIsMember(false);
-          setJoinRequestPending(false);
-          setContributors([]);
-          await fetchPosts();
-          return;
-        }
-
         if (user && channelData) {
           const userIsOwner = channelData.is_owner === true || String(channelData.created_by_user_id) === String(user.id);
           setIsOwner(userIsOwner);
@@ -203,7 +190,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
     if (!authLoading && user && channel && !isOwner && !adminView && id) {
       api.getFollowStatus(id)
         .then((data) => setIsFollowing(Boolean(data?.is_following)))
-        .catch(() => { });
+        .catch(() => setIsFollowing(false));
     }
   }, [authLoading, user, channel, isOwner, adminView, id]);
 
@@ -367,20 +354,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
         await api.uploadContent(payload, postMedia);
         showNotice('Attachment shared with the channel.', 'success');
       } else {
-        const formData = new FormData();
-        const title = newPost.trim() || 'Channel Post';
-        formData.append('title', title.substring(0, 100));
-        formData.append('description', newPost);
-        formData.append('content_type',
-          postMedia.type.startsWith('image/') ? 'image' :
-            postMedia.type.startsWith('video/') ? 'video' :
-              postMedia.type.startsWith('audio/') ? 'audio' : 'pdf'
-        );
-        formData.append('channel_id', id);
-        formData.append('language', 'en');
-        formData.append('tags', '');
-        formData.append('file', postMedia);
-        await api.uploadContent(formData);
+        await api.createChannelPost(id, messageContent);
       }
 
       setNewPost('');
@@ -427,7 +401,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
     }));
 
     if (nextLiked) {
-      api.likeChannelPost?.(id, postId).catch(() => { });
+      api.likeChannelPost?.(id, postId).catch(() => {});
     }
   };
 
@@ -482,8 +456,16 @@ export const ChannelPage = ({ isAdminView = false }) => {
     [posts, searchQuery]
   );
 
-  const chatPosts = [...posts.filter((p) => !p.is_announcement)].sort(
-    (a, b) => new Date(a.created_at) - new Date(b.created_at)
+  const chatPosts = useMemo(
+    () =>
+      [...posts.filter((p) => !p.is_announcement)]
+        .filter((post) => {
+          if (!searchQuery.trim()) return true;
+          const text = `${post.message || ''} ${post.description || ''} ${post.user?.full_name || ''} ${post.user?.username || ''}`.toLowerCase();
+          return text.includes(searchQuery.toLowerCase());
+        })
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at)),
+    [posts, searchQuery]
   );
 
   const adminFeedPosts = [...posts].sort(
@@ -497,12 +479,12 @@ export const ChannelPage = ({ isAdminView = false }) => {
   const canEditEmergencyContact = !adminView && Boolean(user) && (isOwner || isAdminUser);
   const hasEmergencyContact = Boolean(channel?.emergency_contact_name || channel?.emergency_contact_phone);
 
-  const TABS = [
-    { id: 'announcements', label: 'Announcements', icon: '📢' },
-    { id: 'chat', label: 'Chat', icon: '💬' },
-    { id: 'map', label: 'Route Map', icon: '📍' },
-    { id: 'info', label: 'About & Info', icon: 'ℹ️' },
-  ];
+  const TABS = useMemo(() => [
+    { id: 'announcements', label: t('channelPage.tabs.announcements'), icon: 'campaign' },
+    { id: 'chat', label: t('channelPage.tabs.chat'), icon: 'forum' },
+    { id: 'map', label: t('channelPage.tabs.map'), icon: 'map' },
+    { id: 'info', label: t('channelPage.tabs.info'), icon: 'info' },
+  ], [language]);
 
   if (loading) {
     return (
@@ -534,8 +516,9 @@ export const ChannelPage = ({ isAdminView = false }) => {
   }
 
   return (
-    <div className="bg-[#F8F4EE] min-h-[calc(100vh-4rem)] flex flex-col justify-between overflow-hidden">
-      <div className="max-w-[1600px] w-full mx-auto flex-1 flex flex-col lg:flex-row h-full lg:h-[calc(100vh-4rem)]">
+    <div className="bg-[#FBF5EC] text-[#1f1b18] min-h-[calc(100vh-4rem)] flex flex-col justify-between font-body-md overflow-hidden">
+      {/* App Container */}
+      <div className="flex w-full h-[calc(100vh-4rem)] max-w-[1600px] mx-auto bg-[#fff8f5] relative shadow-[0_0_40px_rgba(106,2,10,0.05)] overflow-hidden">
 
         {/* ========================================================================= */}
         {/* LEFT COLUMN: Fixed, Scrollable (Hidden on Mobile, 30% on Desktop)         */}
@@ -554,29 +537,9 @@ loading="lazy"
                 />
               ) : (
                 <div className="w-28 h-28 lg:w-32 lg:h-32 rounded-full bg-gradient-to-br from-[#6a020a] to-[#a13f09] flex items-center justify-center text-white text-4xl lg:text-5xl font-headline-lg font-bold shadow-md border-2 border-[#a13f09] p-1 ring-2 ring-white">
-        <aside className="w-full lg:w-[32%] xl:w-[30%] bg-white border-b lg:border-b-0 lg:border-r border-[#E8DFC8] flex flex-col overflow-y-auto shrink-0 shadow-sm">
-
-          {/* Top back button & Mobile Breadcrumb */}
-          <div className="px-5 py-4 border-b border-[#F0E6D8] flex items-center justify-between">
-            <button
-              onClick={() => navigate(adminView ? '/admin/channels' : -1)}
-              className="inline-flex items-center text-xs font-semibold text-[#8B1E1E] hover:text-[#DD6B35] transition-colors"
-            >
-              <FiArrowLeft className="mr-1.5" size={15} /> {adminView ? 'Admin Channels' : 'All Channels'}
-            </button>
-            <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#FBF5EC] text-[#8B1E1E] border border-[#E8D9C3]">
-              {channel.type || 'Palkhi Channel'}
-            </span>
-          </div>
-
-          <div className="p-5 space-y-6 flex-1">
-            {/* Channel Avatar & Primary Details */}
-            <div className="flex flex-col items-center text-center">
-              <div className="relative">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-[#8B1E1E] to-[#DD6B35] flex items-center justify-center text-white text-3xl sm:text-4xl font-black shadow-md border-4 border-white ring-2 ring-[#E8D9C3]">
                   {channel.name?.[0]?.toUpperCase() || 'W'}
                 </div>
-              </div>
+              )}
 
               {channel.status === 'active' && (
                 <div className="absolute bottom-1 right-1 bg-white text-[#6a020a] rounded-full p-1 shadow-sm border border-[#dfbfbc] flex items-center justify-center">
@@ -602,46 +565,67 @@ loading="lazy"
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="w-full mt-4 flex items-center gap-2">
-            {adminView ? (
-              <div className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#FDF8F0] text-[#6d2325] border border-[#E8D9C3] text-center shadow-sm">
-                Admin Read-Only View
+          {/* Follower Stats Card */}
+          <div className="px-6 pb-4">
+            <div className="flex justify-between bg-white rounded-xl p-3 shadow-[0_2px_8px_rgba(106,2,10,0.03)] border border-[#dfbfbc]/20">
+              <div className="text-center flex-1">
+                <div className="font-headline-md text-xl lg:text-2xl text-[#6a020a] font-bold">
+                  {followersCount >= 1000 ? `${(followersCount / 1000).toFixed(1)}K` : followersCount}
+                </div>
+                <div className="font-label-sm text-xs text-[#58413f]">{t('channelPage.followers')}</div>
               </div>
-            ) : user && !isOwner ? (
+              <div className="w-[1px] bg-[#dfbfbc]/50"></div>
+              <div className="text-center flex-1">
+                <div className="font-headline-md text-xl lg:text-2xl text-[#6a020a] font-bold">
+                  {contributors.length}
+                </div>
+                <div className="font-label-sm text-xs text-[#58413f]">Varkaris</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Action Buttons */}
+          <div className="px-6 pb-5 flex flex-col gap-2.5 border-b border-[#dfbfbc]/30">
+            {isOwner ? (
+              <div className="flex flex-col gap-2">
+                <div className="py-1.5 px-3 rounded-xl text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200 text-center flex items-center justify-center gap-1.5">
+                  <FiStar size={11} className="text-amber-500" /> {t('channelPage.youAreOwner')}
+                </div>
+                <Link
+                  to={`/channel/${id}/manage`}
+                  className="w-full bg-[#6a020a] text-white font-label-md text-sm py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-[#8b1e1e] transition-colors shadow-sm font-semibold"
+                >
+                  <span className="material-symbols-outlined text-[18px]">settings</span>
+                  {t('channelPage.manageChannel')}
+                </Link>
+              </div>
+            ) : adminView ? (
+              <div className="py-2.5 px-4 rounded-xl text-xs font-bold bg-[#FDF8F0] text-[#6a020a] border border-[#dfbfbc] text-center shadow-sm">
+                {t('channelPage.adminViewOnly')}
+              </div>
+            ) : (
               <button
                 onClick={handleFollowToggle}
                 disabled={followLoading}
-                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 ${isFollowing
-                  ? 'bg-[#FBF5EC] text-[#8B1E1E] border border-[#DD6B35]/40 hover:bg-red-50'
-                  : 'bg-[#DD6B35] text-white hover:bg-[#C85A28] active:scale-[0.98]'
-                  }`}
+                className={`w-full font-label-md text-sm py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm font-semibold cursor-pointer ${
+                  isFollowing
+                    ? 'bg-[#FBF5EC] text-[#6a020a] border border-[#a13f09]/40 hover:bg-red-50'
+                    : 'bg-[#a13f09] text-white hover:bg-[#8b3506] active:scale-[0.98]'
+                }`}
               >
                 {followLoading ? (
                   <Loader size="xs" />
                 ) : isFollowing ? (
                   <>
-                    <FiUserCheck size={16} /> Following
+                    <span className="material-symbols-outlined text-[18px]" data-weight="fill">volunteer_activism</span>
+                    {t('channelPage.following')}
                   </>
                 ) : (
                   <>
-                    <FiUserPlus size={16} /> + Follow Channel
+                    <span className="material-symbols-outlined text-[18px]" data-weight="fill">volunteer_activism</span>
+                    {t('channelPage.followChannel')}
                   </>
                 )}
-              </button>
-            ) : isOwner ? (
-              <Link
-                to={`/channel/${id}/manage`}
-                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#8B1E1E] text-white hover:bg-[#701616] transition-all text-center flex items-center justify-center gap-2 shadow-sm"
-              >
-                <FiEdit2 size={14} /> Manage Channel
-              </Link>
-            ) : (
-              <button
-                onClick={() => navigate('/login', { state: { from: `/channel/${id}` } })}
-                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#DD6B35] text-white hover:bg-[#C85A28] transition-all flex items-center justify-center gap-2 shadow-sm"
-              >
-                <FiUserPlus size={16} /> Follow Channel
               </button>
             )}
 
@@ -708,30 +692,70 @@ loading="lazy"
         </aside>
 
         {/* ========================================================================= */}
-        {/* RIGHT COLUMN (70%) - Main Tab Navigation & WhatsApp-style Interactive Area */}
+        {/* RIGHT COLUMN: Main Chat Area (100% on Mobile, 70% on Desktop)             */}
         {/* ========================================================================= */}
-        <main className="w-full lg:w-[68%] xl:w-[70%] flex flex-col bg-[#FDFBF7] h-full overflow-hidden">
+        <main className="flex-1 flex flex-col h-full relative bg-[#ffffff] overflow-hidden">
+          
+          {/* Emergency Alert Banner (Conditional & Dismissible) */}
+          {hasEmergencyContact && showEmergencyBanner && (
+            <div className="bg-[#ba1a1a] text-white px-4 py-2 flex justify-between items-center z-30 shadow-md">
+              <div className="flex items-center gap-2 min-w-0 pr-2">
+                <span className="material-symbols-outlined text-[20px] shrink-0" data-weight="fill">warning</span>
+                <span className="font-label-sm text-xs font-semibold tracking-wide truncate">
+                  Helpline: {channel.emergency_contact_name || 'Emergency Team'} ({channel.emergency_contact_phone})
+                </span>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <a
+                  className="font-label-sm text-xs underline hover:text-white/80 transition-colors font-bold"
+                  href={`tel:${channel.emergency_contact_phone}`}
+                >
+                  Call Help
+                </a>
+                {canEditEmergencyContact && (
+                  <button
+                    aria-label="Edit banner"
+                    onClick={() => setShowEmergencyModal(true)}
+                    className="text-white/80 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                  </button>
+                )}
+                <button
+                  aria-label="Close banner"
+                  onClick={() => setShowEmergencyBanner(false)}
+                  className="text-white/80 hover:text-white transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">close</span>
+                </button>
+              </div>
+            </div>
+          )}
 
-          {/* Top Sticky Bar */}
-          <header className="bg-white/95 backdrop-blur-md border-b border-[#E8D9C3] px-4 py-3 sticky top-0 z-10 shrink-0">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="lg:hidden w-10 h-10 rounded-full bg-[#8B1E1E] text-white flex items-center justify-center font-bold text-sm shrink-0">
+          {/* Top App Bar Header */}
+          <header className="bg-[#fff8f5] border-b border-[#dfbfbc]/40 px-4 py-3 z-20 sticky top-0 flex flex-col w-full shadow-[0_2px_10px_rgba(106,2,10,0.02)]">
+            <div className="flex justify-between items-center w-full">
+              {/* Mobile View: Avatar & Title */}
+              <div className="flex items-center gap-3 md:hidden min-w-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6a020a] to-[#a13f09] text-white flex items-center justify-center font-headline-md font-bold text-sm shrink-0 border border-[#a13f09]/40">
                   {channel.name?.[0]?.toUpperCase() || 'W'}
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <h2 className="text-base sm:text-lg font-bold text-[#2B1B12] truncate">
-                      {channel.name}
-                    </h2>
-                    {channel.status === 'active' && (
-                      <FiCheckCircle className="text-green-500 shrink-0" size={15} />
-                    )}
-                  </div>
-                  <p className="text-[11px] text-gray-500 truncate">
-                    {contributors.length} Sevaks • {followersCount} Warkari Followers
-                  </p>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-headline-md text-base font-bold text-[#6a020a] leading-tight truncate">
+                    {channel.name}
+                  </span>
+                  <span className="font-label-sm text-[11px] text-[#58413f]">Live Community</span>
                 </div>
+              </div>
+
+              {/* Desktop View: Title */}
+              <div className="hidden md:flex items-center gap-2">
+                <span className="font-headline-md text-xl font-bold text-[#6a020a]">
+                  {channel.name}
+                </span>
+                {channel.status === 'active' && (
+                  <span className="material-symbols-outlined text-[#2D6A4F] text-[18px]" data-weight="fill">verified</span>
+                )}
               </div>
 
               {/* Action Buttons */}
@@ -790,18 +814,20 @@ loading="lazy"
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${isActive
-                      ? 'bg-[#8B1E1E] text-white shadow-xs'
-                      : 'bg-[#FBF5EC] text-gray-700 hover:bg-[#F3E7D3] hover:text-[#2B1B12]'
-                      }`}
+                    className={`pb-2 font-label-md text-sm transition-colors whitespace-nowrap px-2 flex items-center gap-1.5 cursor-pointer border-b-2 ${
+                      isActive
+                        ? 'text-[#a13f09] border-[#a13f09] font-bold'
+                        : 'text-[#58413f] border-transparent hover:text-[#a13f09]'
+                    }`}
                   >
                     <span className="material-symbols-outlined text-[18px]" data-weight={isActive ? 'fill' : undefined}>
                       {tab.icon}
                     </span>
                     <span>{tab.label}</span>
                     {tab.id === 'announcements' && announcementPosts.length > 0 && (
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${isActive ? 'bg-white text-[#8B1E1E]' : 'bg-[#DD6B35] text-white'
-                        }`}>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                        isActive ? 'bg-[#a13f09] text-white' : 'bg-[#efe6e2] text-[#6a020a]'
+                      }`}>
                         {announcementPosts.length}
                       </span>
                     )}
@@ -811,9 +837,21 @@ loading="lazy"
             </div>
           </header>
 
-          {/* Tab Content Display Area (Scrollable independently) */}
-          <div className="flex-1 overflow-y-auto p-3.5 sm:p-5 space-y-4">
+          {notice && (
+            <div className={`mx-4 mt-2 rounded-xl border px-3 py-2 text-xs font-semibold ${
+              notice.type === 'success'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : 'border-red-200 bg-red-50 text-red-700'
+            }`}>
+              {notice.text}
+            </div>
+          )}
 
+          {/* ========================================================================= */}
+          {/* TAB CONTENTS (Independently Scrollable with Chat Canvas Background)        */}
+          {/* ========================================================================= */}
+          <div ref={chatCanvasRef} className="flex-1 overflow-y-auto chat-bg p-4 md:p-6 flex flex-col gap-4 relative">
+            
             {/* -------------------- TAB 1: ANNOUNCEMENTS -------------------- */}
             {activeTab === 'announcements' && (
               <div className="space-y-4 max-w-2xl w-full mx-auto">
@@ -856,86 +894,51 @@ loading="lazy"
                   </div>
                 )}
 
-                {/* Admins need the complete channel feed, including content and chat posts. */}
-                {adminView ? (
-                  adminFeedPosts.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
-                      <div className="text-5xl mb-3">🪧</div>
-                      <h3 className="text-base font-bold text-[#2B1B12]">No Channel Updates Yet</h3>
-                      <p className="text-xs text-gray-500 mt-1">Posts and uploaded channel content will appear here.</p>
-                    </div>
-                  ) : (
-                    adminFeedPosts.map((post) => (
-                      <article key={`admin-feed-${post.id}`} className="rounded-2xl border border-[#E8DFC8] bg-white p-4 sm:p-5 shadow-xs">
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-[#8B1E1E]">
-                            {post.is_announcement ? 'Official Announcement' : post.content_type ? 'Channel Content' : 'Channel Chat'}
-                          </span>
-                          <span className="text-[11px] font-medium text-gray-400">{timeAgo(post.created_at)}</span>
-                        </div>
-                        {post.title && post.title !== 'Channel Post' && (
-                          <h4 className="text-base font-bold text-[#2B1B12] mb-1.5">{post.title}</h4>
-                        )}
-                        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-                          {post.message || post.description || 'Uploaded channel content'}
-                        </p>
-                        {post.file_url && (
-                          <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-[#8B1E1E]">
-                            <FiFile size={15} /> View attached file
-                          </a>
-                        )}
-                        <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
-                          Posted by {post.user?.full_name || post.user?.username || 'Channel user'}
-                        </div>
-                      </article>
-                    ))
-                  )
+                {/* Announcements Feed */}
+                {announcementPosts.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-[#dfbfbc] bg-white p-10 text-center">
+                    <div className="text-4xl mb-3">📢</div>
+                    <h3 className="font-headline-md text-base font-bold text-[#1f1b18]">{t('channelPage.announcements.empty')}</h3>
+                    <p className="font-body-md text-xs text-[#58413f] mt-1 max-w-sm mx-auto">
+                      {t('channelPage.announcements.emptySub')}
+                    </p>
+                  </div>
                 ) : (
-                  <>
-                    {/* Announcements List */}
-                    {announcementPosts.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
-                        <div className="text-5xl mb-3">🪧</div>
-                        <h3 className="text-base font-bold text-[#2B1B12]">No Announcements Yet</h3>
-                        <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-                          Official notifications regarding schedule, prasad halts, and Aarti will appear here.
-                        </p>
-                      </div>
-                    ) : (
-                      announcementPosts.map((post) => (
-                        <article
-                          key={`ann-${post.id}`}
-                          className={`rounded-2xl border p-4 sm:p-5 transition-all shadow-xs ${post.is_pinned
-                            ? 'bg-[#FFFBF2] border-amber-300 ring-1 ring-amber-200'
-                            : 'bg-white border-[#E8DFC8]'
-                            }`}
-                        >
-                          <div className="flex items-center justify-between gap-2 mb-3">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="inline-flex items-center gap-1 rounded-md bg-[#8B1E1E] px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
-                                📢 Official Announcement
-                              </span>
-                              {post.is_pinned && (
-                                <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-900">
-                                  📌 Pinned
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-[11px] font-medium text-gray-400">{timeAgo(post.created_at)}</span>
-                          </div>
-
-                          {post.title && post.title !== 'Channel Post' && (
-                            <h4 className="text-base font-bold text-[#2B1B12] mb-1.5">{post.title}</h4>
+                  announcementPosts.map((post) => (
+                    <article
+                      key={`ann-${post.id}`}
+                      className={`rounded-2xl border p-4 sm:p-5 transition-all shadow-[0_2px_8px_rgba(106,2,10,0.04)] ${
+                        post.is_pinned
+                          ? 'bg-[#FFFBF2] border-amber-300 ring-1 ring-amber-200'
+                          : 'bg-white border-[#dfbfbc]/30'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-2.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-[#6a020a] px-2.5 py-0.5 font-label-sm text-[10px] font-black uppercase tracking-wider text-white">
+                            📢 {t('channelPage.announcements.badge')}
+                          </span>
+                          {post.is_pinned && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 font-label-sm text-[10px] font-black uppercase tracking-wider text-amber-900">
+                              {t('channelPage.announcements.pinned')}
+                            </span>
                           )}
+                        </div>
+                        <span className="font-label-sm text-[11px] text-[#58413f]/70">{timeAgo(post.created_at)}</span>
+                      </div>
 
-                          <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-                            {post.message || post.description}
-                          </p>
+                      {post.title && post.title !== 'Channel Post' && (
+                        <h4 className="font-headline-md text-base font-bold text-[#1f1b18] mb-1.5">{post.title}</h4>
+                      )}
+
+                      <p className="font-body-md text-sm text-[#1f1b18] whitespace-pre-wrap leading-relaxed">
+                        {post.message || post.description}
+                      </p>
 
                       {post.file_url && (
                         <div className="mt-3 rounded-xl overflow-hidden border border-[#dfbfbc]/30 bg-gray-50">
                           {post.content_type === 'image' ? (
-                            <img src={post.file_url} alt={post.title || 'Announcement'} className="w-full max-h-80 object-cover" />
+                            <img loading="lazy" src={post.file_url} alt={post.title || 'Announcement'} className="w-full max-h-80 object-cover" />
                           ) : (
                             <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="p-3 flex items-center gap-2 font-label-md text-xs font-bold text-[#6a020a]">
                               <FiFile size={16} /> {t('channelPage.announcements.viewDoc')}
@@ -944,142 +947,227 @@ loading="lazy"
                         </div>
                       )}
 
-                          <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                            <div className="flex items-center gap-2">
-                              <Avatar size="xs" fallback={post.user?.full_name?.[0] || 'P'} />
-                              <span className="font-bold text-[#2B1B12] text-xs">
-                                {post.user?.full_name || 'Palkhi Pramukh'}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <button className="flex items-center gap-1 hover:text-[#8B1E1E]">
-                                <FiHeart size={13} /> {post.likes || 0}
+                      <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between font-label-sm text-xs text-[#58413f]">
+                        <div className="flex items-center gap-2">
+                          <Avatar size="xs" fallback={post.user?.full_name?.[0] || 'P'} />
+                          <span className="font-bold text-[#1f1b18] text-xs">
+                            {post.user?.full_name || 'Palkhi Pramukh'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {(() => {
+                            const isLiked = Boolean(likedPostIds[post.id]);
+                            const totalLikes = Math.max(0, (post.likes || 0) + (reactionMap[post.id] || 0));
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => handleToggleLike(post.id)}
+                                className={`flex items-center gap-1.5 transition-colors cursor-pointer ${
+                                  isLiked ? 'text-red-600 font-bold' : 'hover:text-[#6a020a]'
+                                }`}
+                                title={isLiked ? 'Unlike announcement' : 'Like announcement'}
+                              >
+                                <FiHeart size={13} className={isLiked ? 'fill-red-600 text-red-600' : ''} /> {totalLikes}
                               </button>
-                              <button className="flex items-center gap-1 hover:text-[#8B1E1E]">
-                                <FiShare2 size={13} /> Share
-                              </button>
-                            </div>
-                          </div>
-                        </article>
-                      ))
-                    )}
-                  </>
+                            );
+                          })()}
+                          <button
+                            type="button"
+                            className="flex items-center gap-1 hover:text-[#6a020a] cursor-pointer"
+                            onClick={() => handleSharePost(post)}
+                          >
+                            <FiShare2 size={13} /> {t('channelPage.announcements.share')}
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  ))
                 )}
               </div>
             )}
 
             {/* -------------------- TAB 2: WHATSAPP-STYLE CHAT -------------------- */}
             {activeTab === 'chat' && (
-              <div className="space-y-3 pb-2 max-w-3xl mx-auto">
+              <div className="space-y-4 pb-2 max-w-3xl w-full mx-auto flex flex-col">
+                
+                {/* Sticky Date Separator */}
+                <div className="flex justify-center my-1 sticky top-2 z-10">
+                  <span className="bg-white border border-[#dfbfbc]/30 text-[#58413f] font-label-sm text-xs px-3 py-1 rounded-full shadow-sm">
+                    Today
+                  </span>
+                </div>
+
+                {/* System Message / Pinned Notice Highlight */}
+                {announcementPosts.length > 0 && (
+                  <div className="flex justify-center my-1">
+                    <div className="bg-[#6a020a]/5 border border-[#6a020a]/20 px-4 py-3 rounded-xl flex items-start gap-3 max-w-md shadow-sm">
+                      <span className="material-symbols-outlined text-[#6a020a] text-[20px] mt-0.5" data-weight="fill">info</span>
+                      <div>
+                        <p className="font-label-md text-xs text-[#6a020a] font-bold">
+                          {announcementPosts[0]?.title || 'Palkhi Route Notice'}
+                        </p>
+                        <p className="font-label-sm text-xs text-[#58413f] mt-0.5 line-clamp-2">
+                          {announcementPosts[0]?.message}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Loading State */}
                 {loadingPosts ? (
                   <div className="flex justify-center py-10"><Loader size="md" /></div>
                 ) : chatPosts.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
-                    <div className="text-5xl mb-3">💬</div>
-                    <h3 className="text-base font-bold text-[#2B1B12]">Start the Conversation</h3>
-                    <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-                      Channel members and authorized sevaks can coordinate updates in real-time here.
+                  <div className="rounded-2xl border border-dashed border-[#dfbfbc] bg-white p-10 text-center">
+                    <div className="text-4xl mb-3">💬</div>
+                    <h3 className="font-headline-md text-base font-bold text-[#1f1b18]">{t('channelPage.chat.emptyTitle')}</h3>
+                    <p className="font-body-md text-xs text-[#58413f] mt-1 max-w-sm mx-auto">
+                      {t('channelPage.chat.emptySub')}
                     </p>
                   </div>
                 ) : (
                   chatPosts.map((post) => {
-                    const isMyPost = post.user_id === user?.id || (isOwner && post.user?.role === 'admin');
-                    return (
-                      <div
-                        key={post.id}
-                        className={`flex gap-2 sm:gap-3 items-end ${isMyPost ? 'justify-end' : 'justify-start'}`}
-                      >
-                        {!isMyPost && (
-                          <Avatar
-                            size="sm"
-                            fallback={post.user?.full_name?.[0] || post.user?.username?.[0] || 'W'}
-                            className="shrink-0 mb-1"
-                          />
-                        )}
+                    const isMyPost = Boolean(user) && String(post.user_id) === String(user.id);
+                    const isPostOwner = channel && String(post.user_id) === String(channel.created_by_user_id);
+                    const isContributorPost = post.user?.role === 'contributor';
 
-                        <div className={`max-w-[85%] sm:max-w-[75%] min-w-[140px]`}>
-                          {/* Bubble Container */}
-                          <div
-                            className={`px-3.5 py-2.5 rounded-2xl shadow-xs text-sm relative ${isMyPost
-                              ? 'bg-gradient-to-br from-[#8B1E1E] to-[#A42525] text-white rounded-br-xs'
-                              : 'bg-white text-gray-900 border border-[#E8D9C3] rounded-bl-xs'
-                              }`}
-                          >
-                            {!isMyPost && (
-                              <p className="text-[11px] font-bold text-[#DD6B35] mb-1 truncate">
-                                {post.user?.full_name || post.user?.username || 'Sevak'}
-                              </p>
-                            )}
+                    return isMyPost ? (
+                      /* Self Message (Right Aligned, Warm Peach Tint) */
+                      <div key={post.id} className="flex flex-col items-end self-end max-w-[85%] md:max-w-[70%]">
+                        <div className="bg-[#FFF0E6] border border-[#FFDBCD] p-3 rounded-2xl rounded-tr-none shadow-[0_2px_8px_rgba(161,63,9,0.06)] relative min-w-[120px]">
+                          {post.title && post.title !== 'Channel Post' && (
+                            <p className="font-headline-md text-xs font-bold text-[#6a020a] mb-1">
+                              {post.title}
+                            </p>
+                          )}
+                          <p className="font-body-md text-sm text-[#1f1b18] whitespace-pre-wrap leading-relaxed">
+                            {post.description || post.message}
+                          </p>
 
-                            {post.title && post.title !== 'Channel Post' && (
-                              <p className={`font-bold mb-1 ${isMyPost ? 'text-white' : 'text-[#2B1B12]'}`}>
-                                {post.title}
-                              </p>
-                            )}
-
-                            {post.description && (
-                              <p className={`whitespace-pre-wrap leading-relaxed ${isMyPost ? 'text-white/95' : 'text-gray-800'}`}>
-                                {post.description}
-                              </p>
-                            )}
-
-                            {/* Media Attachment Rendering */}
-                            {post.file_url && (
-                              <div className="mt-2 rounded-xl overflow-hidden bg-black/5">
-                                {post.content_type === 'image' && (
-                                  <img
-                                    src={post.file_url}
-                                    alt="Shared attachment"
-                                    className="w-full max-h-72 object-cover rounded-lg cursor-pointer hover:opacity-95"
-                                    onClick={() => window.open(post.file_url, '_blank')}
-                                  />
-                                )}
-                                {post.content_type === 'video' && (
-                                  <video src={post.file_url} controls className="w-full max-h-72 rounded-lg" />
-                                )}
-                                {post.content_type === 'audio' && (
-                                  <audio src={post.file_url} controls className="w-full mt-1" />
-                                )}
-                                {post.content_type === 'pdf' && (
-                                  <a
-                                    href={post.file_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`flex items-center gap-2 p-2.5 rounded-lg text-xs font-semibold ${isMyPost ? 'bg-white/20 text-white' : 'bg-[#FBF5EC] text-[#8B1E1E]'
-                                      }`}
-                                  >
-                                    <FiFile size={16} /> Attached Document (PDF)
-                                  </a>
-                                )}
-                              </div>
-                            )}
-
-                            <div
-                              className={`flex items-center justify-end gap-1 mt-1 text-[10px] ${isMyPost ? 'text-white/70' : 'text-gray-400'
-                                }`}
-                            >
-                              <span>{timeAgo(post.created_at)}</span>
-                              {isMyPost && <FiCheckCircle size={10} className="text-white/80" />}
+                          {post.file_url && (
+                            <div className="mt-2 rounded-xl overflow-hidden border border-[#FFDBCD]">
+                              {post.content_type === 'image' && (
+                                <img
+loading="lazy" 
+                                  src={post.file_url}
+                                  alt="Attachment"
+                                  className="w-full max-h-72 object-cover rounded-lg cursor-pointer"
+                                  onClick={() => window.open(post.file_url, '_blank')}
+                                />
+                              )}
+                              {post.content_type === 'video' && (
+                                <video src={post.file_url} controls className="w-full max-h-72 rounded-lg" />
+                              )}
+                              {post.content_type === 'pdf' && (
+                                <a
+                                  href={post.file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 p-2 rounded-lg text-xs font-semibold bg-white text-[#6a020a]"
+                                >
+                                  <FiFile size={16} /> Attached Document (PDF)
+                                </a>
+                              )}
                             </div>
-                          </div>
+                          )}
 
-                          {/* Quick Message Actions */}
-                          <div className={`flex items-center gap-3 mt-1 px-1.5 text-[11px] text-gray-500 ${isMyPost ? 'justify-end' : ''}`}>
-                            <button className="flex items-center gap-1 hover:text-[#8B1E1E]">
-                              <FiHeart size={12} /> {post.likes || 0}
-                            </button>
-                            <button className="flex items-center gap-1 hover:text-[#8B1E1E]">
-                              <FiMessageCircle size={12} />
-                            </button>
-                            <button className="hover:text-[#8B1E1E]">
-                              <FiShare2 size={12} />
-                            </button>
+                          <div className="flex justify-end items-center mt-1.5 gap-1 text-[11px] text-[#58413f]/80">
+                            <span>{timeAgo(post.created_at)}</span>
+                            <span className="material-symbols-outlined text-[14px] text-[#a13f09]" data-weight="fill">done_all</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Other User / Admin Message (Left Aligned, Pure White Card) */
+                      <div key={post.id} className="flex flex-col items-start max-w-[85%] md:max-w-[70%]">
+                        <div className="flex items-end gap-1.5 mb-1">
+                          <div className="w-7 h-7 rounded-full bg-[#efe6e2] text-[#6a020a] flex items-center justify-center font-bold text-xs shadow-sm border border-[#dfbfbc]/40">
+                            {post.user?.full_name?.[0]?.toUpperCase() || post.user?.username?.[0]?.toUpperCase() || 'W'}
+                          </div>
+                          <span className="font-label-sm text-xs font-semibold text-[#6a020a]">
+                            {post.user?.full_name || post.user?.username || t('channelPage.chat.warkari')}
+                          </span>
+                          {isPostOwner ? (
+                            <span className="bg-[#6a020a]/10 text-[#6a020a] font-label-sm text-[10px] px-2 py-[1px] rounded-full uppercase tracking-wider font-bold">
+                              {t('channelPage.chat.pramukh')}
+                            </span>
+                          ) : isContributorPost ? (
+                            <span className="bg-emerald-100 text-emerald-800 font-label-sm text-[10px] px-2 py-[1px] rounded-full uppercase tracking-wider font-bold">
+                              {t('channelPage.chat.sevak')}
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <div className="bg-white border border-[#dfbfbc]/20 p-3 rounded-2xl rounded-tl-none shadow-[0_2px_8px_rgba(106,2,10,0.04)] ml-8 min-w-[140px]">
+                          {post.title && post.title !== 'Channel Post' && (
+                            <p className="font-headline-md text-xs font-bold text-[#6a020a] mb-1">
+                              {post.title}
+                            </p>
+                          )}
+                          
+                          {/* Image Thumbnail if attached */}
+                          {post.file_url && post.content_type === 'image' && (
+                            <img
+loading="lazy" 
+                              src={post.file_url}
+                              alt="Attachment"
+                              className="w-full max-h-64 object-cover rounded-xl mb-2 border border-[#dfbfbc]/20 cursor-pointer"
+                              onClick={() => window.open(post.file_url, '_blank')}
+                            />
+                          )}
+
+                          {post.file_url && post.content_type === 'video' && (
+                            <video src={post.file_url} controls className="w-full max-h-64 rounded-xl mb-2" />
+                          )}
+
+                          {post.file_url && post.content_type === 'pdf' && (
+                            <a
+                              href={post.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 p-2 rounded-lg text-xs font-semibold bg-[#fbf2ed] text-[#6a020a] mb-2"
+                            >
+                              <FiFile size={16} /> Attached Document (PDF)
+                            </a>
+                          )}
+
+                          <p className="font-body-md text-sm text-[#1f1b18] whitespace-pre-wrap leading-relaxed">
+                            {post.description || post.message}
+                          </p>
+
+                          <div className="flex justify-between items-center mt-2 pt-1 border-t border-gray-50 text-[11px] text-[#58413f]">
+                            <div className="flex items-center gap-2.5">
+                              {(() => {
+                                const isLiked = Boolean(likedPostIds[post.id]);
+                                const totalLikes = Math.max(0, (post.likes || 0) + (reactionMap[post.id] || 0));
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleLike(post.id)}
+                                    className={`flex items-center gap-1 transition-colors cursor-pointer ${
+                                      isLiked ? 'text-red-600 font-bold' : 'hover:text-[#6a020a]'
+                                    }`}
+                                  >
+                                    <FiHeart size={12} className={isLiked ? 'fill-red-600 text-red-600' : ''} /> {totalLikes}
+                                  </button>
+                                );
+                              })()}
+                              <button
+                                type="button"
+                                className="hover:text-[#6a020a] font-medium cursor-pointer"
+                                onClick={() => setReplyToPost(post)}
+                              >
+                                {t('channelPage.chat.reply')}
+                              </button>
+                            </div>
+                            <span className="text-[11px] text-[#58413f]/70">{timeAgo(post.created_at)}</span>
                           </div>
                         </div>
                       </div>
                     );
                   })
                 )}
+                <div ref={messagesEndRef} />
               </div>
             )}
 
@@ -1194,96 +1282,92 @@ loading="lazy"
             )}
           </div>
 
-          {/* Sticky Input Bar for Chat Tab */}
-          {activeTab === 'chat' && (
-            <footer className="bg-white border-t border-[#E8D9C3] px-3 sm:px-5 py-3 shrink-0">
-              {canPostChat ? (
-                <form onSubmit={handlePost} className="flex items-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-2.5 text-gray-500 hover:text-[#8B1E1E] hover:bg-[#FBF5EC] rounded-full transition-colors shrink-0"
-                    title="Attach Media / Document"
-                  >
-                    <FiPaperclip size={20} />
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    accept="image/*,video/*,audio/*,application/pdf"
-                    onChange={handleFileChange}
-                  />
+{activeTab === 'chat' && !window.location.pathname.includes('/admin') && (
+  <footer className="bg-white border-t border-[#dfbfbc]/30 p-3 md:p-4 sticky bottom-0 z-20 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
+    <form onSubmit={handlePost} className="flex flex-col gap-1.5">
+      {/* Reply Context Banner */}
+      {replyToPost && (
+        <div className="bg-[#fbf2ed] px-3 py-1.5 rounded-t-xl border-l-4 border-[#a13f09] flex justify-between items-center text-xs">
+          <div className="flex flex-col min-w-0">
+            <span className="font-label-sm text-[#a13f09] font-bold text-[11px]">
+              {t('channelPage.chat.replyingTo')} {replyToPost.user?.full_name || replyToPost.user?.username || 'sevak'}
+            </span>
+            <span className="font-body-md text-xs text-[#58413f] truncate max-w-[280px] sm:max-w-md">
+              {replyToPost.description || replyToPost.message}
+            </span>
+          </div>
+          <button type="button" onClick={() => setReplyToPost(null)} className="text-[#58413f] hover:text-[#6a020a]">
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+      )}
 
-                  <div className="flex-1 relative min-w-0">
-                    {postMedia && (
-                      <div className="absolute -top-10 left-0 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-2 shadow-md max-w-full">
-                        <span className="truncate">📎 {postMedia.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => setPostMedia(null)}
-                          className="text-red-400 hover:text-white"
-                        >
-                          <FiX size={14} />
-                        </button>
-                      </div>
-                    )}
-                    <textarea
-                      rows={1}
-                      placeholder={postMedia ? `File attached: ${postMedia.name}` : 'Write a message to channel...'}
-                      value={newPost}
-                      onChange={(e) => setNewPost(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handlePost(e);
-                        }
-                      }}
-                      className="w-full px-4 py-2.5 text-sm bg-[#FDFBF7] border border-[#E8D9C3] rounded-2xl focus:outline-none focus:border-[#8B1E1E] focus:ring-1 focus:ring-[#8B1E1E]/30 resize-none max-h-28"
-                    />
-                  </div>
+      {/* Selected Media Indicator */}
+      {postMedia && (
+        <div className="bg-[#1f1b18] text-white text-xs px-3 py-1 rounded-full flex items-center justify-between gap-2 max-w-sm mb-1">
+          <span className="truncate">📎 {postMedia.name}</span>
+          <button type="button" onClick={() => setPostMedia(null)} className="text-red-400 hover:text-white">
+            <FiX size={14} />
+          </button>
+        </div>
+      )}
 
-                  <button
-                    type="submit"
-                    disabled={posting || (!newPost.trim() && !postMedia)}
-                    className={`p-3 rounded-full shrink-0 transition-all shadow-sm ${newPost.trim() || postMedia
-                      ? 'bg-[#8B1E1E] text-white hover:bg-[#701616] scale-100'
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      }`}
-                  >
-                    {posting ? <Loader size="xs" /> : <FiSend size={16} />}
-                  </button>
-                </form>
-              ) : (
-                <div className="flex items-center justify-between gap-3 py-1">
-                  <div>
-                    <p className="text-xs font-bold text-[#2B1B12]">Contribute to this Channel</p>
-                    <p className="text-[11px] text-gray-500">Become an authorized sevak or request membership to post.</p>
-                  </div>
-                  {canContribute && canContribute() ? (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={handleJoinChannel}
-                      disabled={joinRequestPending}
-                      className="!bg-[#8B1E1E] hover:!bg-[#701616] text-white text-xs font-bold shrink-0"
-                    >
-                      {joinRequestPending ? 'Request Pending' : 'Request to Post'}
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => navigate('/apply-contributor', { state: { from: `/channel/${id}` } })}
-                      className="!bg-[#DD6B35] hover:!bg-[#C85A28] text-white text-xs font-bold shrink-0"
-                    >
-                      Apply as Sevak
-                    </Button>
-                  )}
-                </div>
-              )}
-            </footer>
+      <div className="flex items-end gap-2 bg-[#FBF5EC] rounded-2xl p-1.5 border border-[#dfbfbc]/40 focus-within:bg-white focus-within:border-[#a13f09] transition-colors shadow-sm">
+        {/* Attachment button */}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="p-2 text-[#58413f] hover:text-[#a13f09] transition-colors rounded-full shrink-0 flex items-center justify-center h-10 w-10 cursor-pointer"
+          title="Attach Media or Document"
+        >
+          <span className="material-symbols-outlined text-[24px]">add_circle</span>
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*,video/*,audio/*,application/pdf"
+          onChange={handleFileChange}
+        />
+
+        {/* Textarea */}
+        <textarea
+          rows={1}
+          placeholder={t('channelPage.chat.placeholder')}
+          value={newPost}
+          onChange={(e) => setNewPost(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handlePost(e);
+            }
+          }}
+          className="flex-1 bg-transparent border-none focus:ring-0 resize-none font-body-md text-sm py-[10px] px-1 max-h-32 min-h-[44px] text-[#1f1b18] placeholder:text-[#58413f]/50 no-scrollbar outline-none"
+        />
+
+        {/* Send Button */}
+        <button
+          type="submit"
+          disabled={posting}
+          className="bg-[#a13f09] text-white p-2 rounded-full shrink-0 flex items-center justify-center h-10 w-10 hover:bg-[#8b3506] transition-transform active:scale-95 shadow-md ml-1 mb-[2px] cursor-pointer disabled:opacity-50"
+          title="Send message"
+        >
+          {posting ? (
+            <Loader size="xs" />
+          ) : (
+            <span
+              className="material-symbols-outlined text-[20px]"
+              data-weight="fill"
+              style={{ transform: 'rotate(-45deg) translateX(2px) translateY(-2px)' }}
+            >
+              send
+            </span>
           )}
+        </button>
+      </div>
+    </form>
+  </footer>
+)}
         </main>
       </div>
 

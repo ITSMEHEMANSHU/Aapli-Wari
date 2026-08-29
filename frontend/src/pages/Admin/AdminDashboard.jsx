@@ -58,14 +58,14 @@ export const AdminDashboard = () => {
             id: `user-${user.id}`,
             title: `${user.full_name || user.username || 'New user'} joined`,
             time: formatRelativeTime(user.created_at),
-            color: '#8b3a3a',
+            color: '#E87A1E',
             dot: FiUserPlus,
           })),
           ...recentContent.map((item) => ({
             id: `content-${item.id}`,
             title: `${item.title || 'Content'} ${item.status === 'published' ? 'published' : 'updated'}`,
             time: formatRelativeTime(item.created_at),
-            color: '#D4A373',
+            color: '#C86D16',
             dot: FiFileText,
           })),
           ...recentChannels.map((channel) => ({
@@ -89,10 +89,10 @@ export const AdminDashboard = () => {
         ]);
 
         setQuickActions([
-          { id: 'users', label: `Manage Users (${adminStats?.total_users ?? 0})`, icon: FiUsers, color: '#8b3a3a', path: '/admin/users' },
-          { id: 'content', label: `Review Content (${adminStats?.pending_review ?? 0})`, icon: FiFileText, color: '#7d562d', path: '/admin/content' },
-          { id: 'channels', label: `Channel Management (${adminStats?.total_channels ?? 0})`, icon: FiHash, color: '#6d2325', path: '/admin/channels' },
-          { id: 'settings', label: 'System Settings', icon: FiSettings, color: '#554241', path: '/admin/settings' },
+          { id: 'users', label: `Manage Users (${adminStats?.total_users ?? 0})`, icon: FiUsers, color: '#E87A1E', path: '/admin/users' },
+          { id: 'content', label: `Review Content (${adminStats?.pending_review ?? 0})`, icon: FiFileText, color: '#E87A1E', path: '/admin/content' },
+          { id: 'channels', label: `Channel Management (${adminStats?.total_channels ?? 0})`, icon: FiHash, color: '#E87A1E', path: '/admin/channels' },
+          { id: 'settings', label: 'System Settings', icon: FiSettings, color: '#3D2518', path: '/admin/settings' },
         ]);
       } catch (error) {
         console.error('Failed to fetch stats:', error);
@@ -100,10 +100,10 @@ export const AdminDashboard = () => {
           { id: 'placeholder-user', title: 'Unable to load recent activity', time: 'Just now', color: '#5A4030', dot: FiAlertCircle },
         ]);
         setQuickActions([
-          { id: 'users', label: 'Manage Users', icon: FiUsers, color: '#8b3a3a', path: '/admin/users' },
-          { id: 'content', label: 'Review Content', icon: FiFileText, color: '#7d562d', path: '/admin/content' },
-          { id: 'channels', label: 'Channel Management', icon: FiHash, color: '#6d2325', path: '/admin/channels' },
-          { id: 'settings', label: 'System Settings', icon: FiSettings, color: '#554241', path: '/admin/settings' },
+          { id: 'users', label: 'Manage Users', icon: FiUsers, color: '#E87A1E', path: '/admin/users' },
+          { id: 'content', label: 'Review Content', icon: FiFileText, color: '#E87A1E', path: '/admin/content' },
+          { id: 'channels', label: 'Channel Management', icon: FiHash, color: '#E87A1E', path: '/admin/channels' },
+          { id: 'settings', label: 'System Settings', icon: FiSettings, color: '#3D2518', path: '/admin/settings' },
         ]);
       } finally {
         setLoading(false);
@@ -120,7 +120,7 @@ export const AdminDashboard = () => {
       icon: FiUsers, 
       change: '+12%',
       changeLabel: 'vs last month',
-      color: '#6d2325',
+      color: '#E87A1E',
       onClick: () => navigate('/admin/users')
     },
     { 
@@ -130,7 +130,7 @@ export const AdminDashboard = () => {
       icon: FiHash, 
       change: 'Active',
       changeLabel: '',
-      color: '#7d562d',
+      color: '#E87A1E', 
       onClick: () => navigate('/admin/channels')
     },
     { 
@@ -140,7 +140,7 @@ export const AdminDashboard = () => {
       icon: FiFile, 
       change: '+45',
       changeLabel: 'this week',
-      color: '#8b3a3a',
+      color: '#E87A1E',
       onClick: () => navigate('/admin/content')
     },
     { 
@@ -150,7 +150,7 @@ export const AdminDashboard = () => {
       icon: FiClock, 
       change: 'Requires Attention',
       changeLabel: '',
-      color: '#ba1a1a',
+      color: '#E87A1E',
       onClick: () => navigate('/admin/users')
     },
   ];
@@ -158,7 +158,7 @@ export const AdminDashboard = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#8b3a3a] border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#E87A1E] border-t-transparent"></div>
       </div>
     );
   }
@@ -168,14 +168,13 @@ export const AdminDashboard = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#2D1B0E] tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#3D2518] tracking-tight">
             Dashboard Overview
           </h2>
           <p className="text-[#5A4030] text-sm sm:text-base mt-1">
             Monitor daily operations and administrative tasks
           </p>
         </div>
-
       </div>
 
       {/* Stats Grid */}
@@ -184,8 +183,7 @@ export const AdminDashboard = () => {
           <div
             key={stat.id}
             onClick={stat.onClick}
-            className="bg-white p-6 rounded-xl border border-[#E8D9C3] border-l-4 shadow-[0_4px_20px_rgba(139,58,58,0.08)] hover:shadow-[0_8px_30px_rgba(139,58,58,0.15)] transition-all cursor-pointer"
-            style={{ borderLeftColor: stat.color }}
+            className="bg-white p-6 rounded-xl border border-[#E8D9C3] border-l-4 border-l-[#E87A1E] shadow-[0_4px_20px_rgba(61,37,24,0.06)] hover:shadow-[0_8px_30px_rgba(232,122,30,0.15)] transition-all cursor-pointer"
           >
             <div className="flex justify-between items-start">
               <div>
@@ -198,7 +196,7 @@ export const AdminDashboard = () => {
               </div>
               <div 
                 className="w-12 h-12 rounded-full flex items-center justify-center transition-colors"
-                style={{ backgroundColor: `${stat.color}10`, color: stat.color }}
+                style={{ backgroundColor: `${stat.color}15`, color: stat.color }}
               >
                 <stat.icon size={24} />
               </div>
@@ -224,12 +222,12 @@ export const AdminDashboard = () => {
       {/* Lower Section */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Recent Activity */}
-        <div className="lg:col-span-8 bg-white rounded-xl border border-[#E8D9C3] shadow-[0_4px_20px_rgba(139,58,58,0.08)] flex flex-col">
+        <div className="lg:col-span-8 bg-white rounded-xl border border-[#E8D9C3] shadow-[0_4px_20px_rgba(61,37,24,0.06)] flex flex-col">
           <div className="p-6 border-b border-[#E8D9C3]/50 flex justify-between items-center">
-            <h3 className="font-semibold text-lg text-[#2D1B0E]">Recent Activity</h3>
+            <h3 className="font-semibold text-lg text-[#3D2518]">Recent Activity</h3>
             <button 
               onClick={() => navigate('/admin/content')}
-              className="text-[#8b3a3a] font-semibold text-sm hover:underline"
+              className="text-[#E87A1E] font-semibold text-sm hover:underline"
             >
               View All
             </button>
@@ -259,8 +257,8 @@ export const AdminDashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="lg:col-span-4 bg-white rounded-xl border border-[#E8D9C3] shadow-[0_4px_20px_rgba(139,58,58,0.08)] p-6">
-          <h3 className="font-semibold text-lg text-[#2D1B0E] mb-4 pb-2 border-b border-[#E8D9C3]/50">
+        <div className="lg:col-span-4 bg-white rounded-xl border border-[#E8D9C3] shadow-[0_4px_20px_rgba(61,37,24,0.06)] p-6">
+          <h3 className="font-semibold text-lg text-[#3D2518] mb-4 pb-2 border-b border-[#E8D9C3]/50">
             Quick Actions
           </h3>
           <div className="space-y-3">
@@ -268,7 +266,7 @@ export const AdminDashboard = () => {
               <button
                 key={action.id}
                 onClick={() => navigate(action.path)}
-                className="w-full text-left p-4 bg-[#FDF8F0] rounded-lg border border-[#E8D9C3] hover:border-[#8b3a3a]/50 hover:shadow-md transition-all group"
+                className="w-full text-left p-4 bg-[#FDF8F0] rounded-lg border border-[#E8D9C3] hover:border-[#E87A1E]/50 hover:shadow-md transition-all group"
               >
                 <div className="flex items-center">
                   <div 
@@ -278,11 +276,11 @@ export const AdminDashboard = () => {
                     <action.icon size={20} />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-sm text-[#2D1B0E] group-hover:text-[#8b3a3a] transition-colors">
+                    <h4 className="font-semibold text-sm text-[#2D1B0E] group-hover:text-[#E87A1E] transition-colors">
                       {action.label}
                     </h4>
                   </div>
-                  <FiChevronRight className="text-[#5A4030] group-hover:text-[#8b3a3a] transition-colors" />
+                  <FiChevronRight className="text-[#5A4030] group-hover:text-[#E87A1E] transition-colors" />
                 </div>
               </button>
             ))}
