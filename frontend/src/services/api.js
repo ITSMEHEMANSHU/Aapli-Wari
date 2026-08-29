@@ -3,7 +3,9 @@ const API_URL = 'http://localhost:8000';
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('access_token');
   const isFormData = options.body instanceof FormData;
-  const query = options.params
+
+  // ✅ FIX: Check if options.params exists AND has keys before adding '?'
+  const query = options.params && Object.keys(options.params).length > 0
     ? `?${new URLSearchParams(options.params).toString()}`
     : '';
 
@@ -44,8 +46,9 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
-  // =========================
   // Authentication
+  login: (data) => request('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+  signup: (data) => request('/auth/signup', { method: 'POST', body: JSON.stringify(data) }),
   // =========================
   // =========================
 // Palkhi
@@ -86,10 +89,9 @@ export const api = {
     }),
 
   roles: () => request('/auth/roles'),
-
   me: () => request('/auth/me'),
-
   profile: () => request('/users/me'),
+  updateProfile: (data) => request('/users/me', { method: 'PATCH', body: JSON.stringify(data) }),
 
   updateProfile: (data) =>
     request('/users/me', {
@@ -101,21 +103,54 @@ export const api = {
 
   // =========================
   // RBAC test
-  // =========================
-
   userAccess: () => request('/rbac-test/user'),
+  contributorAccess: () => request('/rbac-test/contributor'),
+  palkhiAccess: () => request('/rbac-test/palkhi-pramukh'),
+  adminAccess: () => request('/rbac-test/admin'),
 
-  contributorAccess: () =>
-    request('/rbac-test/contributor'),
-
-  palkhiAccess: () =>
-    request('/rbac-test/palkhi-pramukh'),
-
-  adminAccess: () =>
-    request('/rbac-test/admin'),
-
-  // =========================
   // Palkhi & Channels
+  myPalkhi: () => request('/channels/palkhis/me'),
+  channels: (params = {}) => request('/channels', { params }),
+  myChannelMemberships: () => request('/channels/my-memberships'),
+  myJoinRequests: () => request('/channels/my-join-requests'),
+  channel: (id) => request(`/channels/${id}`),
+  channelPosts: (channelId) => request(`/channels/${channelId}/posts`),
+  createChannelPost: (channelId, message) => request(`/channels/${channelId}/posts`, { method: 'POST', body: JSON.stringify({ message }) }),
+  createChannel: (data) => request('/channels', { method: 'POST', body: JSON.stringify(data) }),
+  updateChannel: (id, data) => request(`/channels/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  // Contributors & Content
+  joinChannel: (channelId) => request(`/channels/${channelId}/join-request`, { method: 'POST' }),
+  myJoinRequest: (channelId) => request(`/channels/${channelId}/join-request/me`),
+  channelJoinRequests: (channelId) => request(`/channels/${channelId}/join-requests`),
+  decideJoinRequest: (channelId, requestId, action) => request(`/channels/${channelId}/join-requests/${requestId}`, { method: 'PATCH', body: JSON.stringify({ action }) }),
+  channelContributors: (channelId) => request(`/channels/${channelId}/contributors`),
+  addChannelContributor: (channelId, userId) => request(`/channels/${channelId}/contributors`, { method: 'POST', body: JSON.stringify({ user_id: userId }) }),
+  removeChannelContributor: (channelId, userId) => request(`/channels/${channelId}/contributors/${userId}`, { method: 'DELETE' }),
+
+  content: (id) => request(`/content/${id}`),
+  getContent: (id) => request(`/content/${id}`),
+  contentList: (params = {}) => request('/content/', { params }),
+  contentSuggestions: (q) => request('/content/suggestions', { params: { q, limit: 6 } }),
+  getMyContributions: () => request('/content/my/contributions'),
+  uploadContent: (body) => request('/content/upload', { method: 'POST', body }),
+  updateContent: (id, data) => request(`/content/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  replaceContentFile: (id, body) => request(`/content/${id}/file`, { method: 'PUT', body }),
+  deleteContent: (id) => request(`/content/${id}`, { method: 'DELETE' }),
+
+  // Engagement
+  likeContent: (id) => request(`/engagement/content/${id}/like`, { method: 'POST' }),
+  saveContent: (id) => request(`/content/${id}/save`, { method: 'POST' }),
+  getComments: (id, skip = 0, limit = 20) => request(`/engagement/content/${id}/comments`, { params: { skip, limit } }),
+  addComment: (id, text, parentId = null) => request(`/engagement/content/${id}/comments`, { method: 'POST', body: JSON.stringify({ text, parent_id: parentId }) }),
+  deleteComment: (commentId) => request(`/engagement/comment/${commentId}`, { method: 'DELETE' }),
+  trackShare: (id, platform = null) => request(`/engagement/content/${id}/share`, { method: 'POST', body: JSON.stringify({ platform }) }),
+  trackDownload: (id) => request(`/engagement/content/${id}/download`),
+
+  // Chat & Shorts & Amenities
+  chat: (data) => request('/chat/', { method: 'POST', body: JSON.stringify(data) }),
+  shorts: (params = {}) => request('/shorts/', { params }),
+  short: (id) => request(`/shorts/${id}`),
   // =========================
   myPalkhi: () =>
   request('/channels/palkhis/me'),
@@ -305,19 +340,30 @@ short: (id) =>
   // Amenities (Map)
   // =========================
   getAmenities: (params = {}) => request('/amenities', { params }),
-
-  addAmenity: (data) => request('/amenities', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-
+  addAmenity: (data) => request('/amenities', { method: 'POST', body: JSON.stringify(data) }),
   deleteAmenity: (id) => request(`/amenities/${id}`, { method: 'DELETE' }),
-
-  // Palkhi live locations
   getPalkhiLocations: () => request('/palkhis/live-locations'),
 
   // Permissions & Profile Applications
   getMyPermissions: () => request('/users/me/permissions'),
+  // =========================
+// Admin
+// =========================
+
+users: (params = {}) => request('/admin/users', { params }),
+updateUserRole: (userId, role) =>
+  request(`/admin/users/${userId}/role`, {
+    method: 'PATCH',
+    body: JSON.stringify({ role }),
+  }),
+updateUserStatus: (userId, isActive) =>
+  request(`/admin/users/${userId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ is_active: isActive }),
+  }),
+
+  getAdminStats: () => request('/admin/stats'),
+    
 };
 
 export default api;

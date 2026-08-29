@@ -3,6 +3,11 @@ import { api } from '../services/api';
 
 export const AuthContext = createContext();
 
+const normalizeRole = (value) => {
+  if (!value && value !== 0) return '';
+  return String(value).trim().toLowerCase();
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -47,6 +52,15 @@ export const AuthProvider = ({ children }) => {
         const fullUser = await fetchUserWithPermissions();
         setUser(fullUser);
         localStorage.setItem('user', JSON.stringify(fullUser));
+        const currentUser = await api.me();
+        const cachedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const restoredUser = {
+          ...currentUser,
+          name: currentUser.full_name || currentUser.username || cachedUser.name,
+          role: normalizeRole(cachedUser.role || currentUser.role || ''),
+        };
+        setUser(restoredUser);
+        localStorage.setItem('user', JSON.stringify(restoredUser));
       } catch {
         logout();
       } finally {
@@ -68,6 +82,19 @@ export const AuthProvider = ({ children }) => {
     setUser(fullUser);
     localStorage.setItem('user', JSON.stringify(fullUser));
     return fullUser;
+    const currentUser = await api.me();
+    const storedRole = normalizeRole(response.role || currentUser?.role || '');
+
+    const authenticatedUser = {
+      ...currentUser,
+      name: currentUser.full_name || currentUser.username,
+      role: storedRole,
+    };
+
+    setUser(authenticatedUser);
+    localStorage.setItem('user', JSON.stringify(authenticatedUser));
+
+    return authenticatedUser;
   };
 
   const register = async (userData) => {
@@ -112,8 +139,19 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // ✅ NEW: Update context and localStorage instantly
+  const updateUser = (newData) => {
+    const updatedUser = { 
+      ...user, 
+      ...newData,
+      name: newData.full_name || newData.username || user.name 
+    };
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
   const hasRole = (role) => {
-    return user?.role === role;
+    return normalizeRole(user?.role) === normalizeRole(role);
   };
 
   const getCurrentRole = () => {
@@ -121,7 +159,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAdmin = () => {
-    return user?.role === 'admin';
+    return normalizeRole(user?.role) === 'admin';
   };
 
   const canView = () => {
@@ -190,7 +228,8 @@ export const AuthProvider = ({ children }) => {
       isContributor,
       hasContributePermission,
       isPalkhiPramukh,
-      isAuthenticated: !!user
+      isAuthenticated: !!user,
+      updateUser,
     }}>
       {children}
     </AuthContext.Provider>
