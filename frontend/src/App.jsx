@@ -42,7 +42,9 @@ import AdminDashboard from './pages/Admin/AdminDashboard';
 import UserManagement from './pages/Admin/UserManagement';
 import ContentManagement from './pages/Admin/ContentManagement';
 import ChannelManagement from './pages/Admin/ChannelManagement';
-import AdminSettings  from './pages/Admin/Settings';
+import AdminChannelPage from './pages/Admin/AdminChannelPage';
+import AdminContentDetail from './pages/Admin/AdminContentDetail';
+import AdminSettings from './pages/Admin/Settings';
 
 function AppShell() {
   const { language } = useLanguage();
@@ -62,15 +64,15 @@ function AppShell() {
           <Route path="/search" element={isAdminUser ? <Navigate to="/admin" replace /> : <Search />} />
           <Route path="/channels" element={isAdminUser ? <Navigate to="/admin" replace /> : <ChannelList />} />
           <Route path="/register-palkhi" element={isAdminUser ? <Navigate to="/admin" replace /> : <PalkhiRegistration />} />
-          <Route 
-            path="/channel/create" 
+          <Route
+            path="/channel/create"
             element={
               isAdminUser ? <Navigate to="/admin" replace /> : (
                 <ProtectedRoute requiredRole={['palkhi_pramukh', 'admin']}>
                   <CreateChannel />
                 </ProtectedRoute>
               )
-            } 
+            }
           />
           <Route
             path="/channel/:id/manage"
@@ -92,18 +94,18 @@ function AppShell() {
               )
             }
           />
-          <Route 
-            path="/contribute" 
+          <Route
+            path="/contribute"
             element={
               isAdminUser ? <Navigate to="/admin" replace /> : (
                 <ProtectedRoute requiredRole={['contributor', 'palkhi_pramukh', 'admin']}>
                   <Contribute />
                 </ProtectedRoute>
               )
-            } 
+            }
           />
-          <Route path="/channel/:id" element={isAdminUser ? <Navigate to="/admin" replace /> : <ChannelPage />} />
-          <Route path="/content/:id" element={isAdminUser ? <Navigate to="/admin" replace /> : <ContentDetail />} />
+          <Route path="/channel/:id" element={<ChannelPage />} />
+          <Route path="/content/:id" element={<ContentDetail />} />
           <Route path="/ai-assistant" element={isAdminUser ? <Navigate to="/admin" replace /> : <AIAssistant />} />
           <Route path="/shorts" element={isAdminUser ? <Navigate to="/admin" replace /> : <AaplaTheva />} />
           <Route path="/login" element={isAdminUser ? <Navigate to="/admin" replace /> : <Login />} />
@@ -119,8 +121,9 @@ function AppShell() {
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="content" element={<ContentManagement />} />
+            <Route path="content/:id" element={<AdminContentDetail />} />
             <Route path="channels" element={<ChannelManagement />} />
-            <Route path="channels/:id" element={<ChannelPage isAdminView />} />
+            <Route path="channels/:id" element={<AdminChannelPage />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
         </Routes>

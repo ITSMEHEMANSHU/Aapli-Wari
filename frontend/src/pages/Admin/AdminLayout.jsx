@@ -43,7 +43,7 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
         <div className="px-6 pb-6 border-b border-[#dac1bf]/20 mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-[#ffdcbd] tracking-tight">Aapli Wari</h1>
-            <p className="text-[#f0bd8b]/80 text-xs font-semibold mt-1 tracking-widest uppercase">Admin Suite</p>
+            <p className="text-[#f0bd8b]/80 text-xs font-semibold mt-1 tracking-widest uppercase">Admin</p>
           </div>
           <button 
             onClick={() => setIsOpen(false)}
@@ -81,10 +81,10 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
         <div className="px-4 pt-4 border-t border-[#dac1bf]/20">
           <div className="px-2 pt-2 text-[11px] text-[#ffb3b0]/60 flex items-center justify-between">
             <span>Aapli Wari v2.4</span>
-            <span className="inline-flex items-center gap-1 text-[#c6f6d5]">
+            {/* <span className="inline-flex items-center gap-1 text-[#c6f6d5]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#4CAF50] animate-pulse"></span>
               Live
-            </span>
+            </span> */}
           </div>
         </div>
       </aside>

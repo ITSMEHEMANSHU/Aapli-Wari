@@ -149,11 +149,10 @@ export const UserManagement = () => {
             <button
               key={filter}
               onClick={() => { setSelectedRole(filter); setCurrentPage(1); }}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors whitespace-nowrap ${
-                selectedRole === filter
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors whitespace-nowrap ${selectedRole === filter
                   ? 'bg-[#efdfdd] text-[#2D1B0E] border-[#E8D9C3] shadow-sm'
                   : 'bg-white text-[#5A4030] border-[#E8D9C3] hover:bg-[#efdfdd]/60'
-              }`}
+                }`}
             >
               {filter}
             </button>
@@ -180,13 +179,12 @@ export const UserManagement = () => {
                 <th className="p-4 text-xs font-semibold text-[#5A4030] uppercase tracking-wider">User</th>
                 <th className="p-4 text-xs font-semibold text-[#5A4030] uppercase tracking-wider">Role</th>
                 <th className="p-4 text-xs font-semibold text-[#5A4030] uppercase tracking-wider">Status</th>
-                <th className="p-4 text-xs font-semibold text-[#5A4030] uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E8D9C3]/50">
               {paginatedUsers.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="text-center py-10 text-sm text-[#5A4030]">
+                  <td colSpan="3" className="text-center py-10 text-sm text-[#5A4030]">
                     No users found
                   </td>
                 </tr>
@@ -215,16 +213,6 @@ export const UserManagement = () => {
                         className="inline-flex items-center gap-1.5 text-xs font-medium hover:opacity-80 transition-opacity"
                       >
                         {getStatusBadge(user.is_active)}
-                      </button>
-                    </td>
-                    <td className="p-4 text-right">
-                      <button
-                        onClick={() => {
-                          openEditModal(user);
-                        }}
-                        className="p-2 text-[#5A4030] hover:text-[#8b3a3a] rounded-full hover:bg-[#FDF8F0] transition-colors"
-                      >
-                        <FiEdit2 size={16} />
                       </button>
                     </td>
                   </tr>

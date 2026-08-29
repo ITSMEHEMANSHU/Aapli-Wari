@@ -175,12 +175,7 @@ export const AdminDashboard = () => {
             Monitor daily operations and administrative tasks
           </p>
         </div>
-        <Button
-          variant="primary"
-          className="bg-[#8b3a3a] hover:bg-[#6d2325] text-white flex items-center gap-2 self-start sm:self-auto"
-        >
-          <FiPlusCircle size={16} /> New Report
-        </Button>
+
       </div>
 
       {/* Stats Grid */}

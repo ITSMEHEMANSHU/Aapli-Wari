@@ -84,7 +84,7 @@ export const Comments = ({ contentId, postId }) => {
       })}
       {user ? <form onSubmit={handleSubmit} className="flex gap-3 mt-4">
         <input placeholder="Write a comment..." value={newComment} onChange={(event) => setNewComment(event.target.value)} disabled={submitting} className="flex-1 px-4 py-2 border rounded focus:outline-none focus:border-primary" />
-        <button type="submit" disabled={submitting || !newComment.trim()} className="bg-primary text-white px-4 py-2 rounded hover:bg-red-800 disabled:opacity-50 transition flex items-center gap-2"><FaPaperPlane size={14} /> {submitting ? 'Sending...' : 'Send'}</button>
+        <button type="submit" disabled={submitting || !newComment.trim()} className=" text-white px-4 py-2 rounded  bg-red-800 hover:bg-[#6D2325]  transition flex items-center gap-2"><FaPaperPlane size={14} /> {submitting ? 'Sending...' : 'Send'}</button>
       </form> : <p className="mt-4 text-sm text-gray-500">Please log in to comment.</p>}
     </div>
   );

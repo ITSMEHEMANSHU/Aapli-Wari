@@ -5,7 +5,7 @@ export const AuthContext = createContext();
 
 const normalizeRole = (value) => {
   if (!value && value !== 0) return '';
-  return String(value).trim().toLowerCase();
+  return String(value).trim().toLowerCase().replaceAll(' ', '_');
 };
 
 export const AuthProvider = ({ children }) => {
@@ -180,13 +180,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const canCreateChannel = () => {
-    if (isAdmin()) return true;
-    return isPalkhiPramukhApplied();
+    return isAdmin() || normalizeRole(user?.role) === 'palkhi_pramukh' || isPalkhiPramukhApplied();
   };
 
   const canManageChannel = () => {
-    if (isAdmin()) return true;
-    return isPalkhiPramukhApplied();
+    return isAdmin() || normalizeRole(user?.role) === 'palkhi_pramukh' || isPalkhiPramukhApplied();
   };
 
   const canApproveContributors = () => {

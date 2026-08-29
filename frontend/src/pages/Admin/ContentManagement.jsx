@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiRefreshCw, FiEye, FiTrash2, FiImage, FiVideo, FiMusic, FiFile } from 'react-icons/fi';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -8,6 +9,7 @@ import Modal from '../../components/common/Modal';
 import { api } from '../../services/api';
 
 export const ContentManagement = () => {
+  const navigate = useNavigate();
   const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -108,11 +110,10 @@ export const ContentManagement = () => {
             <button
               key={type}
               onClick={() => setSelectedType(type)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors whitespace-nowrap ${
-                selectedType === type
-                  ? 'bg-[#efdfdd] text-[#2D1B0E] border-[#E8D9C3] shadow-sm'
-                  : 'bg-white text-[#5A4030] border-[#E8D9C3] hover:bg-[#efdfdd]/60'
-              }`}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors whitespace-nowrap ${selectedType === type
+                ? 'bg-[#efdfdd] text-[#2D1B0E] border-[#E8D9C3] shadow-sm'
+                : 'bg-white text-[#5A4030] border-[#E8D9C3] hover:bg-[#efdfdd]/60'
+                }`}
             >
               {type}
             </button>
@@ -169,7 +170,7 @@ export const ContentManagement = () => {
                   </span>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => window.open(`/content/${item.id}`, '_blank')}
+                      onClick={() => navigate(`/admin/content/${item.id}`)}
                       className="p-1.5 text-[#5A4030] hover:text-[#8b3a3a] rounded hover:bg-[#FDF8F0] transition-colors"
                     >
                       <FiEye size={16} />
