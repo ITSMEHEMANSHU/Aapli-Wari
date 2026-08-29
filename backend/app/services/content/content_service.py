@@ -55,6 +55,7 @@ class ContentService:
             title=content_data.title,
             description=content_data.description,
             content_type=content_data.content_type,
+            is_short=(content_data.content_type == ContentType.SHORT),
             language=content_data.language,
             tags=content_data.tags or [],
             file_url=file_url,
