@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from backend.app.db.database import get_db
-from backend.app.core.security import authorize_request
+from backend.app.core.security import get_current_user_optional
 from backend.app.models.user import User
 from backend.app.ai.rag.service import ask_question, ask_channel_question
 
@@ -26,7 +26,7 @@ class ChatResponse(BaseModel):
 def chat(
     request: ChatRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(authorize_request)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """Ask question to AI Assistant"""
     
@@ -48,7 +48,7 @@ def chat_channel(
     channel_id: str,
     request: ChatRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(authorize_request)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """Ask question scoped to a specific channel"""
     

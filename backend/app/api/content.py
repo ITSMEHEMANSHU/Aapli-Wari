@@ -7,7 +7,7 @@ from pydantic import BaseModel
 import json
 
 from backend.app.db.database import get_db
-from backend.app.core.security import authorize_request
+from backend.app.core.security import get_current_user, get_current_user_optional
 from backend.app.models.user import User
 from backend.app.models.content import ContentStatus, ContentType, Content
 from backend.app.models.channel import Channel
@@ -49,7 +49,7 @@ class SuggestionItem(BaseModel):
 @router.get("/my/contributions", response_model=List[ContentResponse])
 def get_my_contributions(
     db: Session = Depends(get_db),
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
 ):
     """Fetch all content submitted by the currently authenticated user."""
     contents = (
@@ -100,7 +100,7 @@ def upload_content(
     channel_id: Optional[UUID] = Form(None),
     file: Optional[UploadFile] = File(None),  # ✅ Optional for articles/stories
     db: Session = Depends(get_db),
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
 ):
     from backend.app.services.users.user_service import can_contribute
     if not can_contribute(current_user, db):
@@ -189,7 +189,24 @@ def upload_content(
                 pass
         raise HTTPException(status_code=500, detail=f"Failed to create content record: {str(e)}")
 
-    # Trigger background tasks as before...
+    if content.file_url:
+        processor = None
+        if content_type_value in {'image', 'pdf', 'manuscript'}:
+            from backend.app.ai.ocr import process_ocr
+
+            processor = process_ocr
+        elif content_type_value in {'audio', 'video'}:
+            from backend.app.ai.stt import process_stt
+
+            processor = process_stt
+
+        if processor is not None:
+            threading.Thread(
+                target=processor,
+                args=(content.id,),
+                daemon=True,
+            ).start()
+
     return ContentUploadResponse(
         id=content.id,
         message="Content uploaded successfully and pending community review.",
@@ -200,7 +217,7 @@ def upload_content(
 def get_content(
     content_id: UUID,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(authorize_request),
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ):
     content = ContentService.get_content(db, content_id)
     if not content:
@@ -241,7 +258,7 @@ def list_content(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(authorize_request),
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ):
     # 1. Handle content_type "all" or empty
     content_type_enum = None
@@ -300,7 +317,7 @@ def update_content(
     content_id: UUID,
     update_data: ContentUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
 ):
     content = ContentService.get_content(db, content_id)
     if not content:
@@ -315,7 +332,7 @@ def replace_content_file(
     content_id: UUID,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
 ):
     content = ContentService.get_content(db, content_id)
     if not content:
@@ -366,7 +383,7 @@ def replace_content_file(
 def delete_content(
     content_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
 ):
     content = ContentService.get_content(db, content_id)
     if not content:
@@ -383,7 +400,7 @@ def review_content(
     content_id: UUID,
     review: ContentReviewRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
 ):
     content = ContentService.get_content(db, content_id)
     if not content:

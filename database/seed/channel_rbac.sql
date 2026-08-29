@@ -69,7 +69,22 @@ FROM (VALUES
     ('PATCH',  '/channels/{channel_id}/join-requests/{request_id}',  'manage_palkhi'),
     ('GET',    '/channels/{channel_id}/contributors',               'view_channel'),
     ('POST',   '/channels/{channel_id}/contributors',               'manage_channel_contributors'),
-    ('DELETE', '/channels/{channel_id}/contributors/{user_id}',     'manage_channel_contributors')
+    ('DELETE', '/channels/{channel_id}/contributors/{user_id}',     'manage_channel_contributors'),
+    ('GET',    '/channels/{channel_id}/posts',                       'view_channel'),
+    ('POST',   '/channels/{channel_id}/posts',                       'contribute'),
+    ('GET',    '/channels/{channel_id}/follow-status',               'view_channel'),
+    ('POST',   '/channels/{channel_id}/follow',                      'view_channel'),
+    ('DELETE', '/channels/{channel_id}/follow',                      'view_channel'),
+    ('POST',   '/channels/{channel_id}/announcements',               'manage_channel'),
+    ('PATCH',  '/channels/{channel_id}/emergency-contact',            'manage_channel'),
+    ('GET',    '/admin/stats',                                        'manage_palkhi'),
+    ('GET',    '/admin/users',                                        'manage_palkhi'),
+    ('PATCH',  '/admin/users/{user_id}/role',                         'manage_palkhi'),
+    ('PATCH',  '/admin/users/{user_id}/status',                       'manage_palkhi'),
+    ('GET',    '/admin/content',                                      'manage_palkhi'),
+    ('DELETE', '/admin/content/{content_id}',                         'manage_palkhi'),
+    ('GET',    '/admin/channels',                                     'manage_palkhi'),
+    ('PATCH',  '/admin/channels/{channel_id}/status',                 'manage_palkhi')
     ,('GET',    '/content/',                                        'view_channel')
     ,('POST',   '/content/upload',                                  'contribute')
 ) AS mapping(method, route_path, permission_name)
