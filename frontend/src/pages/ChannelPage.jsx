@@ -46,7 +46,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, canContribute, canManageChannel, isPalkhiPramukhApplied } = useAuth();
+  const { user, loading: authLoading, canContribute, canManageChannel, isPalkhiPramukhApplied } = useAuth();
   const adminView = isAdminView || location.pathname.startsWith('/admin/');
   
   const messagesEndRef = useRef(null);
@@ -152,12 +152,12 @@ export const ChannelPage = ({ isAdminView = false }) => {
 
   // Check Follow Status
   useEffect(() => {
-    if (user && channel && !isOwner && !adminView) {
+    if (!authLoading && user && channel && !isOwner && !adminView) {
       api.getFollowStatus(id)
         .then((data) => setIsFollowing(Boolean(data?.is_following)))
         .catch(() => {});
     }
-  }, [user, channel, isOwner, id]);
+  }, [authLoading, user, channel, isOwner, adminView, id]);
 
   // Pre-fill emergency contact state
   useEffect(() => {
@@ -791,7 +791,8 @@ export const ChannelPage = ({ isAdminView = false }) => {
                     ))
                   )
                 ) : (
-                /* Announcements List */
+                <>
+                {/* Announcements List */}
                 {announcementPosts.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-[#E8D9C3] bg-white p-10 text-center">
                     <div className="text-5xl mb-3">🪧</div>
@@ -863,6 +864,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
                     </article>
                   ))
                 )}
+                </>
                 )}
               </div>
             )}
