@@ -45,7 +45,7 @@ class Content(Base):
         nullable=False,
     )
     is_short = Column(Boolean, default=False, nullable=False)
-    file_url = Column(String(500), nullable=True)
+    file_url = Column(String(500), nullable=True)          # Primary PDF/media URL or Optional header image
     thumbnail_url = Column(String(500), nullable=True)
 
     # ============ ALL JSON columns changed to JSONB ============

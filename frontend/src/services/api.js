@@ -346,6 +346,36 @@ short: (id) =>
 
   // Permissions & Profile Applications
   getMyPermissions: () => request('/users/me/permissions'),
+  // =========================
+// Admin
+// =========================
+
+users: () => request('/admin/users'),
+updateUserRole: (userId, role) =>
+  request(`/admin/users/${userId}/role`, {
+    method: 'PATCH',
+    body: JSON.stringify({ role }),
+  }),
+updateUserStatus: (userId, status) =>
+  request(`/admin/users/${userId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  }),
+
+  getAdminStats: () => request('/admin/stats'), // <-- ADD THIS LINE
+
+  users: () => request('/admin/users'),
+  updateUserRole: (userId, role) =>
+    request(`/admin/users/${userId}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    }),
+  updateUserStatus: (userId, status) =>
+    request(`/admin/users/${userId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+    
 };
 
 export default api;

@@ -36,6 +36,23 @@ import PalkhiRegistration from './components/auth/PalkhiRegistration';
 import MapPage from './pages/MapPage';
 
 import ProtectedRoute from './components/common/ProtectedRoute';
+//Admin
+import AdminLayout from './pages/Admin/AdminLayout';
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import UserManagement from './pages/Admin/UserManagement';
+import ContentManagement from './pages/Admin/ContentManagement';
+import ChannelManagement from './pages/Admin/ChannelManagement';
+import AdminSettings  from './pages/Admin/Settings';
+
+function ProtectedRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <div className="p-8 text-center">Verifying session...</div>;
+  }
+
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+}
 
 function App() {
   const { language } = useLanguage();
@@ -99,7 +116,16 @@ function App() {
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/profile/:id" element={<Profile />} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/contribute" element={<ProtectedRoute><Contribute /></ProtectedRoute>} />
+              <Route path="/admin/*" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="users" element={<UserManagement />} />
+                <Route path="content" element={<ContentManagement />} />
+                <Route path="channels" element={<ChannelManagement />} />
+                <Route path="settings" element={<AdminSettings  />} />
+          </Route>
             </Routes>
+            
           </main>
           <Footer />
         </div>
