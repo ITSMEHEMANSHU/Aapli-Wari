@@ -12,6 +12,15 @@ export const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { language, setLanguage, t, languageOptions } = useLanguage();
 
+  const navLinks = [
+    { label: t('nav.explore') || 'Explore', to: '/explore' },
+    { label: t('nav.map') || 'Map', to: '/map' },
+    { label: t('nav.channels') || 'Channels', to: '/channels' },
+    { label: 'AI Help', to: '/ai-assistant' },
+    { label: user && !canContribute?.() ? 'Become a Contributor' : (t('nav.contribute') || 'Contribute'), to: '/contribute' },
+    { label: 'Aapla Theva', to: '/knowledgepage' },
+  ];
+
   const isContributorUser = typeof canContribute === 'function' ? canContribute() : false;
 
   const handleContributeClick = (e) => {
@@ -30,18 +39,18 @@ export const Header = () => {
     navigate('/contribute');
   };
 
-  const navLinks = [
-    { label: t('nav.explore'), to: '/explore' },
-    { label: t('nav.map'), to: '/map' },
-    { label: t('nav.channels'), to: '/channels' },
-    { label: 'AI Help', to: '/ai-assistant' },
-    {
-      label: user && !isContributorUser ? 'Become a Contributor' : t('nav.contribute'),
-      to: '/contribute',
-      onClick: handleContributeClick,
-    },
-    { label: 'Shorts', to: '/shorts' },
-  ];
+  // const navLinks = [
+  //   { label: t('nav.explore'), to: '/explore' },
+  //   { label: t('nav.map'), to: '/map' },
+  //   { label: t('nav.channels'), to: '/channels' },
+  //   { label: 'AI Help', to: '/ai-assistant' },
+  //   {
+  //     label: user && !isContributorUser ? 'Become a Contributor' : t('nav.contribute'),
+  //     to: '/contribute',
+  //     onClick: handleContributeClick,
+  //   },
+  //   { label: 'Shorts', to: '/shorts' },
+  // ];
 
   return (
     <header className="sticky top-0 z-50 w-full bg-[#F9F1E5] border-b border-[#E8D9C3] shadow-xs backdrop-blur-md">
