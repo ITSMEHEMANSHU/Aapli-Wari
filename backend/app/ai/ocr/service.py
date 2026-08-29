@@ -129,7 +129,7 @@ def process_ocr(content_id: UUID):
             'language': language,
             'isOverlayRequired': 'false',
             'detectOrientation': 'true',
-            'OCREngine': '1',  # Engine 1 supports hin (Devanagari)
+            'OCREngine': '3',  # Engine 1 supports hin (Devanagari)
             'scale': 'true',
             'filetype': filetype_param,
         }

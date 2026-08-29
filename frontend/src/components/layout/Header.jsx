@@ -19,6 +19,8 @@ export const Header = () => {
     { label: 'Map',        to: '/explore?type=map' },
     { label: 'Channels',   to: '/channels' },
     { label: 'Contribute', to: '/contribute' },
+      { label: 'Shorts', to: '/shorts' },  // ✅ Add
+
   ];
 
   return (

@@ -10,6 +10,10 @@ from backend.app.api import channels
 from backend.app.api import  content  # Add content
 from backend.app.api import search
 from backend.app.api import engagement
+from backend.app.api import chat
+from backend.app.api import shorts
+
+
 
 
 
@@ -44,6 +48,10 @@ app.include_router(channels.router)
 app.include_router(content.router)  # Add this
 app.include_router(search.router)
 app.include_router(engagement.router)
+app.include_router(chat.router)
+app.include_router(shorts.router)
+
+
 
 
 @app.get("/")
