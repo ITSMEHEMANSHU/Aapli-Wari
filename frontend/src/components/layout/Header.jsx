@@ -12,6 +12,13 @@ export const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { language, setLanguage, t, languageOptions } = useLanguage();
 
+  const navLinks = [
+    { label: 'Explore',    to: '/explore' },
+    { label: 'Map',        to: '/map' },
+    { label: 'Channels',   to: '/channels' },
+    { label: 'AI Help',    to: '/ai-assistant' },
+    { label: 'Contribute', to: '/contribute' },
+    { label: 'Aapla Theva', to: '/knowledgepage' },
   const isContributorUser = typeof canContribute === 'function' ? canContribute() : false;
 
   const handleContributeClick = (e) => {

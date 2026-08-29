@@ -17,7 +17,7 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import Contribute from './pages/Contribute';
 import CreateChannel from './components/channel-management/CreateChannel';
-
+import KnowledgePage from './pages/KnowledgePage';
 // Auth
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
@@ -91,6 +91,8 @@ function App() {
               <Route path="/shorts" element={<AaplaTheva />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/KnowledgePage" element={<KnowledgePage />} />
+              
               <Route path="/apply-contributor" element={<ContributorRegistration />} />
               <Route path="/apply-palkhi-pramukh" element={<PalkhiPramukhRegistration />} />
               <Route path="/verify-otp" element={<OTPVerification />} />
