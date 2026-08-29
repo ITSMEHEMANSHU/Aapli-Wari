@@ -7,15 +7,28 @@ import { FaChevronDown, FaBars, FaTimes } from 'react-icons/fa';
  * Header — Clean, High-Contrast Temple Theme
  */
 export const Header = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated, hasContributePermission } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleContributeClick = (e) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      window.location.href = '/login';
+      return;
+    }
+    if (!hasContributePermission()) {
+      window.location.href = '/apply-contributor';
+      return;
+    }
+    window.location.href = '/contribute';
+  };
 
   const navLinks = [
     { label: 'Explore',    to: '/explore' },
     { label: 'Map',        to: '/map' },
     { label: 'Channels',   to: '/channels' },
     { label: 'AI Help',    to: '/ai-assistant' },
-    { label: 'Contribute', to: '/contribute' },
+    { label: 'Contribute', to: '/contribute', onClick: handleContributeClick },
       { label: 'Shorts', to: '/shorts' },  // ✅ Add
 
   ];
@@ -39,6 +52,7 @@ export const Header = () => {
             <Link
               key={link.label}
               to={link.to}
+              onClick={link.onClick}
               className="px-4 py-2 rounded-full hover:text-[#E87A1E] hover:bg-orange-50 transition-all duration-200 whitespace-nowrap"
             >
               {link.label}
@@ -56,11 +70,12 @@ export const Header = () => {
 
           {user ? (
             <>
-              <Link to="/contribute">
-                <button className="hidden sm:inline-flex bg-[#E87A1E] hover:bg-[#C8521A] text-white px-4.5 py-2 rounded-xl transition text-sm font-bold shadow-sm active:scale-95 cursor-pointer">
-                  Contribute
-                </button>
-              </Link>
+              <button 
+                onClick={handleContributeClick}
+                className="hidden sm:inline-flex bg-[#E87A1E] hover:bg-[#C8521A] text-white px-4.5 py-2 rounded-xl transition text-sm font-bold shadow-sm active:scale-95 cursor-pointer"
+              >
+                Contribute
+              </button>
               <Link
                 to="/profile"
                 className="w-9 h-9 bg-[#2D1B0E] border border-[#2D1B0E] rounded-full flex items-center justify-center text-white font-bold text-sm hover:bg-[#E87A1E] hover:border-[#E87A1E] transition shadow-2xs"
@@ -91,14 +106,27 @@ export const Header = () => {
       {mobileOpen && (
         <div className="lg:hidden bg-[#FDF8F0] border-t border-[#E8D9C3] px-5 py-4 flex flex-col gap-1.5 shadow-xl animate-in fade-in duration-150 text-[#2D1B0E]">
           {navLinks.map((link) => (
-            <Link
-              key={link.label}
-              to={link.to}
-              onClick={() => setMobileOpen(false)}
-              className="text-sm font-semibold text-[#2D1B0E] hover:text-[#E87A1E] hover:bg-orange-50 px-3.5 py-2.5 rounded-xl transition"
-            >
-              {link.label}
-            </Link>
+            link.label === 'Contribute' ? (
+              <button
+                key={link.label}
+                onClick={(e) => {
+                  link.onClick(e);
+                  setMobileOpen(false);
+                }}
+                className="text-left text-sm font-semibold text-[#2D1B0E] hover:text-[#E87A1E] hover:bg-orange-50 px-3.5 py-2.5 rounded-xl transition"
+              >
+                {link.label}
+              </button>
+            ) : (
+              <Link
+                key={link.label}
+                to={link.to}
+                onClick={() => setMobileOpen(false)}
+                className="text-sm font-semibold text-[#2D1B0E] hover:text-[#E87A1E] hover:bg-orange-50 px-3.5 py-2.5 rounded-xl transition"
+              >
+                {link.label}
+              </Link>
+            )
           ))}
           <div className="pt-3 mt-2 border-t border-[#E8D9C3] flex items-center justify-between gap-3">
             <button className="flex items-center gap-1.5 text-xs font-semibold text-[#2D1B0E] border border-[#E8D9C3] bg-white rounded-xl px-3.5 py-2">

@@ -21,6 +21,7 @@ import CreateChannel from './components/channel-management/CreateChannel';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import OTPVerification from './components/auth/OTPVerification';
+import { ContributorRegistration } from './pages/ContributorRegistration';
 
 // Public Components
 import Search from './components/public/Search';
@@ -81,11 +82,11 @@ function App() {
               <Route path="/shorts" element={<AaplaTheva />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/apply-contributor" element={<ContributorRegistration />} />
               <Route path="/verify-otp" element={<OTPVerification />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/profile/:id" element={<Profile />} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="/contribute" element={<ProtectedRoute><Contribute /></ProtectedRoute>} />
             </Routes>
           </main>
           <Footer />
