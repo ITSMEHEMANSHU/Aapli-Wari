@@ -76,16 +76,21 @@ export const ChannelPage = () => {
         const channelData = await api.channel(id);
         setChannel(channelData);
 
-        if (user) {
-          setIsOwner(channelData.created_by_user_id === user.id);
+        if (user && channelData) {
+          const userIsOwner = channelData.created_by_user_id === user.id;
+          setIsOwner(userIsOwner);
           
           // Check if user is member
-          const memberships = await api.myChannelMemberships();
-          const memberIds = new Set(memberships.map(c => c.id));
-          setIsMember(memberIds.has(channelData.id));
+          try {
+            const memberships = await api.myChannelMemberships();
+            const memberIds = new Set((memberships || []).map(c => c.id));
+            setIsMember(memberIds.has(channelData.id));
+          } catch (memErr) {
+            console.warn('Could not fetch user memberships:', memErr);
+          }
           
-          // Only contributors can create or view join requests.
-          if (user.role === 'contributor') {
+          // If user can contribute and is not owner, check pending join request
+          if (canContribute && canContribute() && !userIsOwner) {
             try {
               const myRequest = await api.myJoinRequest(id);
               if (myRequest && myRequest.status === 'pending') {
@@ -97,8 +102,12 @@ export const ChannelPage = () => {
           }
         }
 
-        const contribs = await api.channelContributors(id);
-        setContributors(contribs);
+        try {
+          const contribs = await api.channelContributors(id);
+          setContributors(contribs || []);
+        } catch (contribErr) {
+          console.warn('Could not fetch channel contributors:', contribErr);
+        }
 
         await fetchPosts();
 

@@ -20,13 +20,16 @@ import { AuthContext } from '../../context/AuthContext';
 
 export const ChannelList = () => {
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  const { user, canCreateChannel, isPalkhiPramukhApplied, isContributorApplied } = useContext(AuthContext);
 
   const [channels, setChannels] = useState([]);
   const [membership, setMembership] = useState({});
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState({});
   const [error, setError] = useState('');
+
+  const isPalkhiPramukhUser = (isPalkhiPramukhApplied && isPalkhiPramukhApplied()) || user?.role === 'palkhi_pramukh' || user?.role === 'admin';
+  const isContributorUser = (isContributorApplied && isContributorApplied()) || user?.role === 'contributor';
 
   useEffect(() => {
     const loadChannels = async () => {
@@ -35,32 +38,34 @@ export const ChannelList = () => {
         setError('');
 
         const data = await api.channels();
-        setChannels(data);
+        setChannels(data || []);
 
-        if (user?.role === 'contributor') {
-          const myMemberships = await api.myChannelMemberships();
-          const myChannelIds = new Set(
-            myMemberships.map((channel) => String(channel.id || channel))
-          );
+        if (user && isContributorUser) {
+          try {
+            const myMemberships = await api.myChannelMemberships();
+            const myChannelIds = new Set(
+              (myMemberships || []).map((channel) => String(channel.id || channel))
+            );
 
-          const myJoinRequests = await api.myJoinRequests();
-          const pendingChannelIds = new Set(
-            myJoinRequests
-              .filter((request) => request.status === 'pending')
-              .map((request) => String(request.channel_id))
-          );
+            const myJoinRequests = await api.myJoinRequests();
+            const pendingChannelIds = new Set(
+              (myJoinRequests || [])
+                .filter((request) => request.status === 'pending')
+                .map((request) => String(request.channel_id))
+            );
 
-          const membershipMap = {};
-          data.forEach((channel) => {
-            membershipMap[channel.id] = {
-              isMember: myChannelIds.has(String(channel.id)),
-              requestPending: pendingChannelIds.has(String(channel.id)),
-            };
-          });
+            const membershipMap = {};
+            (data || []).forEach((channel) => {
+              membershipMap[channel.id] = {
+                isMember: myChannelIds.has(String(channel.id)),
+                requestPending: pendingChannelIds.has(String(channel.id)),
+              };
+            });
 
-          setMembership(membershipMap);
-        } else {
-          setMembership({});
+            setMembership(membershipMap);
+          } catch (memErr) {
+            console.warn('Could not fetch channel memberships:', memErr);
+          }
         }
       } catch (err) {
         setError(err.message || 'Failed to load channels');
@@ -69,12 +74,8 @@ export const ChannelList = () => {
       }
     };
 
-    if (user) {
-      loadChannels();
-    } else {
-      setLoading(false);
-    }
-  }, [user]);
+    loadChannels();
+  }, [user, isContributorUser]);
 
   const sendJoinRequest = async (channelId) => {
     try {
@@ -141,7 +142,7 @@ export const ChannelList = () => {
   }
 
   /* ── 4. Palkhi Pramukh View ── */
-  if (user?.role === 'palkhi_pramukh') {
+  if (isPalkhiPramukhUser) {
     const myChannels = channels.filter((c) => c.created_by_user_id === user.id);
     const otherChannels = channels.filter((c) => c.created_by_user_id !== user.id);
 
@@ -150,6 +151,9 @@ export const ChannelList = () => {
         <HeaderSection 
           title="Palkhi Channels" 
           subtitle="Manage your procession channel and follow official Wari feeds" 
+          showCreateButton={myChannels.length === 0}
+          createButtonText="Create Channel"
+          onCreateClick={handleCreateChannelClick}
         />
 
         {/* Your Managed Channels */}
@@ -162,7 +166,7 @@ export const ChannelList = () => {
               <Button 
                 variant="primary" 
                 size="sm" 
-                className="bg-[#DD6B35] text-white flex items-center gap-1.5"
+                className="bg-[#DD6B35] text-white flex items-center gap-1.5 cursor-pointer"
                 onClick={() => navigate('/channel/create')}
               >
                 <FiPlus className="text-sm" /> Create Channel
@@ -197,7 +201,7 @@ export const ChannelList = () => {
   }
 
   /* ── 5. Contributor View ── */
-  if (user?.role === 'contributor') {
+  if (isContributorUser) {
     const myChannels = channels.filter((c) => membership[c.id]?.isMember === true);
     const otherChannels = channels.filter((c) => membership[c.id]?.isMember !== true);
 
@@ -258,7 +262,7 @@ export const ChannelList = () => {
       navigate('/login', { state: { from: '/channel/create' } });
       return;
     }
-    if (user.role === 'palkhi_pramukh' || user.role === 'admin') {
+    if (isPalkhiPramukhUser) {
       navigate('/channel/create');
     } else {
       navigate('/apply-palkhi-pramukh', { state: { from: '/channel/create' } });

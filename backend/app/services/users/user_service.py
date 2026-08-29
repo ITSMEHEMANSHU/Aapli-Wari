@@ -53,18 +53,21 @@ def upgrade_to_contributor(
     mobile: str,
 ) -> User:
 
-    contributor_role = db.scalar(
-        select(Role).where(Role.name == "contributor")
-    )
-
-    if contributor_role is None:
-        raise HTTPException(
-            status_code=500,
-            detail="Role 'contributor' not found in database",
+    # Only change base role to 'contributor' if user is not already a palkhi_pramukh or admin
+    if user.role not in ("palkhi_pramukh", "admin"):
+        contributor_role = db.scalar(
+            select(Role).where(Role.name == "contributor")
         )
 
-    user.role_id = contributor_role.id
-    user.role = contributor_role.name
+        if contributor_role is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Role 'contributor' not found in database",
+            )
+
+        user.role_id = contributor_role.id
+        user.role = contributor_role.name
+
     user.is_contributor = True
 
     # Create or update contributor_profile
