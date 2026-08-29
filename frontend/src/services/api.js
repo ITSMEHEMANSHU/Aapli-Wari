@@ -47,7 +47,14 @@ export const api = {
   // =========================
   // Authentication
   // =========================
-
+  // =========================
+// Palkhi
+// =========================
+ createPalkhi: (data) =>
+  request('/channels/palkhis', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
   login: (data) =>
     request('/auth/login', {
       method: 'POST',
@@ -56,6 +63,24 @@ export const api = {
 
   signup: (data) =>
     request('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  registerPalkhiPramukh: (data) =>
+    request('/auth/register-palkhi-pramukh', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  applyContributor: (data) =>
+    request('/auth/apply-contributor', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  applyPalkhiPramukh: (data) =>
+    request('/auth/apply-palkhi-pramukh', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -71,6 +96,8 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
+
+
 
   // =========================
   // RBAC test
@@ -172,7 +199,41 @@ decideJoinRequest: (channelId, requestId, action) =>
         method: 'DELETE',
       }
     ),
-    
+
+  // =========================
+  // Follow / Unfollow
+  // =========================
+
+  followChannel: (channelId) =>
+    request(`/channels/${channelId}/follow`, { method: 'POST' }),
+
+  unfollowChannel: (channelId) =>
+    request(`/channels/${channelId}/follow`, { method: 'DELETE' }),
+
+  getFollowStatus: (channelId) =>
+    request(`/channels/${channelId}/follow-status`),
+
+  // =========================
+  // Announcements
+  // =========================
+
+  createAnnouncement: (channelId, data) =>
+    request(`/channels/${channelId}/announcements`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // =========================
+  // Emergency Contact
+  // =========================
+
+  updateEmergencyContact: (channelId, data) =>
+    request(`/channels/${channelId}/emergency-contact`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+
     search: (params) =>
   request('/search/', { params }),
 
@@ -221,9 +282,26 @@ decideJoinRequest: (channelId, requestId, action) =>
       body: JSON.stringify({ platform }),
     }),
 
+  
     trackDownload: (id) => request(`/engagement/content/${id}/download`),
 
+    chat: (data) =>
+  request('/chat/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+
   // =========================
+// Shorts (Aapla Theva)
+// =========================
+
+shorts: (params = {}) =>
+  request('/shorts/', { params }),
+
+short: (id) =>
+  request(`/shorts/${id}`),
+
+// =========================
   // Amenities (Map)
   // =========================
   getAmenities: (params = {}) => request('/amenities', { params }),
@@ -237,9 +315,12 @@ decideJoinRequest: (channelId, requestId, action) =>
 
   // Palkhi live locations
   getPalkhiLocations: () => request('/palkhis/live-locations'),
+
+  // Permissions & Profile Applications
+  getMyPermissions: () => request('/users/me/permissions'),
 };
 
-  export default api;
+export default api;
 
 
 

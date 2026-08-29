@@ -62,7 +62,7 @@ export const ContentDetail = () => {
 
   const handleLike = async () => {
     if (!user) {
-      setError('Please log in to like content.');
+      navigate('/login', { state: { message: 'Please log in to like content.' } });
       return;
     }
     if (liking) return;
@@ -131,6 +131,7 @@ export const ContentDetail = () => {
       case 'video': return '🎬';
       case 'image': return '🖼️';
       case 'audio': return '🎵';
+      case 'short': return '🎬';
       case 'pdf': return '📄';
       case 'manuscript': return '📜';
       default: return '📝';
@@ -163,7 +164,17 @@ export const ContentDetail = () => {
       );
     }
 
-    switch (content.content_type) {
+    const mediaType = content.content_type === 'short'
+      ? (() => {
+          const url = (content.file_url || '').toLowerCase();
+          if (/\.(mp4|webm|mov|m4v|avi)(\?|$)/.test(url) || url.includes('video')) return 'video';
+          if (/\.(mp3|wav|ogg|m4a|aac|flac)(\?|$)/.test(url) || url.includes('audio')) return 'audio';
+          if (/\.(jpg|jpeg|png|gif|webp|bmp)(\?|$)/.test(url) || url.includes('image')) return 'image';
+          return 'video';
+        })()
+      : content.content_type;
+
+    switch (mediaType) {
       case 'image':
         return (
           <img 
@@ -338,7 +349,7 @@ export const ContentDetail = () => {
         <Button onClick={handleLike} disabled={liking} className="flex items-center gap-2">
           {liked ? <FiHeart className="fill-current" /> : <FiHeart />} Like ({likeCount})
         </Button>
-        <Button variant="outline" onClick={() => setSaved(!saved)} className="flex items-center gap-2">
+        <Button variant="outline" onClick={() => { if (!user) { navigate('/login', { state: { message: 'Please log in to save content.' } }); } else { setSaved(!saved); } }} className="flex items-center gap-2">
           <FiBookmark className={saved ? 'fill-current' : ''} /> Save
         </Button>
         <Button variant="outline" onClick={handleShare} className="flex items-center gap-2">

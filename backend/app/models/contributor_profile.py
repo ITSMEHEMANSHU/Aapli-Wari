@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -16,6 +16,11 @@ class ContributorProfile(Base):
         PGUUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         primary_key=True,
+    )
+
+    mobile: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
     )
 
     contribution_count: Mapped[int] = mapped_column(

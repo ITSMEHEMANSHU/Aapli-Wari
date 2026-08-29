@@ -74,9 +74,16 @@ def upload_content(
     db: Session = Depends(get_db),
     current_user: User = Depends(authorize_request),
 ):
+    from backend.app.services.users.user_service import can_contribute
+    if not can_contribute(current_user, db):
+        raise HTTPException(
+            status_code=403,
+            detail="You must apply as a contributor to upload content.",
+        )
+
     content_type_value = content_type.lower()
 
-    valid_types = ['video', 'image', 'audio', 'pdf', 'manuscript', 'story']
+    valid_types = ['video', 'image', 'audio', 'pdf', 'manuscript', 'story', 'short']
     if content_type_value not in valid_types:
         raise HTTPException(status_code=400, detail=f"Invalid content type: {content_type}")
 
@@ -87,6 +94,7 @@ def upload_content(
         "pdf": ["application/pdf"],
         "manuscript": ["application/pdf", "image/jpeg", "image/png"],
         "story": [],
+        "short": ["video/mp4", "video/mpeg", "video/quicktime"]
     }
 
     if content_type_value != "story" and file.content_type not in allowed_types.get(content_type_value, []):
@@ -131,15 +139,27 @@ def upload_content(
             pass
         raise HTTPException(status_code=500, detail=f"Failed to create content record: {str(e)}")
 
+    # ✅ Trigger OCR for images, PDFs, manuscripts
     if content_type_value in ['image', 'pdf', 'manuscript']:
         try:
             from backend.app.ai.ocr import process_ocr
             thread = threading.Thread(target=process_ocr, args=(content.id,))
             thread.daemon = True
             thread.start()
-            print(f"OCR triggered for content {content.id}")
+            print(f"🔍 OCR triggered for content {content.id}")
         except Exception as e:
             print(f"Failed to trigger OCR: {e}")
+
+    # ✅ Trigger STT for audio, video
+    if content_type_value in ['audio', 'video']:
+        try:
+            from backend.app.ai.stt import process_stt
+            thread = threading.Thread(target=process_stt, args=(content.id,))
+            thread.daemon = True
+            thread.start()
+            print(f"🎤 STT triggered for content {content.id}")
+        except Exception as e:
+            print(f"Failed to trigger STT: {e}")
 
     return ContentUploadResponse(
         id=content.id,
@@ -188,6 +208,7 @@ def list_content(
     channel_id: Optional[UUID] = Query(None),
     verified_only: bool = Query(False),
     search: Optional[str] = Query(None),
+    exclude_short: bool = Query(False),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
@@ -209,6 +230,7 @@ def list_content(
         channel_id=channel_id,
         verified_only=verified_only,
         search_query=search,
+        exclude_short=exclude_short,
         limit=limit,
         offset=offset
     )
