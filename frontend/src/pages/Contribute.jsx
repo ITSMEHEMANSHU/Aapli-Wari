@@ -34,6 +34,14 @@ export const Contribute = () => {
     return <Navigate to="/apply-contributor" state={{ from: '/contribute' }} replace />;
   }
 
+  if (defaultTab === 'amenity') {
+    return (
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        <AmenityForm onSuccess={() => {}} />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
       {/* ── Tab switcher ── */}

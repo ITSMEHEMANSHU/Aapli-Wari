@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 
-from backend.app.core.security import authorize_request
+from backend.app.core.security import get_current_user
 from backend.app.db.database import get_db
 from backend.app.models.user import User
 from backend.app.schemas.admin import (
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/admin", tags=["Administration"])
 
 @router.get("/stats", response_model=StatsResponse)
 def get_admin_stats(
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get admin dashboard statistics"""
@@ -39,7 +39,7 @@ def get_users(
     status: Optional[str] = Query(None),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get all users with filters"""
@@ -53,7 +53,7 @@ def get_users(
 def update_user_role(
     user_id: UUID,
     data: RoleUpdateRequest,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Update user role"""
@@ -71,7 +71,7 @@ def update_user_role(
 def update_user_status(
     user_id: UUID,
     data: StatusUpdateRequest,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Activate or suspend user"""
@@ -94,7 +94,7 @@ def get_all_content(
     channel_id: Optional[UUID] = Query(None),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get all content with filters (admin only)"""
@@ -107,7 +107,7 @@ def get_all_content(
 @router.delete("/content/{content_id}")
 def delete_content_admin(
     content_id: UUID,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Delete content (admin only)"""
@@ -127,7 +127,7 @@ def get_all_channels(
     status: Optional[str] = Query(None),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get all channels with filters (admin only)"""
@@ -141,7 +141,7 @@ def get_all_channels(
 def update_channel_status(
     channel_id: UUID,
     data: ChannelStatusUpdateRequest,
-    current_user: User = Depends(authorize_request),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Enable or disable channel"""

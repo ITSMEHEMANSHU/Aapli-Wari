@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { FaChevronDown, FaBars, FaTimes } from 'react-icons/fa';
 import { IMAGES, cloudinaryUrl } from '../../utils/cloudinary';
@@ -9,6 +9,7 @@ import { ROUTES } from '../../routes';
 export const Header = () => {
   const { user, isAuthenticated, canContribute } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { language, setLanguage, t, languageOptions } = useLanguage();
 
@@ -17,11 +18,11 @@ export const Header = () => {
     { label: t('nav.map') || 'Map', to: ROUTES.MAP },
     { label: t('nav.channels') || 'Channels', to: ROUTES.CHANNELS },
     { label: 'AI Help', to: ROUTES.AI_ASSISTANT },
-    { label: user && !canContribute?.() ? 'Become a Contributor' : (t('nav.contribute') || 'Contribute'), to: ROUTES.CONTRIBUTE },
     { label: 'Aapla Theva', to: ROUTES.KNOWLEDGE_PAGE },
   ];
 
   const isContributorUser = typeof canContribute === 'function' ? canContribute() : false;
+  const isKnowledgePage = location.pathname.toLowerCase() === ROUTES.KNOWLEDGE_PAGE.toLowerCase();
 
   const handleContributeClick = (e) => {
     if (e?.preventDefault) e.preventDefault();
@@ -31,12 +32,7 @@ export const Header = () => {
       return;
     }
 
-    if (!isContributorUser) {
-      navigate(ROUTES.APPLY_CONTRIBUTOR, { state: { from: ROUTES.CONTRIBUTE } });
-      return;
-    }
-
-    navigate(ROUTES.CONTRIBUTE);
+    navigate(`${ROUTES.KNOWLEDGE_PAGE}?tab=contribute`);
   };
 
   // const navLinks = [
@@ -56,7 +52,8 @@ export const Header = () => {
     <header className="sticky top-0 z-50 w-full bg-[#F9F1E5] border-b border-[#E8D9C3] shadow-xs backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 min-h-[64px] flex items-center justify-between gap-2 sm:gap-3">
         <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
-          <imgloading="lazy" 
+          <img
+loading="lazy" 
             src={cloudinaryUrl(IMAGES.logo, { width: 40, height: 40, crop: 'fit', quality: 'auto' })}
             alt="Aapli Wari Logo"
             className="w-10 h-10 object-contain rounded-[12px]"
@@ -100,12 +97,14 @@ export const Header = () => {
 
           {user ? (
             <>
-              <button
-                onClick={handleContributeClick}
-                className="hidden sm:inline-flex bg-[#E87A1E] hover:bg-[#C8521A] text-white px-3.5 py-2 rounded-xl transition text-sm font-bold shadow-sm active:scale-95 cursor-pointer whitespace-nowrap max-w-[180px] text-center leading-tight"
-              >
-                {isContributorUser ? t('nav.contribute') : 'Become a Contributor'}
-              </button>
+              {!isKnowledgePage && (
+                <button
+                  onClick={handleContributeClick}
+                  className="hidden sm:inline-flex bg-[#E87A1E] hover:bg-[#C8521A] text-white px-3.5 py-2 rounded-xl transition text-sm font-bold shadow-sm active:scale-95 cursor-pointer whitespace-nowrap max-w-[180px] text-center leading-tight"
+                >
+                  {isContributorUser ? t('nav.contribute') : 'Become a Contributor'}
+                </button>
+              )}
               <Link
                 to="/profile"
                 className="w-9 h-9 bg-[#2D1B0E] border border-[#2D1B0E] rounded-full flex items-center justify-center text-white font-bold text-sm hover:bg-[#E87A1E] hover:border-[#E87A1E] transition shadow-2xs"

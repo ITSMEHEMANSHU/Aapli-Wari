@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from backend.app.core.security import authorize_request, get_current_user
+from backend.app.core.security import get_current_user
 from backend.app.db.database import get_db
 from backend.app.models.contributor_profile import ContributorProfile
 from backend.app.models.palkhi_pramukh_profile import PalkhiPramukhProfile

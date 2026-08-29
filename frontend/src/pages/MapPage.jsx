@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { PANDHARPUR, DEFAULT_ZOOM, AMENITY_TYPES, amenityColor } from '../utils/mapConstants';
 import { api } from '../services/api';
 import { FiFilter, FiRefreshCw, FiMapPin } from 'react-icons/fi';
+import { useAuth } from '../hooks/useAuth';
 
 // ── Fix default leaflet marker icons (webpack/vite breaks them) ──────────────
 delete L.Icon.Default.prototype._getIconUrl;
@@ -56,6 +57,7 @@ const MOCK_PALKHIS = [
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MapPage = () => {
+  const { user } = useAuth();
   const [amenities, setAmenities]       = useState([]);
   const [palkhis, setPalkhis]           = useState(MOCK_PALKHIS);
   const [activeFilters, setActiveFilters] = useState(AMENITY_TYPES.map((t) => t.value));
@@ -86,6 +88,9 @@ const MapPage = () => {
   };
 
   const visibleAmenities = amenities.filter((a) => activeFilters.includes(a.service_type));
+  const canAddAmenity = ['contributor', 'palkhi_pramukh', 'admin'].includes(
+    user?.role?.toLowerCase()
+  );
 
   return (
     <div className="w-full h-[calc(100vh-64px)] flex flex-col">
@@ -252,14 +257,16 @@ const MapPage = () => {
         </div>
 
         {/* ── Add amenity CTA ── */}
-        <div className="absolute bottom-4 right-4 z-1000">
-          <a
-            href="/contribute?tab=amenity"
-            className="inline-flex items-center gap-2 bg-[#DD6B35] hover:bg-[#C85A28] text-white font-semibold px-4 py-2.5 rounded-full shadow-lg transition text-sm"
-          >
-            + Add Amenity
-          </a>
-        </div>
+        {canAddAmenity && (
+          <div className="absolute bottom-4 right-4 z-1000">
+            <a
+              href="/contribute?tab=amenity"
+              className="inline-flex items-center gap-2 bg-[#DD6B35] hover:bg-[#C85A28] text-white font-semibold px-4 py-2.5 rounded-full shadow-lg transition text-sm"
+            >
+              + Add Amenity
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );

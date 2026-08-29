@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from backend.app.core.security import authorize_request, get_current_user
+from backend.app.core.security import get_current_user
 from backend.app.db.database import get_db
 from backend.app.models.user import User
 from backend.app.schemas.amenity import AmenityCreate, AmenityResponse

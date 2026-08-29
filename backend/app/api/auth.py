@@ -9,7 +9,7 @@ from fastapi import (
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.app.core.security import authorize_request, get_current_user
+from backend.app.core.security import get_current_user
 from backend.app.core.supabase import supabase
 from backend.app.db.database import get_db
 

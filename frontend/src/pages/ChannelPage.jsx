@@ -21,6 +21,7 @@ import Avatar from '../components/common/Avatar';
 import Loader from '../components/common/Loader';
 import Modal from '../components/common/Modal';
 import Badge from '../components/common/Badge';
+import ChannelRouteMap from '../components/channel/ChannelRouteMap';
 
 export const ChannelPage = ({ isAdminView = false }) => {
   const { id } = useParams();
@@ -1173,41 +1174,13 @@ loading="lazy"
 
             {/* -------------------- TAB 3: ROUTE MAP -------------------- */}
             {activeTab === 'map' && (
-              <div className="bg-white border border-[#dfbfbc]/30 rounded-3xl p-6 sm:p-10 text-center max-w-2xl w-full mx-auto shadow-sm">
-                <div className="w-20 h-20 mx-auto mb-4 bg-[#fbf2ed] rounded-full flex items-center justify-center text-4xl text-[#a13f09] shadow-inner border border-[#dfbfbc]/30">
-                  <span className="material-symbols-outlined text-[36px]" data-weight="fill">map</span>
-                </div>
-                <h3 className="font-headline-md text-xl font-bold text-[#1f1b18]">{t('channelPage.map.title')}</h3>
-                <p className="font-body-md text-xs sm:text-sm text-[#58413f] mt-2 max-w-md mx-auto leading-relaxed">
-                  {t('channelPage.map.desc')}
-                </p>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-6 max-w-lg mx-auto">
-                  <div className="p-3 bg-[#fbf2ed] rounded-xl text-center border border-[#dfbfbc]/30">
-                    <span className="text-lg">🏕️</span>
-                    <p className="font-label-sm text-[11px] font-bold text-[#58413f] mt-1">{t('channelPage.map.nightHalts')}</p>
-                  </div>
-                  <div className="p-3 bg-[#fbf2ed] rounded-xl text-center border border-[#dfbfbc]/30">
-                    <span className="text-lg">🍲</span>
-                    <p className="font-label-sm text-[11px] font-bold text-[#58413f] mt-1">{t('channelPage.map.annachhatra')}</p>
-                  </div>
-                  <div className="p-3 bg-[#fbf2ed] rounded-xl text-center border border-[#dfbfbc]/30">
-                    <span className="text-lg">🚑</span>
-                    <p className="font-label-sm text-[11px] font-bold text-[#58413f] mt-1">{t('channelPage.map.medical')}</p>
-                  </div>
-                  <div className="p-3 bg-[#fbf2ed] rounded-xl text-center border border-[#dfbfbc]/30">
-                    <span className="text-lg">💧</span>
-                    <p className="font-label-sm text-[11px] font-bold text-[#58413f] mt-1">{t('channelPage.map.waterTanks')}</p>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={() => navigate('/map')}
-                  className="!bg-[#6a020a] hover:!bg-[#8b1e1e] text-white font-label-md text-xs font-bold !px-6 !py-3 rounded-xl shadow-sm inline-flex items-center gap-2 cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[18px]">near_me</span>
-                  {t('channelPage.map.openMap')}
-                </Button>
+              <div className="w-full h-full -m-4 md:-m-6">
+                <ChannelRouteMap
+                  channelId={id}
+                  channelName={channel.name}
+                  isOwner={isOwner}
+                  userToken={localStorage.getItem('access_token')}
+                />
               </div>
             )}
 
