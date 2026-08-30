@@ -73,20 +73,24 @@ class ModerationService:
         url = "https://api.vettly.dev/v1/check"
         payload: Dict[str, Any] = {}
 
+        policy_id = os.getenv("VETTLY_POLICY_ID", "default")
         if content_type == "text":
             text_val = content if isinstance(content, str) else json.dumps(content)
             payload = {
+                "policyId": policy_id,
                 "content": text_val,
                 "contentType": "text",
             }
         elif content_type in ["image", "video", "short"]:
             # For media content, pass media reference/URL
             payload = {
+                "policyId": policy_id,
                 "content": content if isinstance(content, dict) else {"url": str(content)},
                 "contentType": "image" if content_type == "image" else "video",
             }
         else:
             payload = {
+                "policyId": policy_id,
                 "content": str(content),
                 "contentType": "text"
             }

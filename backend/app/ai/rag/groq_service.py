@@ -11,6 +11,7 @@ Topic filter:
 """
 
 import os
+import httpx
 from groq import Groq
 
 # ── Groq client ───────────────────────────────────────────────────────────────
@@ -23,7 +24,7 @@ def get_groq_client() -> Groq:
         key = os.getenv("GROQ_API_KEY")
         if not key:
             raise RuntimeError("GROQ_API_KEY is not set in .env")
-        _client = Groq(api_key=key)
+        _client = Groq(api_key=key, http_client=httpx.Client())
     return _client
 
 
@@ -129,7 +130,7 @@ def groq_chat(query: str, history: list[dict] | None = None) -> dict:
         messages.append({"role": "user", "content": query})
 
         completion = client.chat.completions.create(
-            model="compound-beta",
+            model="groq/compound-mini",
             messages=messages,
             temperature=0.4,
             max_tokens=600,
