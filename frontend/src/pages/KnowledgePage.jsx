@@ -18,9 +18,11 @@ import { SuggestChangeModal } from '../components/knowledge/SuggestChangeModal';
 
 const normalizeKnowledgeItem = (item) => ({
   ...item,
-  contentType: item.content_type,
-  vernacularTitle: item.vernacular_title,
-  fileUrl: item.file_url,
+  contentType: item.content_type || item.contentType,
+  vernacularTitle: item.vernacular_title || item.vernacularTitle,
+  fileUrl: item.file_url || item.fileUrl,
+  extractedText: item.extracted_text || item.extractedText,
+  transcription: item.transcription || item.transcript,
   reviewStatus: item.verified ? 'reviewed' : item.status,
   updatedDate: item.updated_at
     ? new Date(item.updated_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -28,7 +30,7 @@ const normalizeKnowledgeItem = (item) => ({
   sourcesCount: Array.isArray(item.sources) ? item.sources.length : 0,
   contributorsCount: item.contributors_count || 0,
   categories: Array.isArray(item.categories) ? item.categories : [],
-  quickFacts: item.quick_facts || {},
+  quickFacts: item.quick_facts || item.quickFacts || {},
   sections: Array.isArray(item.sections) ? item.sections : [],
   sources: Array.isArray(item.sources) ? item.sources : [],
 });
@@ -83,6 +85,16 @@ export const KnowledgePage = () => {
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 
+  // Debounced search query to prevent rapid API calls on typing
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   // Fetch real content from backend API when filters change
   useEffect(() => {
     const fetchContent = async () => {
@@ -91,8 +103,8 @@ export const KnowledgePage = () => {
         setError(null);
 
         const params = {};
-        if (searchQuery) {
-          params.search = searchQuery; // ✅ Maps to FastAPI backend query parameter 'search'
+        if (debouncedSearchQuery) {
+          params.search = debouncedSearchQuery; // ✅ Maps to FastAPI backend query parameter 'search'
         }
         if (selectedContentType && selectedContentType !== 'all') {
           // ✅ Safely map legacy 'article' to 'text' to prevent backend errors
@@ -120,7 +132,7 @@ export const KnowledgePage = () => {
     };
 
     fetchContent();
-  }, [searchQuery, selectedContentType, selectedCategories]);
+  }, [debouncedSearchQuery, selectedContentType, selectedCategories]);
 
   const toggleCategory = (catId) => {
     setSelectedCategories(prev =>

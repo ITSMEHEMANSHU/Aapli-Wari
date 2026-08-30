@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from backend.app.core.supabase import supabase
 from backend.app.db.database import get_db
 from backend.app.models.user import User
+from backend.app.services.cache_service import cache_get, cache_set
 
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -18,7 +19,10 @@ def get_current_user_optional(
 ) -> User | None:
     if credentials is None:
         return None
-    return get_current_user(credentials=credentials, db=db)
+    try:
+        return get_current_user(credentials=credentials, db=db)
+    except HTTPException:
+        return None
 
 
 def get_current_user(
@@ -34,19 +38,31 @@ def get_current_user(
             detail="Authentication required",
         )
 
-    try:
-        response = supabase.auth.get_user(
-            credentials.credentials
-        )
-        auth_user = response.user
+    token = credentials.credentials
+    cache_key = f"auth_token:{token}"
+    cached_user_id = cache_get(cache_key)
 
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-        )
+    user_id = None
+    if cached_user_id:
+        try:
+            user_id = UUID(str(cached_user_id))
+        except Exception:
+            user_id = None
 
-    if auth_user is None:
+    if not user_id:
+        try:
+            response = supabase.auth.get_user(token)
+            auth_user = response.user
+            if auth_user and auth_user.id:
+                user_id = UUID(str(auth_user.id))
+                cache_set(cache_key, str(user_id), ttl=180)
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token",
+            )
+
+    if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication token",
@@ -54,7 +70,7 @@ def get_current_user(
 
     user = db.get(
         User,
-        UUID(str(auth_user.id)),
+        user_id,
     )
 
     if user is None:

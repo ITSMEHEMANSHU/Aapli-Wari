@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { FaCheckCircle, FaEdit, FaHistory, FaBookOpen, FaChevronRight } from 'react-icons/fa';
 import { CATEGORIES } from './data/knowledgeData';
 
@@ -28,33 +28,66 @@ export const KnowledgeDetail = ({ item, onOpenSuggest, onOpenHistory }) => {
         <h1 className="text-3xl font-serif font-bold text-[#2B1B12] mb-1">{item.title}</h1>
         <div className="text-lg font-serif text-[#DD6B35] mb-4">{item.vernacularTitle}</div>
 
-        {item.fileUrl && item.contentType === 'image' && (
-          <img
-loading="lazy" 
-            src={item.fileUrl}
-            alt={item.title}
-            className="w-full max-h-[500px] object-contain rounded-lg bg-[#FDF8F0] mb-6"
-          />
+        {item.fileUrl && (item.contentType === 'image' || item.contentType === 'manuscript' || item.contentType === 'pdf') && (
+          <div className="mb-6">
+            <img
+              loading="lazy" 
+              src={item.fileUrl}
+              alt={item.title}
+              className="w-full max-h-[500px] object-contain rounded-lg bg-[#FDF8F0] mb-4 border border-[#E8D9C3]"
+            />
+          </div>
         )}
         {item.fileUrl && item.contentType === 'video' && (
           <div className="mb-6">
             <video
               src={item.fileUrl}
               controls
-              className="w-full max-h-[500px] rounded-lg bg-black"
+              className="w-full max-h-[500px] rounded-lg bg-black mb-4"
             />
-            {item.transcription && (
-              <div className="mt-4 rounded-lg border border-[#E8D9C3] bg-[#FDF8F0] p-4">
-                <p className="mb-1 text-sm font-semibold text-[#8B3A3A]">Transcript</p>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#4A392E]">
-                  {item.transcription}
-                </p>
-              </div>
-            )}
           </div>
         )}
         {item.fileUrl && item.contentType === 'audio' && (
-          <audio src={item.fileUrl} controls className="w-full mb-6" />
+          <div className="mb-6 bg-[#FDF8F0] p-4 rounded-2xl border border-[#E8D9C3]">
+            <p className="text-xs font-bold text-[#DD6B35] mb-2 flex items-center gap-1.5">
+              🔊 Audio Recitation / Abhang
+            </p>
+            <audio src={item.fileUrl} controls className="w-full" />
+          </div>
+        )}
+
+        {/* 📜 OCR Extracted Manuscript Text Section */}
+        {item.extractedText && (
+          <div className="mb-6 rounded-2xl border border-[#E8D9C3] bg-[#FFFDF9] p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-[#F5EAD9]">
+              <span className="text-xs font-bold text-[#8B3A3A] uppercase tracking-wider flex items-center gap-1.5">
+                📜 OCR Digitized Manuscript / Image Text
+              </span>
+              <span className="text-[10px] font-semibold bg-[#DD6B35]/10 text-[#DD6B35] px-2 py-0.5 rounded-full border border-[#DD6B35]/20">
+                Devanagari OCR
+              </span>
+            </div>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#2B1B12] font-serif bg-[#FDF8F0] p-4 rounded-xl border border-[#E8D9C3]/60">
+              {item.extractedText}
+            </p>
+          </div>
+        )}
+
+        {/* 🎙️ Speech-to-Text Audio / Video Transcript Section */}
+        {item.transcription && (
+          <div className="mb-6 rounded-2xl border border-[#E8D9C3] bg-[#FFFDF9] p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-[#F5EAD9]">
+              <span className="text-xs font-bold text-[#8B3A3A] uppercase tracking-wider flex items-center gap-1.5">
+                🎙️ Speech-to-Text (STT) Transcript
+              </span>
+              <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">
+                Whisper Audio STT
+              </span>
+            </div>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#4A392E] bg-[#FDF8F0] p-4 rounded-xl border border-[#E8D9C3]/60">
+              {item.transcription}
+            </p>
+          </div>
         )}
 
         <div className="flex flex-wrap items-center gap-4 text-xs text-[#4A392E]/70 py-2.5 border-y border-[#F5EAD9] mb-6">
