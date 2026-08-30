@@ -171,14 +171,6 @@ export const KnowledgePage = () => {
               toggleCategory={toggleCategory}
               clearCategories={() => setSelectedCategories([])}
             />
-            <ContentTypeFilter
-              selectedContentType={selectedContentType}
-              setSelectedContentType={setSelectedContentType}
-              reviewFilter={reviewFilter}
-              setReviewFilter={setReviewFilter}
-              sortBy={sortBy}
-              setSortBy={setSortBy}
-            />
 
             {loading ? (
               <div className="flex justify-center items-center py-20">

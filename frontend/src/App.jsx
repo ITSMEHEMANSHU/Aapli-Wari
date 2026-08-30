@@ -8,6 +8,7 @@ import { ROUTES } from './routes';
 // Layout
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
+import ChatWidget from './components/common/ChatWidget';
 
 const Home = lazy(() => import('./pages/Home'));
 const Explore = lazy(() => import('./pages/Explore'));
@@ -91,6 +92,7 @@ function AppShell() {
         </Suspense>
       </main>
       {!isAdminRoute && !loading && <Footer />}
+      {!isAdminRoute && <ChatWidget />}
     </div>
   );
 }

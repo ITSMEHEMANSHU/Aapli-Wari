@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import Depends, FastAPI
 from backend.app.api import admin
 from backend.app.api import auth

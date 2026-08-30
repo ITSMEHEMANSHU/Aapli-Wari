@@ -233,7 +233,10 @@ export const api = {
   // =========================
   // Chat
   // =========================
-  chat: (data) => request('/chat/', { method: 'POST', body: JSON.stringify(data) }),
+  chat: ({ query, history = [] }) => request('/chat', {
+    method: 'POST',
+    body: JSON.stringify({ query, history }),
+  }),
 
   // =========================
   // Shorts (Aapla Theva)
