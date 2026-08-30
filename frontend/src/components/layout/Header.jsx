@@ -1,89 +1,187 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+﻿import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { FaSearch, FaUser, FaSignOutAlt, FaPlus, FaFlag, FaChevronDown } from 'react-icons/fa';
+import { FaChevronDown, FaBars, FaTimes } from 'react-icons/fa';
+import { IMAGES, cloudinaryUrl } from '../../utils/cloudinary';
+import { useLanguage } from '../../context/LanguageContext';
+import { ROUTES } from '../../routes';
 
 export const Header = () => {
-  const { user, logout } = useAuth();
+  const { user, isAuthenticated, canContribute } = useAuth();
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
+  const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { language, setLanguage, t, languageOptions } = useLanguage();
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+  const navLinks = [
+    { label: t('nav.explore') || 'Explore', to: ROUTES.EXPLORE },
+    { label: t('nav.map') || 'Map', to: ROUTES.MAP },
+    { label: t('nav.channels') || 'Channels', to: ROUTES.CHANNELS },
+    { label: 'Aapla Theva', to: ROUTES.KNOWLEDGE_PAGE },
+  ];
+
+  const isContributorUser = typeof canContribute === 'function' ? canContribute() : false;
+  const isKnowledgePage = location.pathname.toLowerCase() === ROUTES.KNOWLEDGE_PAGE.toLowerCase();
+
+  const handleContributeClick = (e) => {
+    if (e?.preventDefault) e.preventDefault();
+
+    if (!isAuthenticated) {
+      navigate(ROUTES.LOGIN, { state: { from: ROUTES.CONTRIBUTE } });
+      return;
     }
+
+    navigate(`${ROUTES.KNOWLEDGE_PAGE}?tab=contribute`);
   };
 
-  return (
-    <header className="bg-[#FBF5EC]/95 backdrop-blur-sm border-b border-[#E8D9C3] sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center gap-6">
+  // const navLinks = [
+  //   { label: t('nav.explore'), to: '/explore' },
+  //   { label: t('nav.map'), to: '/map' },
+  //   { label: t('nav.channels'), to: '/channels' },
+  //   { label: 'AI Help', to: '/ai-assistant' },
+  //   {
+  //     label: user && !isContributorUser ? 'Become a Contributor' : t('nav.contribute'),
+  //     to: '/contribute',
+  //     onClick: handleContributeClick,
+  //   },
+  //   { label: 'Shorts', to: '/shorts' },
+  // ];
 
-        <Link to="/" className="flex items-center gap-2">
-          <FaFlag className="text-[#DD6B35] text-2xl" />
+  return (
+    <header className="sticky top-0 z-50 w-full bg-[#F9F1E5] border-b border-[#E8D9C3] shadow-xs backdrop-blur-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 min-h-[64px] flex items-center justify-between gap-2 sm:gap-3">
+        <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
+          <img
+loading="lazy" 
+            src={cloudinaryUrl(IMAGES.logo, { width: 40, height: 40, crop: 'fit', quality: 'auto' })}
+            alt="Aapli Wari Logo"
+            className="w-10 h-10 object-contain rounded-[12px]"
+          />
           <div className="leading-tight">
-            <div className="text-xl font-serif font-bold text-[#2B1B12]">Aapli Wari</div>
-            <div className="text-[10px] text-[#DD6B35] font-medium tracking-wide">Aapla Theva</div>
+            <div className="text-xl font-bold text-[#E87A1E] group-hover:text-[#C8521A] transition-colors tracking-tight">
+              Aapli Wari
+            </div>
           </div>
         </Link>
 
-        <nav className="hidden md:flex gap-6 text-sm font-medium text-[#4A392E]">
-          <Link to="/explore" className="hover:text-[#DD6B35] transition">Explore</Link>
-          <Link to="/channels" className="hover:text-[#DD6B35] transition">Channels</Link>
-          <Link to="/ai-assistant" className="hover:text-[#DD6B35] transition">AI Help</Link>
-          <Link to="/shorts" className="hover:text-[#DD6B35] transition">Shorts</Link>
+        <nav className="hidden lg:flex items-center gap-1 text-sm font-semibold text-[#2D1B0E] flex-1 justify-center min-w-0">
+          {navLinks.map((link) => (
+            <Link
+              key={link.label}
+              to={link.to}
+              onClick={link.onClick}
+              className="px-3 py-2 rounded-full hover:text-[#E87A1E] hover:bg-orange-50 transition-all duration-200 whitespace-nowrap"
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
 
-        <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-xs ml-auto">
-          <div className="flex w-full">
-            <input
-              type="text"
-              placeholder="Search Wari..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 px-3 py-2 rounded-l-lg border border-[#E8D9C3] bg-white text-[#2B1B12] text-sm placeholder-[#4A392E]/50 focus:outline-none focus:ring-2 focus:ring-[#DD6B35]/40"
-            />
-            <button type="submit" className="bg-[#F5EADA] border border-l-0 border-[#E8D9C3] px-3 rounded-r-lg hover:bg-[#EDE0CB] transition text-[#DD6B35]">
-              <FaSearch size={14} />
-            </button>
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto flex-wrap justify-end">
+          <div className="hidden md:flex items-center relative shrink-0">
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              aria-label="Select language"
+              className="appearance-none bg-transparent text-sm text-[#5A4030] border border-[#D4A373]/40 rounded-full px-3 py-1.5 pr-7 hover:bg-[#D4A373]/10 transition-colors focus:outline-none"
+            >
+              {languageOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <FaChevronDown size={9} className="pointer-events-none absolute right-2.5 text-[#5A4030]" />
           </div>
-        </form>
 
-        <button className="hidden md:flex items-center gap-1 text-sm text-[#4A392E] border border-[#E8D9C3] rounded-lg px-3 py-2 hover:bg-[#F5EADA] transition">
-          मराठी <FaChevronDown size={10} />
-        </button>
-
-        <div className="flex items-center gap-3">
           {user ? (
             <>
-              <Link to="/contribute">
-                <button className="bg-[#DD6B35] hover:bg-[#C85A28] text-white px-3 py-2 rounded-lg transition text-sm flex items-center gap-1">
-                  <FaPlus size={12} /> Contribute
+              {!isKnowledgePage && (
+                <button
+                  onClick={handleContributeClick}
+                  className="hidden sm:inline-flex bg-[#E87A1E] hover:bg-[#C8521A] text-white px-3.5 py-2 rounded-xl transition text-sm font-bold shadow-sm active:scale-95 cursor-pointer whitespace-nowrap max-w-[180px] text-center leading-tight"
+                >
+                  {isContributorUser ? t('nav.contribute') : 'Become a Contributor'}
                 </button>
+              )}
+              <Link
+                to="/profile"
+                className="w-9 h-9 bg-[#2D1B0E] border border-[#2D1B0E] rounded-full flex items-center justify-center text-white font-bold text-sm hover:bg-[#E87A1E] hover:border-[#E87A1E] transition shadow-2xs"
+              >
+                {user.name?.[0]?.toUpperCase() || 'U'}
               </Link>
-              <Link to="/profile" className="w-9 h-9 bg-[#DD6B35] rounded-full flex items-center justify-center text-white font-bold hover:bg-[#C85A28] transition">
-                {user.name?.[0] || 'U'}
-              </Link>
-              <button onClick={logout} className="text-[#4A392E] hover:text-[#DD6B35] transition">
-                <FaSignOutAlt size={16} />
-              </button>
             </>
           ) : (
-            <>
-              <Link to="/login">
-                <button className="border border-[#2B1B12]/20 text-[#2B1B12] px-4 py-2 rounded-lg hover:bg-[#F5EADA] transition text-sm">
-                  Login
-                </button>
-              </Link>
-              <Link to="/register">
-                <button className="bg-[#DD6B35] hover:bg-[#C85A28] text-white px-4 py-2 rounded-lg transition text-sm font-medium">
-                  Join Aapli Wari
-                </button>
-              </Link>
-            </>
+            <Link to="/register">
+              <button className="bg-[#E87A1E] hover:bg-[#C8521A] text-white px-4.5 py-2 rounded-xl transition text-sm font-bold whitespace-nowrap shadow-sm active:scale-95 cursor-pointer">
+                {t('nav.join')}
+              </button>
+            </Link>
           )}
+
+          <button
+            className="lg:hidden p-2 rounded-xl text-[#2D1B0E] hover:bg-orange-50 transition focus:outline-none cursor-pointer"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? <FaTimes size={18} /> : <FaBars size={18} />}
+          </button>
         </div>
       </div>
+
+      {mobileOpen && (
+        <div className="lg:hidden bg-[#FDF8F0] border-t border-[#E8D9C3] px-5 py-4 flex flex-col gap-1.5 shadow-xl animate-in fade-in duration-150 text-[#2D1B0E]">
+          {navLinks.map((link) =>
+            link.label === 'Contribute' || link.label === t('nav.contribute') ? (
+              <button
+                key={link.label}
+                onClick={(e) => {
+                  if (link.onClick) link.onClick(e);
+                  setMobileOpen(false);
+                }}
+                className="text-left text-sm font-semibold text-[#2D1B0E] hover:text-[#E87A1E] hover:bg-orange-50 px-3.5 py-2.5 rounded-xl transition"
+              >
+                {link.label}
+              </button>
+            ) : (
+              <Link
+                key={link.label}
+                to={link.to}
+                onClick={() => setMobileOpen(false)}
+                className="text-sm font-semibold text-[#2D1B0E] hover:text-[#E87A1E] hover:bg-orange-50 px-3.5 py-2.5 rounded-xl transition"
+              >
+                {link.label}
+              </Link>
+            )
+          )}
+
+          <div className="pt-2 border-t border-[#D4A373]/30 flex gap-3 items-center">
+            <div className="relative shrink-0">
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                aria-label="Select language"
+                className="appearance-none bg-transparent text-sm text-[#5A4030] border border-[#D4A373]/40 rounded-full px-3 py-1.5 pr-7 focus:outline-none"
+              >
+                {languageOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <FaChevronDown size={9} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#5A4030]" />
+            </div>
+
+            {!user && (
+              <Link to="/register" onClick={() => setMobileOpen(false)} className="w-full">
+                <button className="w-full bg-[#E87A1E] hover:bg-[#C8521A] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition">
+                  {t('nav.join')}
+                </button>
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 };

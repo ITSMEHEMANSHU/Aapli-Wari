@@ -16,7 +16,7 @@ export const Badge = ({
   };
 
   return (
-    <span className={`px-2 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1 ${variantClasses[variant]} ${className}`}>
+    <span className={`px-2 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1 ${className || variantClasses[variant]}`}>
       {children}
     </span>
   );

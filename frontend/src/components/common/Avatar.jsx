@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 export const Avatar = ({
   src,
@@ -24,7 +24,7 @@ export const Avatar = ({
   return (
     <div className={`${sizeClasses[size]} rounded-full bg-primary flex items-center justify-center text-white font-bold overflow-hidden ${className}`}>
       {src ? (
-        <img src={src} alt={alt} className="w-full h-full object-cover" />
+        <img loading="lazy" src={src} alt={alt} className="w-full h-full object-cover" />
       ) : (
         <span className={textSize[size]}>{fallback || 'U'}</span>
       )}
