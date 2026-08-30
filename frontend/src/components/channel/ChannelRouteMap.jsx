@@ -89,7 +89,7 @@ function distanceKm(lat1, lng1, lat2, lng2) {
 }
 
 const NEARBY_RADIUS_KM = 10;
-const WS_BASE = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+const WS_BASE = import.meta.env.VITE_WS_URL || (import.meta.env.DEV ? 'ws://localhost:8000' : 'wss://aapli-wari-backend.onrender.com');
 
 // ─────────────────────────────────────────────────────────────────────────────
 

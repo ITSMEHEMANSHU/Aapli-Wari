@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : 'https://aapli-wari-backend.onrender.com');
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('access_token');
