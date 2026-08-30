@@ -213,6 +213,7 @@ def upload_content(
         status=content.status
     )
 
+
 @router.get("/{content_id}", response_model=ContentResponse)
 def get_content(
     content_id: UUID,

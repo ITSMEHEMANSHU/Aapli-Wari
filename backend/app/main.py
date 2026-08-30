@@ -11,6 +11,7 @@ from backend.app.api import engagement
 from backend.app.api import chat
 from backend.app.api import shorts
 from backend.app.api import amenities
+from backend.app.api import store
 from backend.app.api import ws_tracking
 from backend.app.api import admin
 
@@ -52,6 +53,7 @@ app.include_router(shorts.router)
 
 
 app.include_router(amenities.router)
+app.include_router(store.router)
 app.include_router(ws_tracking.router)
 
 

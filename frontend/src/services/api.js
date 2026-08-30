@@ -250,6 +250,16 @@ export const api = {
   getPalkhiLocations: () => request('/palkhis/live-locations'),
 
   // =========================
+  // Store
+  // =========================
+  storeList: (params = {}) => request('/store', { params }),
+  storeCreate: (body) => request('/store', { method: 'POST', body }),
+  storeUpdate: (id, body) => request(`/store/${id}`, { method: 'PUT', body }),
+  storeDelete: (id) => request(`/store/${id}`, { method: 'DELETE' }),
+  storeMarkSold: (id) => request(`/store/${id}/mark_sold`, { method: 'POST' }),
+  storeReport: (id, body) => request(`/store/${id}/report`, { method: 'POST', body }),
+
+  // =========================
   // Search
   // =========================
   search: (params) => request('/search/', { params }),

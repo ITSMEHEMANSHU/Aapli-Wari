@@ -153,8 +153,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const canContribute = () => {
+    if (!user) return false;
     if (isAdmin()) return true;
-    return user?.role === 'contributor' || user?.role === 'palkhi_pramukh' || isContributorApplied();
+    return user?.role === 'contributor' || user?.role === 'palkhi_pramukh' || Boolean(user?.is_contributor);
   };
 
   const canCreateChannel = () => {
