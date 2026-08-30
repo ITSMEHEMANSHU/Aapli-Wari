@@ -63,6 +63,15 @@ def create_comment(content_id: UUID, comment_data: CommentCreate, db: Session = 
     text = comment_data.text.strip()
     if not text:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Comment text cannot be blank")
+
+    # ── Comment Moderation via Vettly ──
+    from backend.app.services.moderation import check_vettly
+    mod_res = check_vettly(text, content_type="text", user_id=str(current_user.id))
+    if not mod_res.get("allowed", True):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"टिप्पणी सुरक्षा नियमांचे उल्लंघन करते / Comment Moderation Alert: {mod_res.get('reason', 'Offensive content detected.')}"
+        )
     if comment_data.parent_id:
         parent = db.get(Comment, comment_data.parent_id)
         if parent is None:

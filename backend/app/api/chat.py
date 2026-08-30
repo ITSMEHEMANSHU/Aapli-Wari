@@ -31,6 +31,15 @@ def chat(request: ChatRequest):
     if not request.query or len(request.query.strip()) < 2:
         raise HTTPException(status_code=400, detail="Query too short.")
 
+    # ── Check query for toxic / offensive content via Vettly ──
+    from backend.app.services.moderation import check_vettly
+    vettly_res = check_vettly(request.query, content_type="text")
+    if not vettly_res.get("allowed", True):
+        return ChatResponse(
+            answer="तुमचा प्रश्न सुरक्षा आणि समुदाय मार्गदर्शक तत्त्वांचे उल्लंघन करतो. कृपया आदरपूर्वक आणि वारीशी संबंधित प्रश्न विचारा. / Your question violates safety guidelines. Please ask respectfully and about Pandharpur Wari.",
+            sources=[]
+        )
+
     # Convert history to plain dicts for groq_service
     history = (
         [{"role": m.role, "content": m.content} for m in request.history]

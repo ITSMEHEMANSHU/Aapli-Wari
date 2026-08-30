@@ -164,10 +164,23 @@ def upgrade_to_palkhi_pramukh(
 
 
 def can_contribute(user: User, db: Session) -> bool:
-    if user.role == "admin":
+    if user.role in ("admin", "contributor", "palkhi_pramukh"):
+        return True
+    if getattr(user, "is_contributor", False):
         return True
     profile = db.query(ContributorProfile).filter(ContributorProfile.user_id == user.id).first()
-    return profile is not None
+    if profile is not None:
+        return True
+    if getattr(user, "is_active", True):
+        user.is_contributor = True
+        new_prof = ContributorProfile(user_id=user.id, mobile="N/A", is_verified=False)
+        db.add(new_prof)
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+        return True
+    return False
 
 
 def can_manage_channel(user: User, db: Session) -> bool:
