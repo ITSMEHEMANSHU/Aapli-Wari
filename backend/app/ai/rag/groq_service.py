@@ -82,6 +82,15 @@ WARI_KEYWORDS = {
     "दिंडी", "चंद्रभागा",
 }
 
+GREETING_WORDS = {
+    "hi", "hello", "hey", "namaste", "namaskar", "pranam", "jai hari",
+    "ram krishna hari", "good morning", "good evening", "good afternoon",
+    "नमस्कार", "नमस्ते", "जय हरी", "राम कृष्ण हरी", "माउली", "माऊली",
+    "जय विठ्ठल", "जय हरी विठ्ठल", "हॅलो", "हाय", "hi ai", "hello ai",
+    "hey ai", "who are you", "what is your name", "तुमचे नाव काय आहे",
+    "how are you", "कसे आहात"
+}
+
 
 def _is_wari_related(query: str) -> bool:
     """Quick keyword check — if any Wari keyword found, allow the API call."""
@@ -89,7 +98,26 @@ def _is_wari_related(query: str) -> bool:
     return any(kw in q for kw in WARI_KEYWORDS)
 
 
-# ── Off-topic static response ─────────────────────────────────────────────────
+def _is_greeting(query: str) -> bool:
+    """Check if the user is sending a standard greeting or introduction."""
+    q = query.lower().strip().strip(".!?,")
+    if q in GREETING_WORDS:
+        return True
+    return any(q.startswith(g) for g in [
+        "hi ", "hello ", "hey ", "namaste ", "namaskar ", "good morning",
+        "good evening", "राम कृष्ण हरी", "जय हरी", "नमस्कार"
+    ])
+
+
+# ── Off-topic & Greeting static responses ───────────────────────────────────
+GREETING_RESPONSE = (
+    "राम कृष्ण हरी! 🙏 जय हरी विठ्ठल!\n\n"
+    "Welcome! I am your Aapli Wari AI assistant. "
+    "I can help you with information about the Pandharpur Wari pilgrimage, "
+    "Palkhi routes, Varkari traditions, saints (Sant Dnyaneshwar, Sant Tukaram), and abhangs.\n\n"
+    "How can I assist you today?"
+)
+
 OFF_TOPIC_RESPONSE = (
     "मला माफ करा — मी फक्त पंढरपूर वारी, पालखी, वारकरी परंपरा आणि संत साहित्याबद्दलच "
     "माहिती देऊ शकतो.\n\n"
@@ -112,9 +140,11 @@ def groq_chat(query: str, history: list[dict] | None = None) -> dict:
     if not query:
         return {"answer": "Please type a question.", "sources": []}
 
-    # Fast off-topic pre-filter — short queries that have no Wari keywords
-    # are almost certainly off-topic, but we still let the LLM decide
-    # for ambiguous longer questions (the system prompt handles it).
+    # 1. Greetings / Intro check
+    if _is_greeting(query):
+        return {"answer": GREETING_RESPONSE, "sources": []}
+
+    # 2. Fast off-topic pre-filter — short queries that have no Wari keywords
     if len(query) < 80 and not _is_wari_related(query):
         return {"answer": OFF_TOPIC_RESPONSE, "sources": []}
 

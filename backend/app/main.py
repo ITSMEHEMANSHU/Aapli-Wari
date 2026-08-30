@@ -7,6 +7,7 @@ from backend.app.api import auth
 from backend.app.api import rbac_test
 from backend.app.api import users
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from backend.app.api import channels
 from backend.app.api import content
 from backend.app.api import search
@@ -24,6 +25,9 @@ app = FastAPI(
     title="Aapli Wari API",
     version="1.0.0",
 )
+
+# GZip compression middleware for ultra-fast response transfers
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 app.add_middleware(
     CORSMiddleware,

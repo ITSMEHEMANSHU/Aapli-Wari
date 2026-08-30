@@ -158,13 +158,33 @@ const AIAssistant = () => {
     }
   }, [input, loading, messages]);
 
+  /* ── Load initial history from Supabase ── */
+  useEffect(() => {
+    const loadStoredHistory = async () => {
+      try {
+        const data = await api.getChatHistory();
+        if (Array.isArray(data?.history) && data.history.length > 0) {
+          setMessages(data.history);
+        }
+      } catch (err) {
+        console.warn('Failed to load chat history:', err);
+      }
+    };
+    loadStoredHistory();
+  }, []);
+
   const handleSubmit = (e) => { e.preventDefault(); send(); };
 
-  const clearChat = () => {
+  const clearChat = async () => {
     setMessages([]);
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
     inputRef.current?.focus();
+    try {
+      await api.clearChatHistory();
+    } catch (err) {
+      console.warn('Failed to clear stored chat history:', err);
+    }
   };
 
   return (
