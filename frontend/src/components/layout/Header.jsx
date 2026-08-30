@@ -40,37 +40,30 @@ export const Header = () => {
     }
   };
 
-  // const navLinks = [
-  //   { label: t('nav.explore'), to: '/explore' },
-  //   { label: t('nav.map'), to: '/map' },
-  //   { label: t('nav.channels'), to: '/channels' },
-  //   { label: 'AI Help', to: '/ai-assistant' },
-  //   {
-  //     label: user && !isContributorUser ? 'Become a Contributor' : t('nav.contribute'),
-  //     to: '/contribute',
-  //     onClick: handleContributeClick,
-  //   },
-  //   { label: 'Shorts', to: '/shorts' },
-  // ];
-
   return (
     <header className="sticky top-0 z-50 w-full bg-[#F9F1E5] border-b border-[#E8D9C3] shadow-xs backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 min-h-[64px] flex items-center justify-between gap-2 sm:gap-3">
-        <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
-          <img
-loading="lazy" 
-            src={cloudinaryUrl(IMAGES.logo, { width: 40, height: 40, crop: 'fit', quality: 'auto' })}
-            alt="Aapli Wari Logo"
-            className="w-10 h-10 object-contain rounded-[12px]"
-          />
-          <div className="leading-tight">
-            <div className="text-xl font-bold text-[#E87A1E] group-hover:text-[#C8521A] transition-colors tracking-tight">
-              Aapli Wari
+      {/* 3-Column Grid guarantees locked positioning for logo, nav, and actions */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 min-h-[64px] grid grid-cols-3 items-center gap-2">
+        
+        {/* ── Left Column: Logo ── */}
+        <div className="flex items-center justify-start">
+          <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
+            <img
+              loading="lazy" 
+              src={cloudinaryUrl(IMAGES.logo, { width: 40, height: 40, crop: 'fit', quality: 'auto' })}
+              alt="Aapli Wari Logo"
+              className="w-10 h-10 object-contain rounded-[12px]"
+            />
+            <div className="leading-tight hidden sm:block">
+              <div className="text-xl font-bold text-[#E87A1E] group-hover:text-[#C8521A] transition-colors tracking-tight">
+                Aapli Wari
+              </div>
             </div>
-          </div>
-        </Link>
+          </Link>
+        </div>
 
-        <nav className="hidden lg:flex items-center gap-1 text-sm font-semibold text-[#2D1B0E] flex-1 justify-center min-w-0">
+        {/* ── Center Column: Desktop Navigation Links (Locked in center) ── */}
+        <nav className="hidden lg:flex items-center justify-center gap-1 text-sm font-semibold text-[#2D1B0E] w-full">
           {navLinks.map((link) => (
             <Link
               key={link.label}
@@ -83,7 +76,8 @@ loading="lazy"
           ))}
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto flex-wrap justify-end">
+        {/* ── Right Column: Actions / User Profile / Language ── */}
+        <div className="flex items-center justify-end gap-2 sm:gap-3 shrink-0">
           <div className="hidden md:flex items-center relative shrink-0">
             <select
               value={language}
@@ -112,7 +106,7 @@ loading="lazy"
               )}
               <Link
                 to="/profile"
-                className="w-9 h-9 bg-[#2D1B0E] border border-[#2D1B0E] rounded-full flex items-center justify-center text-white font-bold text-sm hover:bg-[#E87A1E] hover:border-[#E87A1E] transition shadow-2xs"
+                className="w-9 h-9 bg-[#2D1B0E] border border-[#2D1B0E] rounded-full flex items-center justify-center text-white font-bold text-sm hover:bg-[#E87A1E] hover:border-[#E87A1E] transition shadow-2xs shrink-0"
               >
                 {user.name?.[0]?.toUpperCase() || 'U'}
               </Link>
@@ -126,7 +120,7 @@ loading="lazy"
           )}
 
           <button
-            className="lg:hidden p-2 rounded-xl text-[#2D1B0E] hover:bg-orange-50 transition focus:outline-none cursor-pointer"
+            className="lg:hidden p-2 rounded-xl text-[#2D1B0E] hover:bg-orange-50 transition focus:outline-none cursor-pointer shrink-0"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
           >
@@ -135,6 +129,7 @@ loading="lazy"
         </div>
       </div>
 
+      {/* ── Mobile Menu Dropdown ── */}
       {mobileOpen && (
         <div className="lg:hidden bg-[#FDF8F0] border-t border-[#E8D9C3] px-5 py-4 flex flex-col gap-1.5 shadow-xl animate-in fade-in duration-150 text-[#2D1B0E]">
           {navLinks.map((link) =>

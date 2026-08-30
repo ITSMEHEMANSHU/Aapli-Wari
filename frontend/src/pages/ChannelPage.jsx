@@ -15,6 +15,21 @@ import {
   FiSettings,
   FiStar,
   FiPaperclip,
+  FiSearch,
+  FiHome,
+  FiMapPin,
+  FiCalendar,
+  FiTag,
+  FiPhone,
+  FiMessageCircle,
+  FiInfo,
+  FiUsers,
+  FiBookmark,
+  FiSend,
+  FiImage,
+  FiPlus,
+  FiBell,
+  FiUser,
 } from 'react-icons/fi';
 import Button from '../components/common/Button';
 import Avatar from '../components/common/Avatar';
@@ -53,7 +68,7 @@ export const ChannelPage = ({ isAdminView = false }) => {
   const [showEmergencyBanner, setShowEmergencyBanner] = useState(true);
 
   // Tab & View States
-  const [activeTab, setActiveTab] = useState('chat'); // 'announcements' | 'chat' | 'map' | 'info'
+  const [activeTab, setActiveTab] = useState('announcements');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchBar, setShowSearchBar] = useState(false);
 
@@ -481,34 +496,33 @@ export const ChannelPage = ({ isAdminView = false }) => {
   const hasEmergencyContact = Boolean(channel?.emergency_contact_name || channel?.emergency_contact_phone);
 
   const TABS = useMemo(() => [
-    { id: 'announcements', label: t('channelPage.tabs.announcements'), icon: 'campaign' },
-    // { id: 'chat', label: t('channelPage.tabs.chat'), icon: 'forum' },
-    { id: 'map', label: t('channelPage.tabs.map'), icon: 'map' },
-    { id: 'info', label: t('channelPage.tabs.info'), icon: 'info' },
+    { id: 'announcements', label: t('channelPage.tabs.announcements'), icon: '📢' },
+    { id: 'map', label: t('channelPage.tabs.map'), icon: '📍' },
+    { id: 'info', label: t('channelPage.tabs.info'), icon: 'ℹ️' },
   ], [language]);
 
-  if (loading) {
-    return (
-      <div className="flex flex-col justify-center items-center min-h-[70vh] gap-3 bg-[#FBF5EC]">
-        <Loader size="lg" />
-        <p className="font-body-md text-sm font-medium text-[#6a020a] animate-pulse">Loading Aapli Wari Channel...</p>
-      </div>
-    );
-  }
+if (loading) {
+  return (
+    <div className="flex flex-col justify-center items-center min-h-[70vh] gap-4 bg-[#FEFCF8] font-['Poppins',sans-serif]">
+      <div className="w-12 h-12 rounded-full border-4 border-[#E87A1E] border-t-transparent animate-spin"></div>
+      <p className="font-body-md text-sm font-medium text-[#2F1B12]">Loading Channel...</p>
+    </div>
+  );
+}
 
   if (!channel) {
     return (
-      <div className="text-center py-20 px-4 max-w-md mx-auto bg-[#FBF5EC]">
-        <div className="w-16 h-16 mx-auto mb-4 bg-orange-100 rounded-full flex items-center justify-center text-2xl text-[#a13f09]">
+      <div className="text-center py-20 px-4 max-w-md mx-auto bg-[#FEFCF8] font-['Poppins',sans-serif]">
+        <div className="w-20 h-20 mx-auto mb-4 bg-[#E87A1E]/10 rounded-full flex items-center justify-center text-3xl shadow-lg">
           🔍
         </div>
-        <h2 className="font-headline-md text-2xl font-bold text-[#1f1b18]">Channel Not Found</h2>
-        <p className="font-body-md text-sm text-[#58413f] mt-2 mb-6">
+        <h2 className="font-headline-md text-2xl font-bold text-[#2F1B12]">Channel Not Found</h2>
+        <p className="font-body-md text-sm text-[#2F1B12]/70 mt-2 mb-6">
           The palkhi channel you are looking for might have been moved or removed.
         </p>
         <Link
           to="/channels"
-          className="inline-flex items-center px-4 py-2.5 bg-[#6a020a] text-white rounded-xl font-label-md font-semibold shadow-sm hover:bg-[#8b1e1e] transition-colors"
+          className="inline-flex items-center px-6 py-3 bg-[#E87A1E] text-white rounded-2xl font-label-md font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
         >
           <FiArrowLeft className="mr-2" /> Back to all channels
         </Link>
@@ -517,201 +531,202 @@ export const ChannelPage = ({ isAdminView = false }) => {
   }
 
   return (
-    <div className="bg-[#FBF5EC] text-[#1f1b18] min-h-[calc(100vh-4rem)] flex flex-col justify-between font-body-md overflow-hidden">
+    <div className="bg-[#FEFCF8] text-[#2F1B12] min-h-[calc(100vh-4rem)] flex flex-col justify-between font-['Poppins',sans-serif] overflow-hidden">
       {/* App Container */}
-      <div className="flex w-full h-[calc(100vh-4rem)] max-w-[1600px] mx-auto bg-[#fff8f5] relative shadow-[0_0_40px_rgba(106,2,10,0.05)] overflow-hidden">
+      <div className="flex w-full h-[calc(100vh-4rem)] max-w-[1600px] mx-auto bg-white relative shadow-[0_0_60px_rgba(47,27,18,0.08)] overflow-hidden rounded-2xl my-2">
 
         {/* ========================================================================= */}
-        {/* LEFT COLUMN: Fixed, Scrollable (Hidden on Mobile, 30% on Desktop)         */}
+        {/* LEFT COLUMN: Fixed, Scrollable (Hidden on Mobile, 26% on Desktop)         */}
         {/* ========================================================================= */}
-        <aside className="hidden md:flex flex-col w-[30%] h-full bg-[#fbf2ed] border-r border-[#dfbfbc]/30 relative overflow-y-auto no-scrollbar pb-6 z-10 shadow-[4px_0_12px_rgba(106,2,10,0.02)] shrink-0">
-          
-          {/* Header / Profile Section */}
-          <div className="px-6 pt-6 pb-4 flex flex-col items-center text-center">
-            <div className="relative mb-3">
-              {channel.avatar_url || channel.image_url ? (
-                <img
-loading="lazy" 
-                  alt={channel.name}
-                  className="w-28 h-28 lg:w-32 lg:h-32 rounded-full object-cover border-2 border-[#a13f09] p-1 bg-white shadow-sm"
-                  src={channel.avatar_url || channel.image_url}
-                />
-              ) : (
-                <div className="w-28 h-28 lg:w-32 lg:h-32 rounded-full bg-gradient-to-br from-[#6a020a] to-[#a13f09] flex items-center justify-center text-white text-4xl lg:text-5xl font-headline-lg font-bold shadow-md border-2 border-[#a13f09] p-1 ring-2 ring-white">
-                  {channel.name?.[0]?.toUpperCase() || 'W'}
-                </div>
-              )}
+<aside className="hidden md:flex flex-col w-[26%] h-full bg-[#FEFCF8] border-r border-[#E87A1E]/15 relative overflow-y-auto no-scrollbar pb-4 z-10 shadow-[4px_0_20px_rgba(47,27,18,0.06)] shrink-0">
+  
+  {/* Header / Profile Section */}
+  <div className="px-5 pt-6 pb-4 flex flex-col items-center text-center bg-gradient-to-b from-[#E87A1E]/5 to-transparent">
+    <div className="relative mb-3">
+      {channel.avatar_url || channel.image_url ? (
+        <img
+          loading="lazy" 
+          alt={channel.name}
+          className="w-24 h-24 rounded-full object-cover border-2 border-[#E87A1E] p-1 bg-white shadow-md"
+          src={channel.avatar_url || channel.image_url}
+        />
+      ) : (
+        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#E87A1E] to-[#DD6B35] flex items-center justify-center text-white text-4xl font-headline-lg font-bold shadow-md border-2 border-[#E87A1E] p-1 ring-2 ring-[#E87A1E]/20">
+          {channel.name?.[0]?.toUpperCase() || 'W'}
+        </div>
+      )}
 
-              {channel.status === 'active' && (
-                <div className="absolute bottom-1 right-1 bg-white text-[#6a020a] rounded-full p-1 shadow-sm border border-[#dfbfbc] flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[16px]" data-weight="fill">verified</span>
-                </div>
-              )}
-            </div>
+    </div>
 
-            <h1 className="font-headline-lg text-2xl lg:text-[28px] text-[#6a020a] mb-1 font-bold leading-tight">
-              {channel.name}
-            </h1>
+    <h1 className="font-headline-lg text-2xl lg:text-3xl text-[#2F1B12] mb-0.5 font-bold leading-tight">
+      {channel.name}
+    </h1>
 
-            <p className="font-body-md text-sm text-[#58413f] flex items-center justify-center gap-1.5 font-medium">
-              <span className="material-symbols-outlined text-[18px] text-[#a13f09]">groups</span>
-              <span>{t('channelPage.pramukh')} {channel.owner_name || channel.created_by_name || 'Sant Tukaram Palkhi'}</span>
-            </p>
+    <p className="font-body-md text-sm text-[#2F1B12]/75 flex items-center justify-center gap-1.5 font-medium">
+      <FiUser className="text-[#E87A1E]" size={14} />
+      <span>{t('channelPage.pramukh')} {channel.owner_name || channel.created_by_name || 'Sant Tukaram Palkhi'}</span>
+    </p>
 
-            <div className="mt-2 bg-[#efe6e2] px-3 py-1 rounded-full inline-flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#a13f09]"></span>
-              <span className="font-label-sm text-[11px] text-[#58413f] uppercase tracking-wider font-semibold">
-                Live Route
-              </span>
-            </div>
-          </div>
+    <div className="mt-2.5 bg-[#E87A1E]/10 px-3 py-1 rounded-full inline-flex items-center gap-1.5 shadow-sm border border-[#E87A1E]/20">
+      <span className="w-2 h-2 rounded-full bg-[#E87A1E] animate-pulse"></span>
+      <span className="font-label-sm text-xs text-[#E87A1E] uppercase tracking-wider font-bold">
+        Live Route
+      </span>
+    </div>
+  </div>
 
-          {/* Follower Stats Card */}
-          <div className="px-6 pb-4">
-            <div className="flex justify-between bg-white rounded-xl p-3 shadow-[0_2px_8px_rgba(106,2,10,0.03)] border border-[#dfbfbc]/20">
-              <div className="text-center flex-1">
-                <div className="font-headline-md text-xl lg:text-2xl text-[#6a020a] font-bold">
-                  {followersCount >= 1000 ? `${(followersCount / 1000).toFixed(1)}K` : followersCount}
-                </div>
-                <div className="font-label-sm text-xs text-[#58413f]">{t('channelPage.followers')}</div>
-              </div>
-              <div className="w-[1px] bg-[#dfbfbc]/50"></div>
-              <div className="text-center flex-1">
-                <div className="font-headline-md text-xl lg:text-2xl text-[#6a020a] font-bold">
-                  {contributors.length}
-                </div>
-                <div className="font-label-sm text-xs text-[#58413f]">Varkaris</div>
-              </div>
-            </div>
-          </div>
+  {/* Follower Stats Card */}
+  <div className="px-5 pb-3">
+    <div className="flex justify-between bg-[#FAF6F0] rounded-xl p-3 shadow-sm border border-[#E87A1E]/15">
+      <div className="text-center flex-1">
+        <div className="font-headline-md text-2xl text-[#2F1B12] font-bold">
+          {followersCount >= 1000 ? `${(followersCount / 1000).toFixed(1)}K` : followersCount}
+        </div>
+        <div className="font-label-sm text-xs text-[#2F1B12]/60 flex items-center justify-center gap-1 mt-0.5 font-medium">
+          <FiUsers size={10} /> {t('channelPage.followers')}
+        </div>
+      </div>
+      <div className="w-px bg-gradient-to-b from-transparent via-[#E87A1E]/20 to-transparent mx-1"></div>
+      <div className="text-center flex-1">
+        <div className="font-headline-md text-2xl text-[#2F1B12] font-bold">
+          {contributors.length}
+        </div>
+        <div className="font-label-sm text-xs text-[#2F1B12]/60 flex items-center justify-center gap-1 mt-0.5 font-medium">
+          <FiUsers size={10} /> Varkaris
+        </div>
+      </div>
+    </div>
+  </div>
 
-          {/* Main Action Buttons */}
-          <div className="px-6 pb-5 flex flex-col gap-2.5 border-b border-[#dfbfbc]/30">
-            {isOwner ? (
-              <div className="flex flex-col gap-2">
-                <div className="py-1.5 px-3 rounded-xl text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200 text-center flex items-center justify-center gap-1.5">
-                  <FiStar size={11} className="text-amber-500" /> {t('channelPage.youAreOwner')}
-                </div>
-                <Link
-                  to={`/channel/${id}/manage`}
-                  className="w-full bg-[#6a020a] text-white font-label-md text-sm py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-[#8b1e1e] transition-colors shadow-sm font-semibold"
-                >
-                  <span className="material-symbols-outlined text-[18px]">settings</span>
-                  {t('channelPage.manageChannel')}
-                </Link>
-              </div>
-            ) : adminView ? (
-              <div className="py-2.5 px-4 rounded-xl text-xs font-bold bg-[#FDF8F0] text-[#6a020a] border border-[#dfbfbc] text-center shadow-sm">
-                {t('channelPage.adminViewOnly')}
-              </div>
-            ) : (
+  {/* Main Action Buttons */}
+  <div className="px-5 pb-4 flex flex-col gap-2 border-b border-[#E87A1E]/10">
+    {isOwner ? (
+      <div className="flex flex-col gap-1.5">
+        <div className="py-1.5 px-3 rounded-lg text-xs font-bold bg-[#E87A1E]/10 text-[#E87A1E] border border-[#E87A1E]/20 text-center flex items-center justify-center gap-1.5">
+          <FiStar size={12} className="text-[#E87A1E]" /> {t('channelPage.youAreOwner')}
+        </div>
+        <Link
+          to={`/channel/${id}/manage`}
+          className="w-full bg-[#E87A1E] text-white font-label-md text-sm py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-[#d06b1a] shadow-sm hover:shadow-md transition-all duration-300 font-bold"
+        >
+          <FiSettings size={14} />
+          {t('channelPage.manageChannel')}
+        </Link>
+      </div>
+    ) : adminView ? (
+      <div className="py-2 px-3 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 text-center shadow-sm">
+        {t('channelPage.adminViewOnly')}
+      </div>
+    ) : (
+      <button
+        onClick={handleFollowToggle}
+        disabled={followLoading}
+        className={`w-full font-label-md text-sm py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 shadow-sm font-bold cursor-pointer ${
+          isFollowing
+            ? 'bg-[#FAF6F0] text-[#2F1B12] border border-[#E87A1E]/30 hover:bg-[#F2ECE4]'
+            : 'bg-[#E87A1E] text-white hover:bg-[#d06b1a] hover:shadow-md active:scale-[0.98]'
+        }`}
+      >
+        {followLoading ? (
+          <Loader size="xs" />
+        ) : isFollowing ? (
+          <>
+            <FiCheckCircle size={14} className="text-emerald-600" />
+            {t('channelPage.following')}
+          </>
+        ) : (
+          <>
+            <FiHeart size={14} className="fill-current" />
+            {t('channelPage.followChannel')}
+          </>
+        )}
+      </button>
+    )}
+
+    <button
+      onClick={() => setActiveTab('map')}
+      className="w-full border border-[#E87A1E]/30 text-[#2F1B12] bg-white font-label-md text-sm py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-[#E87A1E]/5 hover:border-[#E87A1E]/50 transition-all duration-300 font-bold cursor-pointer shadow-sm"
+    >
+      <FiMapPin size={14} className="text-[#E87A1E]" />
+      {t('channelPage.tabs.map')}
+    </button>
+  </div>
+
+  {/* Emergency Helpline Card */}
+<div className="px-5 py-3 mt-1">
+    <div className="bg-[#ffffff] border border-[#321D13] rounded-xl p-3 relative overflow-hidden shadow-sm">
+      <div className="absolute top-0 right-0 p-2 opacity-5 pointer-events-none">
+        <span className="material-symbols-outlined text-[60px] text-red-500" data-weight="fill">emergency</span>
+      </div>
+      <div className="flex items-start gap-2.5 mb-2 relative z-10">
+        <div className="bg-[#321D13] text-white p-1.5 rounded-full flex items-center justify-center shadow-md">
+          <FiBell size={16} className="animate-pulse" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between">
+            <h3 className="font-label-md text-sm font-bold text-red-600 truncate">
+              {t('channelPage.emergencyHelpline')}
+            </h3>
+            {canEditEmergencyContact && (
               <button
-                onClick={handleFollowToggle}
-                disabled={followLoading}
-                className={`w-full font-label-md text-sm py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm font-semibold cursor-pointer ${
-                  isFollowing
-                    ? 'bg-[#FBF5EC] text-[#6a020a] border border-[#a13f09]/40 hover:bg-red-50'
-                    : 'bg-[#a13f09] text-white hover:bg-[#8b3506] active:scale-[0.98]'
-                }`}
+                onClick={() => setShowEmergencyModal(true)}
+                className="text-xs font-bold text-red-600 hover:underline cursor-pointer flex items-center gap-0.5 bg-white px-1.5 py-0.5 rounded border border-[#321D13] shadow-2xs"
               >
-                {followLoading ? (
-                  <Loader size="xs" />
-                ) : isFollowing ? (
-                  <>
-                    <span className="material-symbols-outlined text-[18px]" data-weight="fill">volunteer_activism</span>
-                    {t('channelPage.following')}
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-[18px]" data-weight="fill">volunteer_activism</span>
-                    {t('channelPage.followChannel')}
-                  </>
-                )}
+                <FiEdit2 size={10} /> {t('channelPage.edit')}
               </button>
             )}
+          </div>
+          <p className="font-label-sm text-xs text-red-900/60 mt-0.5">Available 24/7 during Yatra</p>
+        </div>
+      </div>
 
+      {hasEmergencyContact ? (
+        <a
+          href={`tel:${channel.emergency_contact_phone}`}
+          className="w-full bg-white text-red-600 border border-[#321D13] font-label-md text-sm py-2 px-2.5 rounded-lg flex items-center justify-center gap-1.5 hover:bg-red-50 transition-all duration-300 shadow-2xs font-bold truncate"
+        >
+          <FiBell size={12} className="animate-pulse" />
+          {channel.emergency_contact_phone} ({channel.emergency_contact_name || 'Medical Team'})
+        </a>
+      ) : (
+        <div className="text-center pt-0.5">
+          <p className="font-label-sm text-xs text-red-900/50 italic mb-1.5">{t('channelPage.noHelpline')}</p>
+          {canEditEmergencyContact && (
             <button
-              onClick={() => setActiveTab('map')}
-              className="w-full border border-[#6a020a] text-[#6a020a] font-label-md text-sm py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-[#6a020a]/5 transition-colors font-semibold cursor-pointer"
+              onClick={() => setShowEmergencyModal(true)}
+              className="w-full bg-white text-red-600 border border-[#321D13] font-label-md text-sm py-1.5 rounded-lg hover:bg-red-50 font-bold transition-all duration-300 cursor-pointer shadow-2xs"
             >
-              <span className="material-symbols-outlined text-[18px]" data-weight="fill">map</span>
-              {t('channelPage.tabs.map')}
+              {t('channelPage.addEmergencyContact')}
             </button>
-          </div>
-
-          {/* Emergency Helpline Card (Prominent) */}
-          <div className="px-6 py-4 mt-2">
-            <div className="bg-[#ba1a1a]/5 border border-[#ba1a1a]/20 rounded-xl p-4 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
-                <span className="material-symbols-outlined text-[64px] text-[#ba1a1a]" data-weight="fill">emergency</span>
-              </div>
-              <div className="flex items-start gap-3 mb-3 relative z-10">
-                <div className="bg-[#ba1a1a] text-white p-1.5 rounded-full flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[20px]" data-weight="fill">medical_services</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-label-md text-sm font-bold text-[#ba1a1a] truncate">
-                      {t('channelPage.emergencyHelpline')}
-                    </h3>
-                    {canEditEmergencyContact && (
-                      <button
-                        onClick={() => setShowEmergencyModal(true)}
-                        className="text-[11px] font-bold text-[#ba1a1a] hover:underline cursor-pointer flex items-center gap-0.5"
-                      >
-                        <FiEdit2 size={10} /> {t('channelPage.edit')}
-                      </button>
-                    )}
-                  </div>
-                  <p className="font-label-sm text-[11px] text-[#ba1a1a]/80">Available 24/7 during Yatra</p>
-                </div>
-              </div>
-
-              {hasEmergencyContact ? (
-                <a
-                  href={`tel:${channel.emergency_contact_phone}`}
-                  className="w-full bg-white text-[#ba1a1a] border border-[#ba1a1a]/20 font-label-md text-xs py-2.5 px-3 rounded-lg flex items-center justify-center gap-2 hover:bg-[#ba1a1a]/5 transition-colors shadow-sm font-bold truncate"
-                >
-                  <span className="material-symbols-outlined text-[18px]">call</span>
-                  {channel.emergency_contact_phone} ({channel.emergency_contact_name || 'Medical Team'})
-                </a>
-              ) : (
-                <div className="text-center pt-1">
-                  <p className="font-label-sm text-xs text-[#58413f]/70 italic mb-2">{t('channelPage.noHelpline')}</p>
-                  {canEditEmergencyContact && (
-                    <button
-                      onClick={() => setShowEmergencyModal(true)}
-                      className="w-full bg-white text-[#ba1a1a] border border-[#ba1a1a]/20 font-label-md text-xs py-2 rounded-lg hover:bg-red-50 font-bold transition-colors cursor-pointer"
-                    >
-                      {t('channelPage.addEmergencyContact')}
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </aside>
+          )}
+        </div>
+      )}
+    </div>
+  </div>
+</aside>
 
         {/* ========================================================================= */}
-        {/* RIGHT COLUMN: Main Chat Area (100% on Mobile, 70% on Desktop)             */}
+        {/* RIGHT COLUMN: Main Chat Area (100% on Mobile, 74% on Desktop)             */}
         {/* ========================================================================= */}
-        <main className="flex-1 flex flex-col h-full relative bg-[#ffffff] overflow-hidden">
+        <main className="flex-1 flex flex-col h-full relative bg-[#FEFCF8] overflow-hidden">
           
           {/* Emergency Alert Banner (Conditional & Dismissible) */}
           {hasEmergencyContact && showEmergencyBanner && (
-            <div className="bg-[#ba1a1a] text-white px-4 py-2 flex justify-between items-center z-30 shadow-md">
-              <div className="flex items-center gap-2 min-w-0 pr-2">
-                <span className="material-symbols-outlined text-[20px] shrink-0" data-weight="fill">warning</span>
-                <span className="font-label-sm text-xs font-semibold tracking-wide truncate">
+            <div className="bg-[#E87A1E] text-white px-4 py-2.5 flex justify-between items-center z-30 shadow-lg">
+              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                <div className="bg-white/20 rounded-full p-1 animate-pulse">
+                  <FiBell size={14} className="text-white" />
+                </div>
+                <span className="font-label-sm text-sm font-semibold tracking-wide truncate">
                   Helpline: {channel.emergency_contact_name || 'Emergency Team'} ({channel.emergency_contact_phone})
                 </span>
               </div>
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 <a
-                  className="font-label-sm text-xs underline hover:text-white/80 transition-colors font-bold"
+                  className="font-label-sm text-sm bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-lg transition-colors font-bold flex items-center gap-1"
                   href={`tel:${channel.emergency_contact_phone}`}
                 >
-                  Call Help
+                  <FiBell size={11} /> Call Help
                 </a>
                 {canEditEmergencyContact && (
                   <button
@@ -719,7 +734,7 @@ loading="lazy"
                     onClick={() => setShowEmergencyModal(true)}
                     className="text-white/80 hover:text-white transition-colors cursor-pointer"
                   >
-                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                    <FiEdit2 size={14} />
                   </button>
                 )}
                 <button
@@ -727,61 +742,73 @@ loading="lazy"
                   onClick={() => setShowEmergencyBanner(false)}
                   className="text-white/80 hover:text-white transition-colors cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[18px]">close</span>
+                  <FiX size={16} />
                 </button>
               </div>
             </div>
           )}
 
           {/* Top App Bar Header */}
-          <header className="bg-[#fff8f5] border-b border-[#dfbfbc]/40 px-4 py-3 z-20 sticky top-0 flex flex-col w-full shadow-[0_2px_10px_rgba(106,2,10,0.02)]">
+          <header className="bg-white/90 backdrop-blur-md border-b border-[#E87A1E]/10 px-4 py-2.5 z-20 sticky top-0 flex flex-col w-full shadow-sm">
             <div className="flex justify-between items-center w-full">
               {/* Mobile View: Avatar & Title */}
-              <div className="flex items-center gap-3 md:hidden min-w-0">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6a020a] to-[#a13f09] text-white flex items-center justify-center font-headline-md font-bold text-sm shrink-0 border border-[#a13f09]/40">
+              <div className="flex items-center gap-2.5 md:hidden min-w-0">
+                <div className="w-9 h-9 rounded-full bg-[#E87A1E] text-white flex items-center justify-center font-headline-md font-bold text-sm shrink-0 shadow-md">
                   {channel.name?.[0]?.toUpperCase() || 'W'}
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="font-headline-md text-base font-bold text-[#6a020a] leading-tight truncate">
+                  <span className="font-headline-md text-base font-bold text-[#2F1B12] leading-tight truncate">
                     {channel.name}
                   </span>
-                  <span className="font-label-sm text-[11px] text-[#58413f]">Live Community</span>
+                  <span className="font-label-sm text-xs text-[#2F1B12]/60 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Live Community
+                  </span>
                 </div>
               </div>
 
               {/* Desktop View: Title */}
-              <div className="hidden md:flex items-center gap-2">
-                <span className="font-headline-md text-xl font-bold text-[#6a020a]">
+              <div className="hidden md:flex items-center gap-2.5">
+                <span className="font-headline-md text-xl font-bold text-[#2F1B12]">
                   {channel.name}
                 </span>
                 {channel.status === 'active' && (
-                  <span className="material-symbols-outlined text-[#2D6A4F] text-[18px]" data-weight="fill">verified</span>
+                  <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1">
+                    <FiCheckCircle size={11} /> Active
+                  </span>
                 )}
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-1 text-[#6a020a]">
+              <div className="flex items-center gap-0.5 text-[#2F1B12]">
                 <button
                   onClick={() => setShowSearchBar((p) => !p)}
-                  className="p-2 hover:bg-[#efe6e2] rounded-full transition-colors active:scale-95 cursor-pointer"
+                  className="p-2 hover:bg-[#E87A1E]/10 rounded-full transition-all duration-300 active:scale-95 cursor-pointer"
                   title="Search messages"
                 >
-                  <span className="material-symbols-outlined text-[20px]">search</span>
+                  <FiSearch size={16} />
                 </button>
                 <button
                   onClick={() => setShowContributorsModal(true)}
-                  className="p-2 hover:bg-[#efe6e2] rounded-full transition-colors active:scale-95 cursor-pointer"
+                  className="p-2 hover:bg-[#E87A1E]/10 rounded-full transition-all duration-300 active:scale-95 cursor-pointer"
                   title="View Contributors"
                 >
-                  <span className="material-symbols-outlined text-[20px]">groups</span>
+                  <FiUsers size={16} />
+                </button>
+                <button
+                  onClick={() => setShowInfoModal(true)}
+                  className="p-2 hover:bg-[#E87A1E]/10 rounded-full transition-all duration-300 active:scale-95 cursor-pointer hidden md:inline-flex"
+                  title="Channel Info"
+                >
+                  <FiInfo size={16} />
                 </button>
                 {(isOwner || isAdminUser) && !adminView && (
                   <Link
                     to={`/channel/${id}/manage`}
-                    className="p-2 hover:bg-[#efe6e2] rounded-full transition-colors active:scale-95 cursor-pointer"
+                    className="p-2 hover:bg-[#E87A1E]/10 rounded-full transition-all duration-300 active:scale-95 cursor-pointer"
                     title="Channel Settings"
                   >
-                    <span className="material-symbols-outlined text-[20px]">settings</span>
+                    <FiSettings size={16} />
                   </Link>
                 )}
               </div>
@@ -789,45 +816,43 @@ loading="lazy"
 
             {/* Expandable Quick Search Bar */}
             {showSearchBar && (
-              <div className="mt-2.5 flex items-center bg-white border border-[#dfbfbc]/60 rounded-xl px-3 py-1.5 shadow-2xs animate-fade-in">
-                <span className="material-symbols-outlined text-[#58413f] text-[18px] mr-2">search</span>
+              <div className="mt-2.5 flex items-center bg-[#FEFCF8] border-2 border-[#E87A1E]/20 rounded-xl px-3 py-1.5 shadow-inner animate-fade-in">
+                <FiSearch size={14} className="text-[#2F1B12]/50 mr-2.5" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t('channelPage.searchPlaceholder')}
-                  className="w-full bg-transparent text-xs text-[#1f1b18] placeholder:text-gray-400 focus:outline-none font-body-md"
+                  className="w-full bg-transparent text-sm text-[#2F1B12] placeholder:text-[#2F1B12]/40 focus:outline-none font-body-md"
                   autoFocus
                 />
                 {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-[#6a020a]">
+                  <button onClick={() => setSearchQuery('')} className="text-[#2F1B12]/40 hover:text-[#2F1B12] transition-colors">
                     <FiX size={14} />
                   </button>
                 )}
               </div>
             )}
 
-            {/* Navigation Tabs (Announcements, Chat, Map, Info) */}
-            <div className="flex gap-4 overflow-x-auto no-scrollbar w-full mt-2 pt-2 border-t border-[#dfbfbc]/20">
+            {/* Navigation Tabs */}
+            <div className="flex gap-3 overflow-x-auto no-scrollbar w-full mt-2.5 pt-2 border-t border-[#E87A1E]/10">
               {TABS.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`pb-2 font-label-md text-sm transition-colors whitespace-nowrap px-2 flex items-center gap-1.5 cursor-pointer border-b-2 ${
+                    className={`pb-2 font-label-md text-sm transition-all duration-300 whitespace-nowrap px-2.5 flex items-center gap-1.5 cursor-pointer border-b-2 ${
                       isActive
-                        ? 'text-[#a13f09] border-[#a13f09] font-bold'
-                        : 'text-[#58413f] border-transparent hover:text-[#a13f09]'
+                        ? 'text-[#E87A1E] border-[#E87A1E] font-bold'
+                        : 'text-[#2F1B12]/60 border-transparent hover:text-[#E87A1E] hover:border-[#E87A1E]/30'
                     }`}
                   >
-                    <span className="material-symbols-outlined text-[18px]" data-weight={isActive ? 'fill' : undefined}>
-                      {tab.icon}
-                    </span>
-                    <span>{tab.label}</span>
+                    <span className="text-base">{tab.icon}</span>
+                    <span className="text-sm">{tab.label}</span>
                     {tab.id === 'announcements' && announcementPosts.length > 0 && (
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                        isActive ? 'bg-[#a13f09] text-white' : 'bg-[#efe6e2] text-[#6a020a]'
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
+                        isActive ? 'bg-[#E87A1E] text-white' : 'bg-[#E87A1E]/10 text-[#2F1B12]'
                       }`}>
                         {announcementPosts.length}
                       </span>
@@ -839,56 +864,64 @@ loading="lazy"
           </header>
 
           {notice && (
-            <div className={`mx-4 mt-2 rounded-xl border px-3 py-2 text-xs font-semibold ${
+            <div className={`mx-4 mt-2.5 rounded-xl border px-3.5 py-2.5 text-sm font-semibold shadow-sm animate-slide-down ${
               notice.type === 'success'
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                : 'border-red-200 bg-red-50 text-red-700'
+                : notice.type === 'error'
+                ? 'border-red-200 bg-red-50 text-red-700'
+                : 'border-[#E87A1E]/20 bg-[#E87A1E]/5 text-[#2F1B12]'
             }`}>
               {notice.text}
             </div>
           )}
 
           {/* ========================================================================= */}
-          {/* TAB CONTENTS (Independently Scrollable with Chat Canvas Background)        */}
+          {/* TAB CONTENTS (Independently Scrollable)                                  */}
           {/* ========================================================================= */}
-          <div ref={chatCanvasRef} className="flex-1 overflow-y-auto chat-bg p-4 md:p-6 flex flex-col gap-4 relative">
+          <div ref={chatCanvasRef} className="flex-1 overflow-y-auto bg-[#FEFCF8] p-4 md:p-5 flex flex-col gap-4 relative">
             
             {/* -------------------- TAB 1: ANNOUNCEMENTS -------------------- */}
             {activeTab === 'announcements' && (
               <div className="space-y-4 max-w-2xl w-full mx-auto">
                 {/* Post Announcement Form for Pramukh / Owner / Admins */}
                 {canCreateAnnouncement && (
-                  <div className="bg-white border border-[#a13f09]/30 rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="material-symbols-outlined text-[#6a020a] text-[20px]" data-weight="fill">campaign</span>
-                      <h3 className="font-label-md text-xs font-bold uppercase tracking-wider text-[#6a020a]">
+                  <div className="bg-white border-2 border-[#E87A1E]/20 rounded-xl p-4 shadow-lg shadow-[#E87A1E]/5">
+                    <div className="flex items-center gap-2.5 mb-2.5">
+                      <div className="bg-[#E87A1E] text-white p-1.5 rounded-lg">
+                        <FiEdit2 size={14} />
+                      </div>
+                      <h3 className="font-label-md text-sm font-bold uppercase tracking-wider text-[#2F1B12]">
                         {t('channelPage.announcements.postTitle')}
                       </h3>
                     </div>
-                    <form onSubmit={handlePostAnnouncement} className="space-y-3">
+                    <form onSubmit={handlePostAnnouncement} className="space-y-2.5">
                       <textarea
-                        rows={3}
+                        rows={2}
                         placeholder={t('channelPage.announcements.placeholder')}
                         value={newAnnouncement}
                         onChange={(e) => setNewAnnouncement(e.target.value)}
-                        className="w-full p-3 font-body-md text-sm border border-[#dfbfbc]/50 rounded-xl focus:outline-none focus:border-[#6a020a] focus:ring-1 focus:ring-[#6a020a]/20 resize-none bg-[#fff8f5]"
+                        className="w-full p-2.5 font-body-md text-sm border-2 border-[#E87A1E]/15 rounded-lg focus:outline-none focus:border-[#E87A1E] focus:ring-4 focus:ring-[#E87A1E]/10 resize-none bg-[#FEFCF8] transition-all duration-300"
                       />
-                      <div className="flex items-center justify-between gap-3 flex-wrap">
-                        <label className="flex items-center gap-2 font-label-sm text-xs font-semibold text-[#58413f] cursor-pointer select-none">
+                      <div className="flex items-center justify-between gap-2.5 flex-wrap">
+                        <label className="flex items-center gap-1.5 font-label-sm text-sm font-semibold text-[#2F1B12]/70 cursor-pointer select-none">
                           <input
                             type="checkbox"
                             checked={announcementPinned}
                             onChange={(e) => setAnnouncementPinned(e.target.checked)}
-                            className="w-4 h-4 rounded text-[#6a020a] focus:ring-[#6a020a] accent-[#6a020a]"
+                            className="w-3.5 h-3.5 rounded border-[#E87A1E] text-[#E87A1E] focus:ring-[#E87A1E] accent-[#E87A1E]"
                           />
-                          {t('channelPage.announcements.pin')}
+                          <FiBookmark size={12} /> {t('channelPage.announcements.pin')}
                         </label>
                         <Button
                           type="submit"
                           disabled={postingAnnouncement || !newAnnouncement.trim()}
-                          className="!px-4 !py-2 !bg-[#6a020a] hover:!bg-[#8b1e1e] text-white font-label-md text-xs font-bold rounded-xl shadow-xs cursor-pointer"
+                          className="!px-4 !py-1.5 !bg-[#E87A1E] hover:!shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 text-white font-label-md text-sm font-bold rounded-lg shadow-md cursor-pointer"
                         >
-                          {postingAnnouncement ? t('channelPage.announcements.broadcasting') : t('channelPage.announcements.broadcast')}
+                          {postingAnnouncement ? (
+                            <><Loader size="xs" className="inline mr-1.5" /> {t('channelPage.announcements.broadcasting')}</>
+                          ) : (
+                            <><FiSend size={12} className="inline mr-1.5" /> {t('channelPage.announcements.broadcast')}</>
+                          )}
                         </Button>
                       </div>
                     </form>
@@ -897,10 +930,10 @@ loading="lazy"
 
                 {/* Announcements Feed */}
                 {announcementPosts.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-[#dfbfbc] bg-white p-10 text-center">
+                  <div className="rounded-xl border-2 border-dashed border-[#E87A1E]/20 bg-white/80 backdrop-blur-sm p-10 text-center">
                     <div className="text-4xl mb-3">📢</div>
-                    <h3 className="font-headline-md text-base font-bold text-[#1f1b18]">{t('channelPage.announcements.empty')}</h3>
-                    <p className="font-body-md text-xs text-[#58413f] mt-1 max-w-sm mx-auto">
+                    <h3 className="font-headline-md text-base font-bold text-[#2F1B12]">{t('channelPage.announcements.empty')}</h3>
+                    <p className="font-body-md text-sm text-[#2F1B12]/60 mt-1 max-w-sm mx-auto">
                       {t('channelPage.announcements.emptySub')}
                     </p>
                   </div>
@@ -908,50 +941,52 @@ loading="lazy"
                   announcementPosts.map((post) => (
                     <article
                       key={`ann-${post.id}`}
-                      className={`rounded-2xl border p-4 sm:p-5 transition-all shadow-[0_2px_8px_rgba(106,2,10,0.04)] ${
+                      className={`rounded-xl border-2 p-4 sm:p-5 transition-all duration-300 shadow-lg hover:shadow-xl ${
                         post.is_pinned
-                          ? 'bg-[#FFFBF2] border-amber-300 ring-1 ring-amber-200'
-                          : 'bg-white border-[#dfbfbc]/30'
+                          ? 'bg-[#E87A1E]/5 border-[#E87A1E]/30 ring-2 ring-[#E87A1E]/10'
+                          : 'bg-white border-[#E87A1E]/10 hover:border-[#E87A1E]/20'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2 mb-2.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="inline-flex items-center gap-1 rounded-md bg-[#6a020a] px-2.5 py-0.5 font-label-sm text-[10px] font-black uppercase tracking-wider text-white">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-[#E87A1E] px-2.5 py-0.5 font-label-sm text-[10px] font-black uppercase tracking-wider text-white shadow-md">
                             📢 {t('channelPage.announcements.badge')}
                           </span>
                           {post.is_pinned && (
-                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 font-label-sm text-[10px] font-black uppercase tracking-wider text-amber-900">
-                              {t('channelPage.announcements.pinned')}
+                            <span className="inline-flex items-center gap-0.5 rounded-lg bg-[#E87A1E]/10 border border-[#E87A1E]/20 px-2 py-0.5 font-label-sm text-[10px] font-black uppercase tracking-wider text-[#2F1B12]">
+                              <FiBookmark size={9} /> {t('channelPage.announcements.pinned')}
                             </span>
                           )}
                         </div>
-                        <span className="font-label-sm text-[11px] text-[#58413f]/70">{timeAgo(post.created_at)}</span>
+                        <span className="font-label-sm text-xs text-[#2F1B12]/40">{timeAgo(post.created_at)}</span>
                       </div>
 
                       {post.title && post.title !== 'Channel Post' && (
-                        <h4 className="font-headline-md text-base font-bold text-[#1f1b18] mb-1.5">{post.title}</h4>
+                        <h4 className="font-headline-md text-base font-bold text-[#2F1B12] mb-1.5">{post.title}</h4>
                       )}
 
-                      <p className="font-body-md text-sm text-[#1f1b18] whitespace-pre-wrap leading-relaxed">
+                      <p className="font-body-md text-sm text-[#2F1B12] whitespace-pre-wrap leading-relaxed">
                         {post.message || post.description}
                       </p>
 
                       {post.file_url && (
-                        <div className="mt-3 rounded-xl overflow-hidden border border-[#dfbfbc]/30 bg-gray-50">
+                        <div className="mt-3 rounded-lg overflow-hidden border border-[#E87A1E]/10 bg-gray-50 shadow-inner">
                           {post.content_type === 'image' ? (
-                            <img loading="lazy" src={post.file_url} alt={post.title || 'Announcement'} className="w-full max-h-80 object-cover" />
+                            <img loading="lazy" src={post.file_url} alt={post.title || 'Announcement'} className="w-full max-h-72 object-cover" />
                           ) : (
-                            <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="p-3 flex items-center gap-2 font-label-md text-xs font-bold text-[#6a020a]">
-                              <FiFile size={16} /> {t('channelPage.announcements.viewDoc')}
+                            <a href={post.file_url} target="_blank" rel="noopener noreferrer" className="p-2.5 flex items-center gap-1.5 font-label-md text-sm font-bold text-[#E87A1E] hover:bg-gray-100 transition-colors">
+                              <FiFile size={14} /> {t('channelPage.announcements.viewDoc')}
                             </a>
                           )}
                         </div>
                       )}
 
-                      <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between font-label-sm text-xs text-[#58413f]">
+                      <div className="mt-3 pt-2.5 border-t border-[#E87A1E]/10 flex items-center justify-between font-label-sm text-xs text-[#2F1B12]/60">
                         <div className="flex items-center gap-2">
-                          <Avatar size="xs" fallback={post.user?.full_name?.[0] || 'P'} />
-                          <span className="font-bold text-[#1f1b18] text-xs">
+                          <div className="w-6 h-6 rounded-full bg-[#E87A1E] text-white flex items-center justify-center font-bold text-[10px] shadow-md">
+                            {post.user?.full_name?.[0] || 'P'}
+                          </div>
+                          <span className="font-bold text-[#2F1B12] text-xs">
                             {post.user?.full_name || 'Palkhi Pramukh'}
                           </span>
                         </div>
@@ -963,21 +998,21 @@ loading="lazy"
                               <button
                                 type="button"
                                 onClick={() => handleToggleLike(post.id)}
-                                className={`flex items-center gap-1.5 transition-colors cursor-pointer ${
-                                  isLiked ? 'text-red-600 font-bold' : 'hover:text-[#6a020a]'
+                                className={`flex items-center gap-1 transition-all duration-300 cursor-pointer ${
+                                  isLiked ? 'text-red-600 font-bold' : 'hover:text-[#E87A1E]'
                                 }`}
                                 title={isLiked ? 'Unlike announcement' : 'Like announcement'}
                               >
-                                <FiHeart size={13} className={isLiked ? 'fill-red-600 text-red-600' : ''} /> {totalLikes}
+                                <FiHeart size={12} className={`${isLiked ? 'fill-red-600 text-red-600' : ''} transition-all`} /> {totalLikes}
                               </button>
                             );
                           })()}
                           <button
                             type="button"
-                            className="flex items-center gap-1 hover:text-[#6a020a] cursor-pointer"
+                            className="flex items-center gap-1 hover:text-[#E87A1E] transition-colors cursor-pointer"
                             onClick={() => handleSharePost(post)}
                           >
-                            <FiShare2 size={13} /> {t('channelPage.announcements.share')}
+                            <FiShare2 size={12} /> {t('channelPage.announcements.share')}
                           </button>
                         </div>
                       </div>
@@ -987,27 +1022,29 @@ loading="lazy"
               </div>
             )}
 
-            {/* -------------------- TAB 2: WHATSAPP-STYLE CHAT -------------------- */}
+            {/* -------------------- TAB 2: CHAT -------------------- */}
             {activeTab === 'chat' && (
-              <div className="space-y-4 pb-2 max-w-3xl w-full mx-auto flex flex-col">
+              <div className="space-y-3.5 pb-2 max-w-3xl w-full mx-auto flex flex-col">
                 
                 {/* Sticky Date Separator */}
-                <div className="flex justify-center my-1 sticky top-2 z-10">
-                  <span className="bg-white border border-[#dfbfbc]/30 text-[#58413f] font-label-sm text-xs px-3 py-1 rounded-full shadow-sm">
+                <div className="flex justify-center my-0.5 sticky top-2 z-10">
+                  <span className="bg-white/90 backdrop-blur-sm border border-[#E87A1E]/20 text-[#2F1B12]/60 font-label-sm text-xs px-3 py-1 rounded-full shadow-md">
                     Today
                   </span>
                 </div>
 
                 {/* System Message / Pinned Notice Highlight */}
                 {announcementPosts.length > 0 && (
-                  <div className="flex justify-center my-1">
-                    <div className="bg-[#6a020a]/5 border border-[#6a020a]/20 px-4 py-3 rounded-xl flex items-start gap-3 max-w-md shadow-sm">
-                      <span className="material-symbols-outlined text-[#6a020a] text-[20px] mt-0.5" data-weight="fill">info</span>
+                  <div className="flex justify-center my-0.5">
+                    <div className="bg-[#E87A1E]/5 border border-[#E87A1E]/20 px-4 py-3 rounded-xl flex items-start gap-2.5 max-w-md shadow-md">
+                      <div className="bg-[#E87A1E] text-white p-1 rounded-full flex items-center justify-center shadow-md">
+                        <FiInfo size={12} />
+                      </div>
                       <div>
-                        <p className="font-label-md text-xs text-[#6a020a] font-bold">
+                        <p className="font-label-md text-sm text-[#2F1B12] font-bold">
                           {announcementPosts[0]?.title || 'Palkhi Route Notice'}
                         </p>
-                        <p className="font-label-sm text-xs text-[#58413f] mt-0.5 line-clamp-2">
+                        <p className="font-label-sm text-xs text-[#2F1B12]/60 mt-0.5 line-clamp-2">
                           {announcementPosts[0]?.message}
                         </p>
                       </div>
@@ -1017,12 +1054,12 @@ loading="lazy"
 
                 {/* Loading State */}
                 {loadingPosts ? (
-                  <div className="flex justify-center py-10"><Loader size="md" /></div>
+                  <div className="flex justify-center py-8"><Loader size="md" /></div>
                 ) : chatPosts.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-[#dfbfbc] bg-white p-10 text-center">
+                  <div className="rounded-xl border-2 border-dashed border-[#E87A1E]/20 bg-white/80 backdrop-blur-sm p-10 text-center">
                     <div className="text-4xl mb-3">💬</div>
-                    <h3 className="font-headline-md text-base font-bold text-[#1f1b18]">{t('channelPage.chat.emptyTitle')}</h3>
-                    <p className="font-body-md text-xs text-[#58413f] mt-1 max-w-sm mx-auto">
+                    <h3 className="font-headline-md text-base font-bold text-[#2F1B12]">{t('channelPage.chat.emptyTitle')}</h3>
+                    <p className="font-body-md text-sm text-[#2F1B12]/60 mt-1 max-w-sm mx-auto">
                       {t('channelPage.chat.emptySub')}
                     </p>
                   </div>
@@ -1033,75 +1070,75 @@ loading="lazy"
                     const isContributorPost = post.user?.role === 'contributor';
 
                     return isMyPost ? (
-                      /* Self Message (Right Aligned, Warm Peach Tint) */
-                      <div key={post.id} className="flex flex-col items-end self-end max-w-[85%] md:max-w-[70%]">
-                        <div className="bg-[#FFF0E6] border border-[#FFDBCD] p-3 rounded-2xl rounded-tr-none shadow-[0_2px_8px_rgba(161,63,9,0.06)] relative min-w-[120px]">
+                      /* Self Message (Right Aligned) */
+                      <div key={post.id} className="flex flex-col items-end self-end max-w-[85%] md:max-w-[70%] animate-slide-in-right">
+                        <div className="bg-[#E87A1E]/10 border-2 border-[#E87A1E]/20 p-2.5 rounded-2xl rounded-tr-none shadow-lg shadow-[#E87A1E]/5 relative min-w-[100px]">
                           {post.title && post.title !== 'Channel Post' && (
-                            <p className="font-headline-md text-xs font-bold text-[#6a020a] mb-1">
+                            <p className="font-headline-md text-sm font-bold text-[#2F1B12] mb-0.5">
                               {post.title}
                             </p>
                           )}
-                          <p className="font-body-md text-sm text-[#1f1b18] whitespace-pre-wrap leading-relaxed">
+                          <p className="font-body-md text-sm text-[#2F1B12] whitespace-pre-wrap leading-relaxed">
                             {post.description || post.message}
                           </p>
 
                           {post.file_url && (
-                            <div className="mt-2 rounded-xl overflow-hidden border border-[#FFDBCD]">
+                            <div className="mt-1.5 rounded-lg overflow-hidden border border-[#E87A1E]/10 shadow-inner">
                               {post.content_type === 'image' && (
                                 <img
-loading="lazy" 
+                                  loading="lazy" 
                                   src={post.file_url}
                                   alt="Attachment"
-                                  className="w-full max-h-72 object-cover rounded-lg cursor-pointer"
+                                  className="w-full max-h-64 object-cover rounded-lg cursor-pointer transition-transform hover:scale-105"
                                   onClick={() => window.open(post.file_url, '_blank')}
                                 />
                               )}
                               {post.content_type === 'video' && (
-                                <video src={post.file_url} controls className="w-full max-h-72 rounded-lg" />
+                                <video src={post.file_url} controls className="w-full max-h-64 rounded-lg" />
                               )}
                               {post.content_type === 'pdf' && (
                                 <a
                                   href={post.file_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex items-center gap-2 p-2 rounded-lg text-xs font-semibold bg-white text-[#6a020a]"
+                                  className="flex items-center gap-1.5 p-1.5 rounded-lg text-sm font-semibold bg-white text-[#E87A1E] hover:bg-gray-50 transition-colors"
                                 >
-                                  <FiFile size={16} /> Attached Document (PDF)
+                                  <FiFile size={14} /> Attached Document (PDF)
                                 </a>
                               )}
                             </div>
                           )}
 
-                          <div className="flex justify-end items-center mt-1.5 gap-1 text-[11px] text-[#58413f]/80">
+                          <div className="flex justify-end items-center mt-1 gap-1 text-xs text-[#2F1B12]/40">
                             <span>{timeAgo(post.created_at)}</span>
-                            <span className="material-symbols-outlined text-[14px] text-[#a13f09]" data-weight="fill">done_all</span>
+                            <FiCheckCircle size={12} className="text-[#E87A1E]" />
                           </div>
                         </div>
                       </div>
                     ) : (
-                      /* Other User / Admin Message (Left Aligned, Pure White Card) */
-                      <div key={post.id} className="flex flex-col items-start max-w-[85%] md:max-w-[70%]">
+                      /* Other User / Admin Message (Left Aligned) */
+                      <div key={post.id} className="flex flex-col items-start max-w-[85%] md:max-w-[70%] animate-slide-in-left">
                         <div className="flex items-end gap-1.5 mb-1">
-                          <div className="w-7 h-7 rounded-full bg-[#efe6e2] text-[#6a020a] flex items-center justify-center font-bold text-xs shadow-sm border border-[#dfbfbc]/40">
+                          <div className="w-7 h-7 rounded-full bg-[#E87A1E] text-white flex items-center justify-center font-bold text-xs shadow-md border-2 border-white">
                             {post.user?.full_name?.[0]?.toUpperCase() || post.user?.username?.[0]?.toUpperCase() || 'W'}
                           </div>
-                          <span className="font-label-sm text-xs font-semibold text-[#6a020a]">
+                          <span className="font-label-sm text-sm font-semibold text-[#2F1B12]">
                             {post.user?.full_name || post.user?.username || t('channelPage.chat.warkari')}
                           </span>
                           {isPostOwner ? (
-                            <span className="bg-[#6a020a]/10 text-[#6a020a] font-label-sm text-[10px] px-2 py-[1px] rounded-full uppercase tracking-wider font-bold">
+                            <span className="bg-[#E87A1E] text-white font-label-sm text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold shadow-sm">
                               {t('channelPage.chat.pramukh')}
                             </span>
                           ) : isContributorPost ? (
-                            <span className="bg-emerald-100 text-emerald-800 font-label-sm text-[10px] px-2 py-[1px] rounded-full uppercase tracking-wider font-bold">
+                            <span className="bg-emerald-600 text-white font-label-sm text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold shadow-sm">
                               {t('channelPage.chat.sevak')}
                             </span>
                           ) : null}
                         </div>
 
-                        <div className="bg-white border border-[#dfbfbc]/20 p-3 rounded-2xl rounded-tl-none shadow-[0_2px_8px_rgba(106,2,10,0.04)] ml-8 min-w-[140px]">
+                        <div className="bg-white border-2 border-[#E87A1E]/10 p-2.5 rounded-2xl rounded-tl-none shadow-lg shadow-[#2F1B12]/5 ml-8 min-w-[120px] hover:shadow-xl transition-shadow duration-300">
                           {post.title && post.title !== 'Channel Post' && (
-                            <p className="font-headline-md text-xs font-bold text-[#6a020a] mb-1">
+                            <p className="font-headline-md text-sm font-bold text-[#2F1B12] mb-0.5">
                               {post.title}
                             </p>
                           )}
@@ -1109,16 +1146,16 @@ loading="lazy"
                           {/* Image Thumbnail if attached */}
                           {post.file_url && post.content_type === 'image' && (
                             <img
-loading="lazy" 
+                              loading="lazy" 
                               src={post.file_url}
                               alt="Attachment"
-                              className="w-full max-h-64 object-cover rounded-xl mb-2 border border-[#dfbfbc]/20 cursor-pointer"
+                              className="w-full max-h-56 object-cover rounded-lg mb-1.5 border border-[#E87A1E]/10 cursor-pointer transition-transform hover:scale-105"
                               onClick={() => window.open(post.file_url, '_blank')}
                             />
                           )}
 
                           {post.file_url && post.content_type === 'video' && (
-                            <video src={post.file_url} controls className="w-full max-h-64 rounded-xl mb-2" />
+                            <video src={post.file_url} controls className="w-full max-h-56 rounded-lg mb-1.5" />
                           )}
 
                           {post.file_url && post.content_type === 'pdf' && (
@@ -1126,17 +1163,17 @@ loading="lazy"
                               href={post.file_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-2 p-2 rounded-lg text-xs font-semibold bg-[#fbf2ed] text-[#6a020a] mb-2"
+                              className="flex items-center gap-1.5 p-1.5 rounded-lg text-sm font-semibold bg-[#FEFCF8] text-[#E87A1E] mb-1.5 hover:bg-[#E87A1E]/5 transition-colors"
                             >
-                              <FiFile size={16} /> Attached Document (PDF)
+                              <FiFile size={14} /> Attached Document (PDF)
                             </a>
                           )}
 
-                          <p className="font-body-md text-sm text-[#1f1b18] whitespace-pre-wrap leading-relaxed">
+                          <p className="font-body-md text-sm text-[#2F1B12] whitespace-pre-wrap leading-relaxed">
                             {post.description || post.message}
                           </p>
 
-                          <div className="flex justify-between items-center mt-2 pt-1 border-t border-gray-50 text-[11px] text-[#58413f]">
+                          <div className="flex justify-between items-center mt-1.5 pt-1 border-t border-[#E87A1E]/10 text-xs text-[#2F1B12]/60">
                             <div className="flex items-center gap-2.5">
                               {(() => {
                                 const isLiked = Boolean(likedPostIds[post.id]);
@@ -1145,23 +1182,23 @@ loading="lazy"
                                   <button
                                     type="button"
                                     onClick={() => handleToggleLike(post.id)}
-                                    className={`flex items-center gap-1 transition-colors cursor-pointer ${
-                                      isLiked ? 'text-red-600 font-bold' : 'hover:text-[#6a020a]'
+                                    className={`flex items-center gap-1 transition-all duration-300 cursor-pointer ${
+                                      isLiked ? 'text-red-600 font-bold' : 'hover:text-[#E87A1E]'
                                     }`}
                                   >
-                                    <FiHeart size={12} className={isLiked ? 'fill-red-600 text-red-600' : ''} /> {totalLikes}
+                                    <FiHeart size={11} className={`${isLiked ? 'fill-red-600 text-red-600' : ''} transition-all`} /> {totalLikes}
                                   </button>
                                 );
                               })()}
                               <button
                                 type="button"
-                                className="hover:text-[#6a020a] font-medium cursor-pointer"
+                                className="hover:text-[#E87A1E] font-medium transition-colors cursor-pointer"
                                 onClick={() => setReplyToPost(post)}
                               >
-                                {t('channelPage.chat.reply')}
+                                <FiMessageCircle size={11} className="inline mr-0.5" /> {t('channelPage.chat.reply')}
                               </button>
                             </div>
-                            <span className="text-[11px] text-[#58413f]/70">{timeAgo(post.created_at)}</span>
+                            <span className="text-xs text-[#2F1B12]/40">{timeAgo(post.created_at)}</span>
                           </div>
                         </div>
                       </div>
@@ -1174,7 +1211,7 @@ loading="lazy"
 
             {/* -------------------- TAB 3: ROUTE MAP -------------------- */}
             {activeTab === 'map' && (
-              <div className="w-full h-full -m-4 md:-m-6">
+              <div className="w-full h-full -m-4 md:-m-5">
                 <ChannelRouteMap
                   channelId={id}
                   channelName={channel.name}
@@ -1186,66 +1223,85 @@ loading="lazy"
 
             {/* -------------------- TAB 4: ABOUT & INFO -------------------- */}
             {activeTab === 'info' && (
-              <div className="space-y-4 max-w-2xl w-full mx-auto">
-                <div className="bg-white border border-[#dfbfbc]/30 rounded-2xl p-5 shadow-[0_2px_8px_rgba(106,2,10,0.03)]">
-                  <h3 className="font-headline-md text-sm font-bold text-[#6a020a] mb-2 uppercase tracking-wider">
-                    {t('channelPage.info.aboutTitle')}
+              <div className="space-y-3.5 max-w-2xl w-full mx-auto">
+                <div className="bg-white border-2 border-[#E87A1E]/10 rounded-xl p-5 shadow-lg shadow-[#2F1B12]/5">
+                  <h3 className="font-headline-md text-sm font-bold text-[#2F1B12] mb-2 uppercase tracking-wider flex items-center gap-1.5">
+                    <FiInfo size={14} /> {t('channelPage.info.aboutTitle')}
                   </h3>
-                  <p className="font-body-md text-sm text-[#1f1b18] leading-relaxed">
+                  <p className="font-body-md text-sm text-[#2F1B12] leading-relaxed">
                     {channel.description || t('channelPage.info.aboutDefault')}
                   </p>
                 </div>
 
                 {/* Emergency Contact detail card */}
-                <div className="bg-[#ba1a1a]/5 border border-[#ba1a1a]/20 rounded-2xl p-5 shadow-2xs">
+                <div className="bg-[#E87A1E]/5 border-2 border-[#E87A1E]/15 rounded-xl p-5 shadow-lg shadow-[#E87A1E]/5">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-label-md text-xs font-bold uppercase tracking-wider text-[#ba1a1a] flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[18px]" data-weight="fill">medical_services</span>
+                    <h3 className="font-label-md text-sm font-bold uppercase tracking-wider text-[#E87A1E] flex items-center gap-1.5">
+                      <div className="bg-[#E87A1E] text-white p-1 rounded-full shadow-md">
+                        <FiBell size={12} />
+                      </div>
                       {t('channelPage.info.helplineTitle')}
                     </h3>
                     {canEditEmergencyContact && (
                       <button
                         onClick={() => setShowEmergencyModal(true)}
-                        className="text-xs font-bold text-[#ba1a1a] underline cursor-pointer"
+                        className="text-xs font-bold text-[#E87A1E] underline hover:no-underline transition-colors cursor-pointer"
                       >
-                        {t('channelPage.info.editHelpline')}
+                        <FiEdit2 size={10} className="inline mr-0.5" /> {t('channelPage.info.editHelpline')}
                       </button>
                     )}
                   </div>
-                  <div className="space-y-2 font-body-md text-sm text-[#1f1b18]">
-                    <p><span className="font-semibold text-[#58413f]">{t('channelPage.contactPerson')}</span> {channel.emergency_contact_name || t('channelPage.notSpecified')}</p>
-                    <p>
-                      <span className="font-semibold text-[#58413f]">{t('channelPage.helplinePhone')}</span>{' '}
-                      {channel.emergency_contact_phone ? (
-                        <a href={`tel:${channel.emergency_contact_phone}`} className="text-[#ba1a1a] font-bold underline">
-                          {channel.emergency_contact_phone}
-                        </a>
-                      ) : t('channelPage.notSpecified')}
-                    </p>
-                    <p><span className="font-semibold text-[#58413f]">{t('channelPage.role')}</span> {channel.emergency_contact_role || 'Pramukh / Seva Head'}</p>
+                  <div className="space-y-2 font-body-md text-sm text-[#2F1B12]">
+                    <div className="flex items-start gap-1.5">
+                      <FiUser size={12} className="text-[#2F1B12]/50 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-[#2F1B12]/70">{t('channelPage.contactPerson')}</span>{' '}
+                        <span className="font-medium">{channel.emergency_contact_name || t('channelPage.notSpecified')}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-1.5">
+                      <FiPhone size={12} className="text-[#2F1B12]/50 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-[#2F1B12]/70">{t('channelPage.helplinePhone')}</span>{' '}
+                        {channel.emergency_contact_phone ? (
+                          <a href={`tel:${channel.emergency_contact_phone}`} className="text-[#E87A1E] font-bold hover:underline">
+                            {channel.emergency_contact_phone}
+                          </a>
+                        ) : t('channelPage.notSpecified')}
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-1.5">
+                      <FiTag size={12} className="text-[#2F1B12]/50 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-[#2F1B12]/70">{t('channelPage.role')}</span>{' '}
+                        <span className="font-medium">{channel.emergency_contact_role || 'Pramukh / Seva Head'}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 {/* Contributors List card */}
-                <div className="bg-white border border-[#dfbfbc]/30 rounded-2xl p-5 shadow-[0_2px_8px_rgba(106,2,10,0.03)]">
+                <div className="bg-white border-2 border-[#E87A1E]/10 rounded-xl p-5 shadow-lg shadow-[#2F1B12]/5">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-headline-md text-sm font-bold text-[#6a020a] uppercase tracking-wider">
-                      {t('channelPage.info.authorizedSevaks')} ({contributors.length})
+                    <h3 className="font-headline-md text-sm font-bold text-[#2F1B12] uppercase tracking-wider flex items-center gap-1.5">
+                      <FiUsers size={14} /> {t('channelPage.info.authorizedSevaks')} ({contributors.length})
                     </h3>
                     <button
                       onClick={() => setShowContributorsModal(true)}
-                      className="font-label-md text-xs font-bold text-[#a13f09] hover:underline cursor-pointer"
+                      className="font-label-md text-xs font-bold text-[#E87A1E] hover:underline transition-colors cursor-pointer"
                     >
                       {t('channelPage.info.viewAll')}
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {contributors.slice(0, 6).map((c) => (
-                      <div key={c.id || c.user_id} className="flex items-center gap-2.5 p-2 bg-[#fbf2ed] rounded-xl border border-[#dfbfbc]/40">
-                        <Avatar size="xs" fallback={c.full_name?.[0] || 'S'} />
+                      <div key={c.id || c.user_id} className="flex items-center gap-2 p-2 bg-[#FEFCF8] rounded-lg border border-[#E87A1E]/10 hover:border-[#E87A1E]/30 transition-all duration-300">
+                        <div className="w-7 h-7 rounded-full bg-[#E87A1E] text-white flex items-center justify-center font-bold text-xs shadow-md">
+                          {c.full_name?.[0] || 'S'}
+                        </div>
                         <div className="min-w-0">
-                          <p className="font-label-md text-xs font-bold text-[#1f1b18] truncate">{c.full_name || c.username}</p>
-                          <p className="font-label-sm text-[10px] text-[#58413f] truncate">{c.email || t('channelPage.info.verifiedSevak')}</p>
+                          <p className="font-label-md text-sm font-bold text-[#2F1B12] truncate">{c.full_name || c.username}</p>
+                          <p className="font-label-sm text-xs text-[#2F1B12]/50 truncate">{c.email || t('channelPage.info.verifiedSevak')}</p>
                         </div>
                       </div>
                     ))}
@@ -1256,44 +1312,46 @@ loading="lazy"
           </div>
 
 {activeTab === 'chat' && !window.location.pathname.includes('/admin') && (
-  <footer className="bg-white border-t border-[#dfbfbc]/30 p-3 md:p-4 sticky bottom-0 z-20 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
+  <footer className="bg-white/95 backdrop-blur-md border-t-2 border-[#E87A1E]/10 p-2.5 md:p-3.5 sticky bottom-0 z-20 shadow-[0_-8px_30px_rgba(0,0,0,0.03)]">
     <form onSubmit={handlePost} className="flex flex-col gap-1.5">
       {/* Reply Context Banner */}
       {replyToPost && (
-        <div className="bg-[#fbf2ed] px-3 py-1.5 rounded-t-xl border-l-4 border-[#a13f09] flex justify-between items-center text-xs">
+        <div className="bg-[#E87A1E]/5 px-3 py-1.5 rounded-t-xl border-l-4 border-[#E87A1E] flex justify-between items-center text-sm shadow-inner">
           <div className="flex flex-col min-w-0">
-            <span className="font-label-sm text-[#a13f09] font-bold text-[11px]">
-              {t('channelPage.chat.replyingTo')} {replyToPost.user?.full_name || replyToPost.user?.username || 'sevak'}
+            <span className="font-label-sm text-[#E87A1E] font-bold text-sm flex items-center gap-1">
+              <FiMessageCircle size={10} /> {t('channelPage.chat.replyingTo')} {replyToPost.user?.full_name || replyToPost.user?.username || 'sevak'}
             </span>
-            <span className="font-body-md text-xs text-[#58413f] truncate max-w-[280px] sm:max-w-md">
+            <span className="font-body-md text-xs text-[#2F1B12]/60 truncate max-w-[280px] sm:max-w-md">
               {replyToPost.description || replyToPost.message}
             </span>
           </div>
-          <button type="button" onClick={() => setReplyToPost(null)} className="text-[#58413f] hover:text-[#6a020a]">
-            <span className="material-symbols-outlined text-[18px]">close</span>
+          <button type="button" onClick={() => setReplyToPost(null)} className="text-[#2F1B12]/60 hover:text-[#2F1B12] transition-colors p-1 rounded-full hover:bg-white/50">
+            <FiX size={14} />
           </button>
         </div>
       )}
 
       {/* Selected Media Indicator */}
       {postMedia && (
-        <div className="bg-[#1f1b18] text-white text-xs px-3 py-1 rounded-full flex items-center justify-between gap-2 max-w-sm mb-1">
-          <span className="truncate">📎 {postMedia.name}</span>
-          <button type="button" onClick={() => setPostMedia(null)} className="text-red-400 hover:text-white">
+        <div className="bg-[#2F1B12] text-white text-xs px-3 py-1.5 rounded-full flex items-center justify-between gap-2.5 max-w-sm shadow-md">
+          <span className="truncate flex items-center gap-1.5">
+            <FiImage size={12} /> {postMedia.name}
+          </span>
+          <button type="button" onClick={() => setPostMedia(null)} className="text-red-400 hover:text-white transition-colors">
             <FiX size={14} />
           </button>
         </div>
       )}
 
-      <div className="flex items-end gap-2 bg-[#FBF5EC] rounded-2xl p-1.5 border border-[#dfbfbc]/40 focus-within:bg-white focus-within:border-[#a13f09] transition-colors shadow-sm">
+      <div className="flex items-end gap-2 bg-[#FEFCF8] rounded-xl p-1.5 border-2 border-[#E87A1E]/15 focus-within:bg-white focus-within:border-[#E87A1E] transition-all duration-300 shadow-inner">
         {/* Attachment button */}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="p-2 text-[#58413f] hover:text-[#a13f09] transition-colors rounded-full shrink-0 flex items-center justify-center h-10 w-10 cursor-pointer"
+          className="p-1.5 text-[#2F1B12]/60 hover:text-[#E87A1E] transition-all duration-300 rounded-full shrink-0 flex items-center justify-center h-9 w-9 cursor-pointer hover:bg-[#E87A1E]/10"
           title="Attach Media or Document"
         >
-          <span className="material-symbols-outlined text-[24px]">add_circle</span>
+          <FiPlus size={18} className="hover:rotate-90 transition-transform duration-300" />
         </button>
         <input
           ref={fileInputRef}
@@ -1310,31 +1368,25 @@ loading="lazy"
           value={newPost}
           onChange={(e) => setNewPost(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               handlePost(e);
             }
           }}
-          className="flex-1 bg-transparent border-none focus:ring-0 resize-none font-body-md text-sm py-[10px] px-1 max-h-32 min-h-[44px] text-[#1f1b18] placeholder:text-[#58413f]/50 no-scrollbar outline-none"
+          className="flex-1 bg-transparent border-none focus:ring-0 resize-none font-body-md text-sm py-2 px-0.5 max-h-28 min-h-[38px] text-[#2F1B12] placeholder:text-[#2F1B12]/40 no-scrollbar outline-none"
         />
 
         {/* Send Button */}
         <button
           type="submit"
           disabled={posting}
-          className="bg-[#a13f09] text-white p-2 rounded-full shrink-0 flex items-center justify-center h-10 w-10 hover:bg-[#8b3506] transition-transform active:scale-95 shadow-md ml-1 mb-[2px] cursor-pointer disabled:opacity-50"
+          className="bg-[#E87A1E] text-white p-2 rounded-full shrink-0 flex items-center justify-center h-9 w-9 hover:shadow-lg transform hover:scale-105 transition-all duration-300 active:scale-95 ml-0.5 mb-0.5 cursor-pointer disabled:opacity-50 disabled:transform-none"
           title="Send message"
         >
           {posting ? (
             <Loader size="xs" />
           ) : (
-            <span
-              className="material-symbols-outlined text-[20px]"
-              data-weight="fill"
-              style={{ transform: 'rotate(-45deg) translateX(2px) translateY(-2px)' }}
-            >
-              send
-            </span>
+            <FiSend size={16} className="transform rotate-[-30deg] translate-x-0.5 -translate-y-0.5" />
           )}
         </button>
       </div>
@@ -1347,31 +1399,31 @@ loading="lazy"
       {/* ========================================================================= */}
       {/* MOBILE BOTTOM NAVIGATION BAR (Visible on mobile < md)                     */}
       {/* ========================================================================= */}
-      <nav className="md:hidden fixed bottom-0 w-full bg-white border-t border-[#dfbfbc]/40 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-40">
-        <div className="flex justify-between items-center px-3 py-1">
-          <Link to="/" className="flex flex-col items-center p-2 text-[#58413f] flex-1">
-            <span className="material-symbols-outlined text-[22px]">home</span>
-            <span className="font-label-sm text-[10px] mt-0.5">Home</span>
+      <nav className="md:hidden fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t-2 border-[#E87A1E]/10 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-40">
+        <div className="flex justify-between items-center px-2 py-0.5">
+          <Link to="/" className="flex flex-col items-center p-1.5 text-[#2F1B12]/60 flex-1 transition-colors hover:text-[#E87A1E]">
+            <FiHome size={20} />
+            <span className="font-label-sm text-xs mt-0.5">Home</span>
           </Link>
-          <Link to="/map" className="flex flex-col items-center p-2 text-[#58413f] flex-1">
-            <span className="material-symbols-outlined text-[22px]">calendar_month</span>
-            <span className="font-label-sm text-[10px] mt-0.5">Schedule</span>
+          <Link to="/map" className="flex flex-col items-center p-1.5 text-[#2F1B12]/60 flex-1 transition-colors hover:text-[#E87A1E]">
+            <FiMapPin size={20} />
+            <span className="font-label-sm text-xs mt-0.5">Schedule</span>
           </Link>
           <button
             onClick={() => setActiveTab('chat')}
-            className="flex flex-col items-center p-2 text-[#a13f09] flex-1 cursor-pointer"
+            className="flex flex-col items-center p-1.5 text-[#E87A1E] flex-1 cursor-pointer relative"
           >
-            <div className="bg-[#fe844c]/20 px-3.5 py-0.5 rounded-full mb-0.5">
-              <span className="material-symbols-outlined text-[22px]" data-weight="fill">forum</span>
+            <div className="bg-[#E87A1E]/20 px-3 py-0.5 rounded-full shadow-inner">
+              <FiMessageCircle size={20} className="fill-current" />
             </div>
-            <span className="font-label-sm text-[10px] font-bold">Chat</span>
+            <span className="font-label-sm text-xs font-bold">Chat</span>
           </button>
           <button
             onClick={() => setShowEmergencyModal(true)}
-            className="flex flex-col items-center p-2 text-[#ba1a1a] flex-1 cursor-pointer"
+            className="flex flex-col items-center p-1.5 text-[#E87A1E] flex-1 transition-colors hover:text-[#E87A1E]/80 cursor-pointer"
           >
-            <span className="material-symbols-outlined text-[22px]">emergency</span>
-            <span className="font-label-sm text-[10px] mt-0.5">Alerts</span>
+            <FiBell size={20} className="animate-pulse" />
+            <span className="font-label-sm text-xs mt-0.5">Alerts</span>
           </button>
         </div>
       </nav>
@@ -1389,8 +1441,8 @@ loading="lazy"
       >
         <form onSubmit={handleSaveEmergencyContact} className="space-y-4 font-body-md">
           <div>
-            <label className="block font-label-md text-xs font-bold text-[#1f1b18] uppercase tracking-wide mb-1">
-              {t('channelPage.modals.personName')}
+            <label className="block font-label-md text-sm font-bold text-[#2F1B12] uppercase tracking-wide mb-1 flex items-center gap-1">
+              <FiUser size={12} /> {t('channelPage.modals.personName')}
             </label>
             <input
               type="text"
@@ -1398,12 +1450,12 @@ loading="lazy"
               placeholder="e.g. Dr. Patil / Palkhi Seva Kendra"
               value={emergencyContact.name}
               onChange={(e) => setEmergencyContact((p) => ({ ...p, name: e.target.value }))}
-              className="w-full px-3.5 py-2.5 text-sm border border-[#dfbfbc] rounded-xl focus:border-[#6a020a] focus:outline-none bg-[#fff8f5]"
+              className="w-full px-3.5 py-2.5 text-sm border-2 border-[#E87A1E]/15 rounded-lg focus:border-[#E87A1E] focus:ring-4 focus:ring-[#E87A1E]/10 focus:outline-none bg-[#FEFCF8] transition-all duration-300"
             />
           </div>
           <div>
-            <label className="block font-label-md text-xs font-bold text-[#1f1b18] uppercase tracking-wide mb-1">
-              {t('channelPage.modals.phone')}
+            <label className="block font-label-md text-sm font-bold text-[#2F1B12] uppercase tracking-wide mb-1 flex items-center gap-1">
+              <FiPhone size={12} /> {t('channelPage.modals.phone')}
             </label>
             <input
               type="tel"
@@ -1411,36 +1463,40 @@ loading="lazy"
               placeholder="e.g. 9876543210"
               value={emergencyContact.phone}
               onChange={(e) => setEmergencyContact((p) => ({ ...p, phone: e.target.value }))}
-              className="w-full px-3.5 py-2.5 text-sm border border-[#dfbfbc] rounded-xl focus:border-[#6a020a] focus:outline-none bg-[#fff8f5]"
+              className="w-full px-3.5 py-2.5 text-sm border-2 border-[#E87A1E]/15 rounded-lg focus:border-[#E87A1E] focus:ring-4 focus:ring-[#E87A1E]/10 focus:outline-none bg-[#FEFCF8] transition-all duration-300"
             />
           </div>
           <div>
-            <label className="block font-label-md text-xs font-bold text-[#1f1b18] uppercase tracking-wide mb-1">
-              {t('channelPage.modals.roleDesc')}
+            <label className="block font-label-md text-sm font-bold text-[#2F1B12] uppercase tracking-wide mb-1 flex items-center gap-1">
+              <FiTag size={12} /> {t('channelPage.modals.roleDesc')}
             </label>
             <input
               type="text"
               placeholder="e.g. Medical Van Coordinator, Local Pramukh"
               value={emergencyContact.role}
               onChange={(e) => setEmergencyContact((p) => ({ ...p, role: e.target.value }))}
-              className="w-full px-3.5 py-2.5 text-sm border border-[#dfbfbc] rounded-xl focus:border-[#6a020a] focus:outline-none bg-[#fff8f5]"
+              className="w-full px-3.5 py-2.5 text-sm border-2 border-[#E87A1E]/15 rounded-lg focus:border-[#E87A1E] focus:ring-4 focus:ring-[#E87A1E]/10 focus:outline-none bg-[#FEFCF8] transition-all duration-300"
             />
           </div>
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2.5 pt-1.5">
             <Button
               type="button"
               variant="outline"
               onClick={() => setShowEmergencyModal(false)}
-              className="flex-1 text-xs cursor-pointer font-label-md"
+              className="flex-1 text-sm cursor-pointer font-label-md border-2 border-[#E87A1E]/20 hover:bg-[#FEFCF8] transition-all duration-300"
             >
               {t('channelPage.modals.cancel')}
             </Button>
             <Button
               type="submit"
               disabled={savingEmergency}
-              className="flex-1 !bg-[#ba1a1a] hover:!bg-[#93000a] text-white text-xs font-bold cursor-pointer font-label-md"
+              className="flex-1 !bg-[#E87A1E] hover:!shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 text-white text-sm font-bold cursor-pointer font-label-md"
             >
-              {savingEmergency ? t('channelPage.modals.saving') : t('channelPage.modals.saveHelpline')}
+              {savingEmergency ? (
+                <><Loader size="xs" className="inline mr-1.5" /> {t('channelPage.modals.saving')}</>
+              ) : (
+                <><FiBell size={12} className="inline mr-1.5" /> {t('channelPage.modals.saveHelpline')}</>
+              )}
             </Button>
           </div>
         </form>
@@ -1453,30 +1509,38 @@ loading="lazy"
         title={t('channelPage.modals.detailsTitle')}
         size="lg"
       >
-        <div className="space-y-4 font-body-md text-sm text-[#1f1b18]">
-          <div className="flex items-center gap-3 pb-3 border-b border-[#dfbfbc]/30">
-            <div className="w-14 h-14 rounded-full bg-[#6a020a] text-white flex items-center justify-center font-headline-md font-bold text-xl">
+        <div className="space-y-4 font-body-md text-sm text-[#2F1B12]">
+          <div className="flex items-center gap-3.5 pb-3.5 border-b-2 border-[#E87A1E]/10">
+            <div className="w-14 h-14 rounded-full bg-[#E87A1E] text-white flex items-center justify-center font-headline-md font-bold text-xl shadow-lg">
               {channel.name?.[0]?.toUpperCase() || 'W'}
             </div>
             <div>
-              <h3 className="font-headline-md text-base font-bold text-[#6a020a]">{channel.name}</h3>
-              <p className="font-label-sm text-xs text-[#58413f]">{t('channelPage.modals.created')} {new Date(channel.created_at).toLocaleDateString(language === 'mr' ? 'mr-IN' : 'en-GB')}</p>
+              <h3 className="font-headline-md text-base font-bold text-[#2F1B12]">{channel.name}</h3>
+              <p className="font-label-sm text-xs text-[#2F1B12]/60 flex items-center gap-1">
+                <FiCalendar size={11} /> {t('channelPage.modals.created')} {new Date(channel.created_at).toLocaleDateString(language === 'mr' ? 'mr-IN' : 'en-GB')}
+              </p>
             </div>
           </div>
           <div>
-            <h4 className="font-label-md text-xs font-bold uppercase tracking-wider text-[#58413f] mb-1">{t('channelPage.modals.descLabel')}</h4>
-            <p className="leading-relaxed bg-[#fbf2ed] p-3 rounded-xl border border-[#dfbfbc]/40">
+            <h4 className="font-label-md text-xs font-bold uppercase tracking-wider text-[#2F1B12]/60 mb-1 flex items-center gap-1">
+              <FiInfo size={12} /> {t('channelPage.modals.descLabel')}
+            </h4>
+            <p className="leading-relaxed bg-[#FEFCF8] p-3 rounded-lg border border-[#E87A1E]/10">
               {channel.description || t('channelPage.info.aboutDefault')}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-white rounded-xl border border-[#dfbfbc]/30">
-              <span className="font-label-sm text-xs text-[#58413f] block">{t('channelPage.followers')}</span>
-              <span className="font-headline-md text-base font-bold text-[#6a020a]">{followersCount}</span>
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="p-3 bg-white rounded-lg border border-[#E87A1E]/10 shadow-sm">
+              <span className="font-label-sm text-xs text-[#2F1B12]/60 flex items-center gap-1">
+                <FiUsers size={12} /> {t('channelPage.followers')}
+              </span>
+              <span className="font-headline-md text-base font-bold text-[#2F1B12] block mt-0.5">{followersCount}</span>
             </div>
-            <div className="p-3 bg-white rounded-xl border border-[#dfbfbc]/30">
-              <span className="font-label-sm text-xs text-[#58413f] block">{t('channelPage.modals.totalUpdates')}</span>
-              <span className="font-headline-md text-base font-bold text-[#6a020a]">{posts.length}</span>
+            <div className="p-3 bg-white rounded-lg border border-[#E87A1E]/10 shadow-sm">
+              <span className="font-label-sm text-xs text-[#2F1B12]/60 flex items-center gap-1">
+                <FiMessageCircle size={12} /> {t('channelPage.modals.totalUpdates')}
+              </span>
+              <span className="font-headline-md text-base font-bold text-[#2F1B12] block mt-0.5">{posts.length}</span>
             </div>
           </div>
         </div>
@@ -1491,33 +1555,39 @@ loading="lazy"
       >
         <div className="max-h-80 overflow-y-auto space-y-2 pr-1 no-scrollbar">
           {contributors.length === 0 ? (
-            <p className="text-center py-6 font-label-sm text-xs text-[#58413f]">{t('channelPage.modals.noContributors')}</p>
+            <p className="text-center py-6 font-label-sm text-xs text-[#2F1B12]/60">{t('channelPage.modals.noContributors')}</p>
           ) : (
             contributors.map((c) => (
               <div
                 key={c.id || c.user_id}
-                className="flex items-center justify-between p-2.5 bg-white hover:bg-[#fbf2ed] rounded-xl border border-[#dfbfbc]/30 transition-colors"
+                className="flex items-center justify-between p-2.5 bg-white hover:bg-[#FEFCF8] rounded-lg border border-[#E87A1E]/10 hover:border-[#E87A1E]/30 transition-all duration-300 shadow-sm hover:shadow-md"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <Avatar size="sm" fallback={c.full_name?.[0] || c.username?.[0] || 'S'} />
+                  <div className="w-8 h-8 rounded-full bg-[#E87A1E] text-white flex items-center justify-center font-bold text-xs shadow-md">
+                    {c.full_name?.[0] || c.username?.[0] || 'S'}
+                  </div>
                   <div className="min-w-0">
-                    <p className="font-label-md text-xs font-bold text-[#1f1b18] truncate">{c.full_name || c.username}</p>
-                    <p className="font-label-sm text-[11px] text-[#58413f] truncate">{c.email}</p>
+                    <p className="font-label-md text-sm font-bold text-[#2F1B12] truncate">{c.full_name || c.username}</p>
+                    <p className="font-label-sm text-xs text-[#2F1B12]/50 truncate">{c.email}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {c.id === channel?.created_by_user_id ? (
-                    <Badge variant="primary" className="text-[10px]">{t('channelPage.chat.pramukh')}</Badge>
+                    <Badge variant="primary" className="text-[10px] bg-[#E87A1E] text-white px-2 py-0.5 rounded-full">
+                      {t('channelPage.chat.pramukh')}
+                    </Badge>
                   ) : (
-                    <Badge variant="default" className="text-[10px]">{t('channelPage.chat.sevak')}</Badge>
+                    <Badge variant="default" className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                      {t('channelPage.chat.sevak')}
+                    </Badge>
                   )}
                   {canEditEmergencyContact && c.id !== channel?.created_by_user_id && (
                     <button
                       onClick={() => handleRemoveContributor(c.id || c.user_id)}
-                      className="font-label-sm text-[11px] text-[#ba1a1a] hover:underline font-bold p-1 transition-colors cursor-pointer"
+                      className="font-label-sm text-xs text-red-600 hover:text-red-700 hover:underline font-bold p-0.5 transition-colors cursor-pointer"
                       title={t('channelPage.modals.remove')}
                     >
-                      {t('channelPage.modals.remove')}
+                      <FiX size={12} />
                     </button>
                   )}
                 </div>
