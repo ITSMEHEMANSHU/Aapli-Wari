@@ -87,7 +87,7 @@ export const ContributeHub = ({ onComplete }) => {
     try {
       setLoading(true);
       await api.uploadContent(formData);
-      alert('Submitted successfully for community review!');
+      alert('Submitted and published successfully!');
       handleResetForm();
       if (onComplete) onComplete();
     } catch (err) {
@@ -274,7 +274,7 @@ export const ContributeHub = ({ onComplete }) => {
             )}
 
             <div className="bg-[#FDF8F0] p-3 rounded-xl border border-[#E8D9C3] text-xs text-[#4A392E]/80">
-              <strong>Notice:</strong> Submissions are moderated by the community prior to publishing.
+              <strong>Notice:</strong> Submissions are saved directly to the database and published.
             </div>
 
             <div className="flex gap-2 pt-2">
@@ -283,7 +283,7 @@ export const ContributeHub = ({ onComplete }) => {
                 disabled={loading}
                 className="px-5 py-2.5 bg-[#DD6B35] hover:bg-[#C85A28] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow transition"
               >
-                {loading ? 'Submitting...' : 'Submit for Review'}
+                {loading ? 'Submitting...' : 'Submit'}
               </button>
               <button 
                 type="button" 

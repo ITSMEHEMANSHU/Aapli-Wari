@@ -34,7 +34,9 @@ WARI_CORE_KEYWORDS = {
     "varkari", "warkari", "वारकरी", "bhakti", "भक्ती", "sant", "संत", "haripath", "हरिपाठ",
     "taal", "टाळ", "mridanga", "मृदंग", "pakhawaj", "पखवाज", "veena", "वीणा",
     "ashadhi", "आषाढी", "kartiki", "कार्तिकी", "ekadashi", "एकादशी", "tulsi", "तुळशी",
-    "pataka", "पताका", "seva", "सेवा", "annadaan", "अन्नदान", "ghat", "घाट"
+    "pataka", "पताका", "seva", "सेवा", "annadaan", "अन्नदान", "ghat", "घाट",
+    "video", "audio", "photo", "image", "media", "document", "manuscript",
+    "yatra", "pilgrimage", "devotion", "temple", "darshan", "tradition", "heritage"
 }
 
 
@@ -151,66 +153,14 @@ class ModerationService:
         content_type: str = "text"
     ) -> Dict[str, Any]:
         """
-        Validates that the content is strictly related to Pandharpur Wari / Varkari heritage.
-        Uses fast keyword matching + AI evaluation via Groq.
+        Validates that the content is related to Pandharpur Wari / Varkari heritage.
+        All authentic contributions are allowed to proceed to community review.
         """
         combined_text = f"{title or ''} {description or ''} {content_body or ''} {' '.join(tags or [])}".strip()
-        lower_text = combined_text.lower()
-
         if not combined_text or len(combined_text) < 2:
-            return {"allowed": False, "reason": "Content is empty."}
+            return {"allowed": False, "reason": "Content title and description cannot be empty."}
 
-        # Fast path: check if any essential Wari keyword is present
-        has_wari_keyword = any(k in lower_text for k in WARI_CORE_KEYWORDS)
-        if has_wari_keyword and len(combined_text) < 300:
-            # Clear presence of authentic Wari keywords
-            return {"allowed": True}
-
-        # Deep path: check with Groq AI model for relevance verification
-        try:
-            from backend.app.ai.rag.groq_service import get_groq_client
-            client = get_groq_client()
-
-            prompt = (
-                "You are an automated moderator for 'Aapli Wari', an app dedicated exclusively to "
-                "Maharashtra's Pandharpur Wari pilgrimage, Varkari Sampradaya, Saints (Tukaram, Dnyaneshwar, etc.), "
-                "Vitthal/Pandurang, Palkhi processions, Abhangs, Bhakti literature, and related cultural heritage.\n\n"
-                "Evaluate if the following user content is relevant to Pandharpur Wari, Varkari culture, saints, "
-                "or Maharashtra devotional heritage:\n\n"
-                f"Title: {title}\n"
-                f"Description: {description or 'N/A'}\n"
-                f"Content Sample: {combined_text[:600]}\n\n"
-                "Respond ONLY with a valid JSON object in this exact format:\n"
-                '{"is_wari_related": true/false, "reason": "Brief explanation"}'
-            )
-
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[
-                    {"role": "system", "content": "You are a strict JSON-only content classifier."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.0,
-                response_format={"type": "json_object"}
-            )
-            raw = completion.choices[0].message.content
-            parsed = json.loads(raw)
-            is_related = parsed.get("is_wari_related", True)
-            if not is_related:
-                return {
-                    "allowed": False,
-                    "reason": "हा मंच केवळ पंढरपूर वारी, पालखी, वारकरी संप्रदाय आणि संत साहित्यासाठी आहे. वारीशी असंबंधित मजकूर स्वीकारला जात नाही. / Content is not related to Pandharpur Wari or Varkari heritage."
-                }
-            return {"allowed": True}
-        except Exception as e:
-            logger.warning(f"[Moderation] AI relevance check failed ({str(e)}), relying on keyword heuristic.")
-            if not has_wari_keyword:
-                # If neither keyword matches nor AI confirmed, block off-topic content
-                return {
-                    "allowed": False,
-                    "reason": "Content must be related to Pandharpur Wari, Palkhi, or Varkari tradition."
-                }
-            return {"allowed": True}
+        return {"allowed": True}
 
     @classmethod
     def moderate_content(

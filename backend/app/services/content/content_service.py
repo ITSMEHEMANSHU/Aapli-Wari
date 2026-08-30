@@ -71,8 +71,8 @@ class ContentService:
             file_size=file_size,
             user_id=user_id,
             channel_id=content_data.channel_id,
-            verified=is_public or is_channel_post,
-            status=ContentStatus.PUBLISHED if is_public or is_channel_post else ContentStatus.PENDING_REVIEW,
+            verified=True,
+            status=ContentStatus.PUBLISHED,
         )
         
         try:

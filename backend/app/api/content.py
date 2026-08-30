@@ -207,6 +207,8 @@ def upload_content(
         content.vernacular_title = vernacular_title
         content.content_body = content_body
         content.categories = parsed_categories
+        content.status = ContentStatus.PUBLISHED
+        content.verified = True
         db.commit()
         db.refresh(content)
 
@@ -238,7 +240,7 @@ def upload_content(
 
     return ContentUploadResponse(
         id=content.id,
-        message="Content uploaded successfully and pending community review.",
+        message="Content uploaded and published successfully.",
         status=content.status
     )
 
