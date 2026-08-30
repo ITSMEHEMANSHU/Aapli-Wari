@@ -231,12 +231,14 @@ export const api = {
   trackDownload: (id) => request(`/engagement/content/${id}/download`),
 
   // =========================
-  // Chat
+  // Chat AI
   // =========================
   chat: ({ query, history = [] }) => request('/chat', {
     method: 'POST',
     body: JSON.stringify({ query, history }),
   }),
+  getChatHistory: () => request('/chat/history'),
+  clearChatHistory: () => request('/chat/history', { method: 'DELETE' }),
 
   // =========================
   // Shorts (Aapla Theva)
