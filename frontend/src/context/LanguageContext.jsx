@@ -365,19 +365,95 @@ const translations = {
   },
 };
 
+const INDIAN_LANGUAGE_OPTIONS = [
+  { value: 'mr', label: 'मराठी (Marathi)' },
+  { value: 'en', label: 'English' },
+  { value: 'hi', label: 'हिंदी (Hindi)' },
+  { value: 'gu', label: 'ગુજરાતી (Gujarati)' },
+  { value: 'kn', label: 'ಕನ್ನಡ (Kannada)' },
+  { value: 'te', label: 'తెలుగు (Telugu)' },
+  { value: 'ta', label: 'தமிழ் (Tamil)' },
+  { value: 'bn', label: 'বাংলা (Bengali)' },
+  { value: 'pa', label: 'ਪੰਜਾਬੀ (Punjabi)' },
+  { value: 'ml', label: 'മലയാളം (Malayalam)' },
+  { value: 'or', label: 'ଓଡ଼ିଆ (Odia)' },
+  { value: 'as', label: 'অসমীয়া (Assamese)' },
+  { value: 'ur', label: 'اردو (Urdu)' },
+  { value: 'sa', label: 'संस्कृतम् (Sanskrit)' },
+];
+
 const LanguageContext = createContext(null);
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState(() => {
-    if (typeof window === 'undefined') return 'en';
+  const [language, setLanguageState] = useState(() => {
+    if (typeof window === 'undefined') return 'mr';
     const saved = window.localStorage.getItem('apliwari-language');
-    return saved && translations[saved] ? saved : 'en';
+    return saved || 'mr';
   });
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('apliwari-language', language);
+  const triggerGoogleTranslate = (langCode) => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const hostname = window.location.hostname;
+      document.cookie = `googtrans=/en/${langCode}; path=/;`;
+      document.cookie = `googtrans=/en/${langCode}; domain=${hostname}; path=/;`;
+
+      const selectEl = document.querySelector('.goog-te-combo');
+      if (selectEl) {
+        selectEl.value = langCode;
+        selectEl.dispatchEvent(new Event('change'));
+      }
+    } catch (e) {
+      console.warn('Google Translate trigger notice:', e);
     }
+  };
+
+  const setLanguage = (newLang) => {
+    setLanguageState(newLang);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('apliwari-language', newLang);
+      triggerGoogleTranslate(newLang);
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (!document.getElementById('google_translate_element')) {
+      const container = document.createElement('div');
+      container.id = 'google_translate_element';
+      container.style.display = 'none';
+      document.body.appendChild(container);
+    }
+
+    window.googleTranslateElementInit = () => {
+      if (window.google?.translate?.TranslateElement) {
+        new window.google.translate.TranslateElement(
+          {
+            pageLanguage: 'en',
+            includedLanguages: 'mr,en,hi,gu,kn,te,ta,bn,pa,ml,or,as,ur,sa',
+            autoDisplay: false,
+          },
+          'google_translate_element'
+        );
+        setTimeout(() => triggerGoogleTranslate(language), 400);
+      }
+    };
+
+    if (!document.getElementById('google-translate-script')) {
+      const script = document.createElement('script');
+      script.id = 'google-translate-script';
+      script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+      script.async = true;
+      document.body.appendChild(script);
+    } else {
+      triggerGoogleTranslate(language);
+    }
+  }, []);
+
+  useEffect(() => {
+    triggerGoogleTranslate(language);
   }, [language]);
 
   const value = useMemo(() => ({
@@ -385,19 +461,31 @@ export const LanguageProvider = ({ children }) => {
     setLanguage,
     t: (key) => {
       const segments = key.split('.');
-      let current = translations[language];
+      let current = translations[language] || translations.mr || translations.en;
 
       for (const segment of segments) {
-        if (current == null) return key;
+        if (current == null) break;
         current = current[segment];
       }
 
-      return current ?? key;
+      if (current != null) return current;
+
+      let fallbackMr = translations.mr;
+      for (const segment of segments) {
+        if (fallbackMr == null) break;
+        fallbackMr = fallbackMr[segment];
+      }
+      if (fallbackMr != null) return fallbackMr;
+
+      let fallbackEn = translations.en;
+      for (const segment of segments) {
+        if (fallbackEn == null) break;
+        fallbackEn = fallbackEn[segment];
+      }
+
+      return fallbackEn ?? key;
     },
-    languageOptions: [
-      { value: 'en', label: translations.en.common.english },
-      { value: 'mr', label: translations.mr.common.marathi },
-    ],
+    languageOptions: INDIAN_LANGUAGE_OPTIONS,
   }), [language]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
