@@ -29,6 +29,7 @@ const Search = lazy(() => import('./components/public/Search'));
 const AIAssistant = lazy(() => import('./components/public/AIAssistant'));
 const AaplaTheva = lazy(() => import('./components/public/AaplaTheva'));
 const ChannelList = lazy(() => import('./components/public/ChannelList'));
+const Store = lazy(() => import('./pages/Store'));
 const ManageChannel = lazy(() => import('./components/channel-management/ManageChannel'));
 const ContributorManagement = lazy(() => import('./components/channel-management/ContributorManagement'));
 const MapPage = lazy(() => import('./pages/MapPage'));
@@ -59,6 +60,7 @@ function AppShell() {
             <Route path={ROUTES.EXPLORE} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <Explore />} />
             <Route path={ROUTES.SEARCH} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <Search />} />
             <Route path={ROUTES.CHANNELS} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <ChannelList />} />
+            <Route path={ROUTES.STORE} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <Store />} />
             <Route path="/register-palkhi" element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : <PalkhiRegistration />} />
             <Route path={ROUTES.CREATE_CHANNEL} element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : (<ProtectedRoute requiredRole={['palkhi_pramukh', 'admin']}><CreateChannel /></ProtectedRoute>)} />
             <Route path="/channel/:id/manage" element={isAdminUser ? <Navigate to={ROUTES.ADMIN} replace /> : (<ProtectedRoute requiredRole={['palkhi_pramukh', 'admin']}><ManageChannel /></ProtectedRoute>)} />
@@ -95,12 +97,18 @@ function AppShell() {
   );
 }
 
+function AppContent() {
+  return (
+    <BrowserRouter>
+      <AppShell />
+    </BrowserRouter>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppShell />
-      </BrowserRouter>
+      <AppContent />
     </AuthProvider>
   );
 }

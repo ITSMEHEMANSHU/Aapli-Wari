@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { FaChevronDown, FaBars, FaTimes } from 'react-icons/fa';
@@ -17,6 +17,8 @@ export const Header = () => {
     { label: t('nav.explore') || 'Explore', to: ROUTES.EXPLORE },
     { label: t('nav.map') || 'Map', to: ROUTES.MAP },
     { label: t('nav.channels') || 'Channels', to: ROUTES.CHANNELS },
+    { label: 'Store', to: ROUTES.STORE },
+    { label: 'AI Help', to: ROUTES.AI_ASSISTANT },
     { label: 'Aapla Theva', to: ROUTES.KNOWLEDGE_PAGE },
   ];
 
@@ -27,11 +29,15 @@ export const Header = () => {
     if (e?.preventDefault) e.preventDefault();
 
     if (!isAuthenticated) {
-      navigate(ROUTES.LOGIN, { state: { from: ROUTES.CONTRIBUTE } });
+      navigate(ROUTES.LOGIN, { state: { from: ROUTES.APPLY_CONTRIBUTOR } });
       return;
     }
 
-    navigate(`${ROUTES.KNOWLEDGE_PAGE}?tab=contribute`);
+    if (isContributorUser) {
+      navigate(`${ROUTES.KNOWLEDGE_PAGE}?tab=contribute`);
+    } else {
+      navigate(ROUTES.APPLY_CONTRIBUTOR);
+    }
   };
 
   // const navLinks = [
