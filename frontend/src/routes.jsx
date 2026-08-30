@@ -6,6 +6,7 @@ export const ROUTES = {
   EXPLORE: '/explore',
   SEARCH: '/search',
   CHANNELS: '/channels',
+  STORE: '/store',
   CHANNEL_DETAIL: '/channel/:id',
   CONTENT_DETAIL: '/content/:id',
   CREATE_CHANNEL: '/channel/create',

@@ -1,303 +1,330 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { FaRobot, FaPaperPlane, FaBook, FaUser, FaExclamationTriangle, FaArrowDown } from 'react-icons/fa';
-
-import Loader from '../../components/common/Loader';
-import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
+import { FiSend, FiRefreshCw, FiChevronDown } from 'react-icons/fi';
+import { HiSparkles } from 'react-icons/hi';
 import { api } from '../../services/api';
 
-// Error Boundary Class
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-  }
-
-  handleReset = () => {
-    this.setState({ hasError: false, error: null });
-  };
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="w-full p-6 text-center bg-[#faf8f5] border border-[#3c2a21]/20 rounded-2xl shadow-sm my-4">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[#efe8e0] text-[#3c2a21] flex items-center justify-center text-xl">
-            <FaExclamationTriangle />
-          </div>
-          <h3 className="text-lg font-semibold text-[#3c2a21] mb-1">Something went wrong</h3>
-          <p className="text-sm text-[#6c584c] mb-4 max-w-md mx-auto">
-            {this.state.error?.message || 'An unexpected error occurred.'}
-          </p>
-          <button
-            onClick={this.handleReset}
-            className="px-4 py-2 bg-[#3c2a21] text-[#f5ebe0] text-sm font-medium rounded-xl hover:bg-[#2b1e17] transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-const SUGGESTED_PROMPTS = [
-  'What is the history of Wari?',
-  'Tell me about Palkhi tradition',
-  'Who are the key Sants?'
+/* ── Suggested starter questions ─────────────────────────────────────────── */
+const SUGGESTIONS = [
+  { emoji: '🚩', text: 'What is the history of Pandharpur Wari?' },
+  { emoji: '📜', text: 'Tell me about Sant Tukaram and his abhangs' },
+  { emoji: '🛕', text: 'What is the significance of Vitthal and Pandharpur?' },
+  { emoji: '🎶', text: 'What happens during Ashadhi Ekadashi?' },
+  { emoji: '🙏', text: 'Explain the Varkari tradition and philosophy' },
+  { emoji: '🗺️', text: 'What is the route of the Dnyaneshwar Palkhi?' },
 ];
 
-const AIAssistantContent = () => {
-  const [question, setQuestion] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
+/* ── Typing indicator ─────────────────────────────────────────────────────── */
+const TypingDots = () => (
+  <div className="flex items-center gap-1.5 px-1 py-1">
+    {[0, 1, 2].map((i) => (
+      <span
+        key={i}
+        className="w-2.5 h-2.5 rounded-full bg-[#DD6B35]"
+        style={{
+          animation: `typingBounce 1.4s ${i * 0.2}s infinite ease-in-out`,
+          opacity: 0.7,
+        }}
+      />
+    ))}
+    <style>{`
+      @keyframes typingBounce {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+        30%            { transform: translateY(-6px); opacity: 1; }
+      }
+    `}</style>
+  </div>
+);
 
-  const scrollContainerRef = useRef(null);
-  const isNearBottomRef = useRef(true);
-
-  // Smooth scroll to bottom
-  const scrollToBottom = useCallback((behavior = 'smooth') => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({
-        top: scrollContainerRef.current.scrollHeight,
-        behavior
-      });
-      setShowScrollBottomBtn(false);
-    }
-  }, []);
-
-  // Monitor user scroll position (detect if user scrolled up)
-  const handleScroll = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const threshold = 120; // px tolerance to be considered "at bottom"
-    const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-    const isAtBottom = distanceToBottom <= threshold;
-
-    isNearBottomRef.current = isAtBottom;
-
-    if (isAtBottom) {
-      setShowScrollBottomBtn(false);
-    } else if (messages.length > 0) {
-      setShowScrollBottomBtn(true);
-    }
-  }, [messages.length]);
-
-  // Handle auto-scrolling when messages change or assistant starts thinking
-  useEffect(() => {
-    if (isNearBottomRef.current) {
-      scrollToBottom('smooth');
-    } else if (messages.length > 0) {
-      setShowScrollBottomBtn(true);
-    }
-  }, [messages, loading, scrollToBottom]);
-
-  const handleSend = async (textToSend) => {
-    const queryText = textToSend || question;
-    if (!queryText.trim() || loading) return;
-
-    const userMessage = { role: 'user', content: queryText };
-    setMessages((prev) => [...prev, userMessage]);
-    setQuestion('');
-    setLoading(true);
-
-    try {
-      const response = await api.chat({ query: queryText });
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: response?.answer || 'No answer received.',
-          sources: response?.sources || []
-        }
-      ]);
-    } catch (error) {
-      console.error('Chat error:', error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again.'
-        }
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    handleSend();
-  };
+/* ── Single message bubble ────────────────────────────────────────────────── */
+const MessageBubble = ({ msg }) => {
+  const isUser = msg.role === 'user';
 
   return (
-    <div className="w-full h-[calc(100dvh-1rem)] sm:h-[calc(100dvh-2rem)] max-h-[920px] flex flex-col p-1.5 sm:p-4">
-      <Card className="flex-1 flex flex-col overflow-hidden shadow-md border border-[#3c2a21]/20 rounded-2xl bg-[#faf8f5] min-h-0 relative">
-        
-        {/* Sticky Header */}
-        <div className="bg-[#3c2a21] text-[#f5ebe0] px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between border-b border-[#2b1e17] shrink-0 z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#d5aea1]/20 flex items-center justify-center border border-[#d5aea1]/30 text-[#e6ccb2] shrink-0">
-              <FaRobot className="text-lg sm:text-xl" />
-            </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-semibold text-[#f5ebe0]">Wari Heritage Assistant</h2>
-              <p className="text-xs text-[#d5aea1]">Ask about culture, Sants, and Palkhi history</p>
-            </div>
-          </div>
-        </div>
+    <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'} items-end`}>
+      {/* Avatar */}
+      <div
+        className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold shadow-sm select-none
+          ${isUser
+            ? 'bg-[#DD6B35] text-white'
+            : 'bg-white border-2 border-[#E8D9C3] text-[#DD6B35]'
+          }`}
+      >
+        {isUser ? 'You' : <HiSparkles size={14} />}
+      </div>
 
-        {/* Messages Container with custom subtle scrollbar & overflow anchor */}
-        <div
-          ref={scrollContainerRef}
-          onScroll={handleScroll}
-          className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-4 bg-[#fdfbf7] min-h-0 [overflow-anchor:auto] scroll-smooth [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[#d5aea1]/40 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-[#d5aea1]/70"
-        >
-          {messages.length === 0 ? (
-            <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-center p-4 sm:p-6 space-y-5">
-              <div className="p-4 sm:p-5 bg-[#efe8e0] rounded-full border border-[#e5dfd8] text-[#3c2a21] shadow-inner">
-                <FaRobot className="text-3xl sm:text-4xl" />
-              </div>
-              <div className="max-w-md">
-                <h3 className="text-lg sm:text-xl font-semibold text-[#3c2a21] mb-1">Welcome to Wari Assistant</h3>
-                <p className="text-xs sm:text-sm text-[#6c584c]">Explore centuries of rich spiritual tradition and heritage. Select a topic below or type your question.</p>
-              </div>
-              
-              <div className="flex flex-wrap justify-center gap-2 max-w-2xl">
-                {SUGGESTED_PROMPTS.map((prompt, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleSend(prompt)}
-                    className="text-xs text-[#3c2a21] bg-[#efe8e0] hover:bg-[#3c2a21] hover:text-[#f5ebe0] transition-all px-3.5 py-2 rounded-full border border-[#d5aea1]/50 font-medium active:scale-95 shadow-xs"
-                  >
-                    "{prompt}"
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            messages.map((msg, idx) => {
-              const isUser = msg.role === 'user';
-              return (
-                <div
-                  key={idx}
-                  className={`flex gap-2.5 sm:gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'} items-start`}
-                >
-                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 text-xs shadow-xs mt-0.5 ${
-                    isUser ? 'bg-[#3c2a21] text-[#f5ebe0]' : 'bg-[#efe8e0] text-[#3c2a21] border border-[#d5aea1]/40'
-                  }`}>
-                    {isUser ? <FaUser /> : <FaRobot />}
-                  </div>
-
-                  <div className={`max-w-[88%] sm:max-w-[80%] md:max-w-[75%] lg:max-w-[70%] rounded-2xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm leading-relaxed shadow-xs break-words overflow-hidden ${
-                    isUser 
-                      ? 'bg-[#3c2a21] text-[#f5ebe0] rounded-tr-none' 
-                      : 'bg-[#efe8e0] text-[#2b1e17] rounded-tl-none border border-[#e5dfd8]'
-                  }`}>
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                    
-                    {/* Safe Sources Rendering */}
-                    {msg.sources && msg.sources.length > 0 && (
-                      <div className="mt-2.5 pt-2 border-t border-[#d5aea1]/30 flex flex-wrap items-center gap-1.5 text-xs text-[#6c584c]">
-                        <FaBook className="text-xs text-[#8c6d58] shrink-0" />
-                        <span className="font-semibold text-[#3c2a21]">Sources:</span>
-                        {msg.sources.map((src, sIdx) => {
-                          const sourceText = typeof src === 'object' ? (src.title || src.name || src.url || JSON.stringify(src)) : src;
-                          const sourceUrl = typeof src === 'object' ? src.url : null;
-
-                          return sourceUrl ? (
-                            <a
-                              key={sIdx}
-                              href={sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="bg-[#faf8f5] text-[#3c2a21] hover:underline px-2 py-0.5 rounded text-[11px] border border-[#d5aea1]/40 break-all"
-                            >
-                              {sourceText}
-                            </a>
-                          ) : (
-                            <span key={sIdx} className="bg-[#faf8f5] text-[#3c2a21] px-2 py-0.5 rounded text-[11px] border border-[#d5aea1]/40 break-all">
-                              {sourceText}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          )}
-
-          {loading && (
-            <div className="flex gap-2.5 sm:gap-3 items-center">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#efe8e0] text-[#3c2a21] flex items-center justify-center shrink-0 border border-[#d5aea1]/40 text-xs">
-                <FaRobot />
-              </div>
-              <div className="bg-[#efe8e0] border border-[#e5dfd8] rounded-2xl rounded-tl-none px-3.5 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2">
-                <Loader size="sm" />
-                <span className="text-xs text-[#6c584c]">Assistant is thinking...</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Floating "Scroll to Bottom" button (shown only when user has scrolled up) */}
-        {showScrollBottomBtn && (
-          <button
-            type="button"
-            onClick={() => scrollToBottom('smooth')}
-            className="absolute bottom-20 right-6 z-20 flex items-center gap-1.5 px-3 py-1.5 bg-[#3c2a21] text-[#f5ebe0] text-xs font-medium rounded-full shadow-lg border border-[#d5aea1]/40 hover:bg-[#2b1e17] transition-all transform animate-bounce"
-            aria-label="Scroll to latest messages"
-          >
-            <FaArrowDown className="text-[10px]" />
-            <span>Latest message</span>
-          </button>
+      {/* Bubble */}
+      <div
+        className={`max-w-[78%] sm:max-w-[70%] text-sm leading-relaxed shadow-sm
+          ${isUser
+            ? 'bg-[#DD6B35] text-white rounded-2xl rounded-br-sm px-4 py-3'
+            : 'bg-white border border-[#E8D9C3] text-[#2B1B12] rounded-2xl rounded-bl-sm px-4 py-3'
+          }`}
+      >
+        {/* Render markdown-style bold */}
+        <p className="whitespace-pre-wrap" style={{ wordBreak: 'break-word' }}>
+          {msg.content}
+        </p>
+        {msg.timestamp && (
+          <p className={`text-[10px] mt-1.5 ${isUser ? 'text-white/50 text-right' : 'text-[#4A392E]/35'}`}>
+            {msg.timestamp}
+          </p>
         )}
-
-        {/* Input Form */}
-        <form onSubmit={handleSubmit} className="p-3 sm:p-4 border-t border-[#e5dfd8] bg-[#efe8e0]/80">
-          <div className="flex items-center gap-2">
-            <Button 
-              type="submit" 
-              disabled={loading || !question.trim()} 
-              className="flex items-center justify-center gap-2 px-5 py-3 bg-[#3c2a21] hover:bg-[#2b1e17] disabled:bg-[#a89f91] text-[#f5ebe0] rounded-xl transition-colors text-sm font-medium h-full shrink-0"
-            >
-              <FaPaperPlane className="text-xs" />
-              <span className="hidden sm:inline">Send</span>
-            </Button>
-
-            <input
-              type="text"
-              placeholder="Ask about Wari heritage..."
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              className="flex-1 w-full bg-white text-[#2b1e17] placeholder-[#8c6d58] text-sm px-4 py-3 rounded-xl border border-[#3c2a21]/40 focus:border-[#3c2a21] focus:ring-1 focus:ring-[#3c2a21] outline-none shadow-sm transition-all"
-            />
-          </div>
-        </form>
-
-      </Card>
+      </div>
     </div>
   );
 };
 
-export const AIAssistant = () => (
-  <ErrorBoundary>
-    <AIAssistantContent />
-  </ErrorBoundary>
-);
+/* ── Main component ───────────────────────────────────────────────────────── */
+const AIAssistant = () => {
+  const [messages, setMessages]       = useState([]);
+  const [input, setInput]             = useState('');
+  const [loading, setLoading]         = useState(false);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+
+  const scrollRef     = useRef(null);
+  const inputRef      = useRef(null);
+  const nearBottomRef = useRef(true);
+  const textareaRef   = useRef(null);
+
+  /* ── Scroll helpers ── */
+  const scrollToBottom = useCallback((behavior = 'smooth') => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
+    setShowScrollBtn(false);
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+    nearBottomRef.current = dist < 120;
+    setShowScrollBtn(dist > 120 && messages.length > 0);
+  }, [messages.length]);
+
+  useEffect(() => {
+    if (nearBottomRef.current) scrollToBottom();
+  }, [messages, loading, scrollToBottom]);
+
+  /* ── Auto-resize textarea ── */
+  const resizeTextarea = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  };
+
+  /* ── Send message ── */
+  const send = useCallback(async (text) => {
+    const q = (text || input).trim();
+    if (!q || loading) return;
+
+    const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setMessages((prev) => [...prev, { role: 'user', content: q, timestamp: ts }]);
+    setInput('');
+
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+
+    setLoading(true);
+
+    const history = messages
+      .slice(-8)
+      .map(({ role, content }) => ({ role, content }));
+
+    try {
+      const res = await api.chat({ query: q, history });
+      setMessages((prev) => [
+        ...prev,
+        {
+          role:      'assistant',
+          content:   res?.answer || 'No response received.',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } catch (err) {
+      console.error('Chat error:', err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role:      'assistant',
+          content:   'Unable to connect. Please make sure the backend is running and try again.',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } finally {
+      setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [input, loading, messages]);
+
+  const handleSubmit = (e) => { e.preventDefault(); send(); };
+
+  const clearChat = () => {
+    setMessages([]);
+    setInput('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    inputRef.current?.focus();
+  };
+
+  return (
+    <div className="w-full min-h-[calc(100dvh-80px)] bg-[#FBF5EC] flex items-start justify-center px-4 py-6">
+      <div className="w-full max-w-2xl flex flex-col" style={{ height: 'calc(100dvh - 112px)' }}>
+
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between mb-4 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-[#DD6B35] flex items-center justify-center shadow-md shrink-0">
+              <HiSparkles className="text-white text-xl" />
+            </div>
+            <div>
+              <h1 className="font-serif font-bold text-[#2B1B12] text-lg leading-none">
+                Aapli Wari AI
+              </h1>
+              <p className="text-xs text-[#4A392E]/60 mt-0.5">Your guide to Wari heritage</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {messages.length > 0 && (
+              <button
+                onClick={clearChat}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-[#4A392E]/60 border border-[#E8D9C3] bg-white px-3 py-1.5 rounded-full hover:bg-[#F5EADA] hover:text-[#DD6B35] transition-colors"
+              >
+                <FiRefreshCw size={11} /> New chat
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ── Chat window ── */}
+        <div className="flex-1 flex flex-col min-h-0 bg-white rounded-3xl border border-[#E8D9C3] shadow-sm overflow-hidden relative">
+
+          {/* Messages area */}
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto px-4 sm:px-5 py-5 space-y-4
+              [&::-webkit-scrollbar]:w-1
+              [&::-webkit-scrollbar-thumb]:bg-[#E8D9C3]
+              [&::-webkit-scrollbar-thumb]:rounded-full"
+          >
+            {/* Empty state */}
+            {messages.length === 0 && (
+              <div className="flex flex-col items-center justify-center text-center h-full py-6 px-4">
+                <div className="relative mb-5">
+                  <div className="w-20 h-20 rounded-3xl bg-[#FBF5EC] border border-[#E8D9C3] flex items-center justify-center shadow-inner">
+                    <span className="text-4xl">🚩</span>
+                  </div>
+                  <div className="absolute -top-1.5 -right-1.5 w-7 h-7 bg-[#DD6B35] rounded-full flex items-center justify-center shadow-sm">
+                    <HiSparkles className="text-white text-sm" />
+                  </div>
+                </div>
+
+                <h2 className="font-serif font-bold text-[#2B1B12] text-2xl mb-2">
+                  ज्ञानबा-तुकाराम!
+                </h2>
+                <p className="text-sm text-[#4A392E]/65 max-w-xs leading-relaxed mb-7">
+                  Ask me anything about Pandharpur Wari, Palkhi processions,
+                  Varkari saints, and Maharashtra's living heritage.
+                </p>
+
+                {/* Suggestion grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
+                  {SUGGESTIONS.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => send(s.text)}
+                      className="flex items-start gap-2.5 px-4 py-3 bg-[#FBF5EC] hover:bg-[#F5EADA] border border-[#E8D9C3] hover:border-[#DD6B35]/50 rounded-xl text-xs text-[#2B1B12] font-medium transition-all text-left group cursor-pointer active:scale-[0.98]"
+                    >
+                      <span className="text-base shrink-0 mt-0.5 leading-none">{s.emoji}</span>
+                      <span className="leading-snug group-hover:text-[#DD6B35] transition-colors">{s.text}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Message bubbles */}
+            {messages.map((msg, i) => (
+              <MessageBubble key={i} msg={msg} />
+            ))}
+
+            {/* Typing indicator */}
+            {loading && (
+              <div className="flex gap-3 items-end">
+                <div className="w-8 h-8 rounded-full bg-white border-2 border-[#E8D9C3] flex items-center justify-center shrink-0">
+                  <HiSparkles size={13} className="text-[#DD6B35]" />
+                </div>
+                <div className="bg-white border border-[#E8D9C3] rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-sm">
+                  <TypingDots />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Scroll-to-bottom button */}
+          {showScrollBtn && (
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10">
+              <button
+                onClick={() => scrollToBottom()}
+                className="inline-flex items-center gap-1.5 bg-[#2B1B12]/90 text-white text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-lg hover:bg-[#DD6B35] transition-colors backdrop-blur-sm"
+              >
+                <FiChevronDown size={12} /> Latest
+              </button>
+            </div>
+          )}
+
+          {/* ── Input area ── */}
+          <div className="shrink-0 border-t border-[#E8D9C3] bg-[#FDFAF6] px-4 py-3">
+            <form onSubmit={handleSubmit}>
+              <div
+                className="flex items-end gap-2.5 bg-white border border-[#E8D9C3] rounded-2xl px-4 py-2.5
+                  focus-within:border-[#DD6B35] focus-within:shadow-[0_0_0_3px_rgba(221,107,53,0.12)]
+                  transition-all"
+              >
+                <textarea
+                  ref={(el) => { textareaRef.current = el; inputRef.current = el; }}
+                  value={input}
+                  onChange={(e) => { setInput(e.target.value); resizeTextarea(); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      send();
+                    }
+                  }}
+                  placeholder="Ask about Wari, Palkhi, saints..."
+                  rows={1}
+                  disabled={loading}
+                  className="flex-1 bg-transparent resize-none text-sm text-[#2B1B12]
+                    placeholder-[#4A392E]/40 focus:outline-none leading-relaxed py-0.5
+                    disabled:opacity-60"
+                  style={{ maxHeight: '120px' }}
+                />
+                <button
+                  type="submit"
+                  disabled={loading || !input.trim()}
+                  className="w-9 h-9 rounded-xl bg-[#DD6B35] hover:bg-[#C85A28]
+                    disabled:bg-[#E8D9C3] disabled:cursor-not-allowed
+                    text-white flex items-center justify-center shrink-0
+                    transition-colors shadow-sm active:scale-95 mb-0.5 cursor-pointer"
+                  aria-label="Send"
+                >
+                  {loading
+                    ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    : <FiSend size={14} />
+                  }
+                </button>
+              </div>
+              <p className="text-[10px] text-[#4A392E]/35 text-center mt-2 leading-none">
+                Only answers questions about Maharashtra Wari &amp; Varkari heritage
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default AIAssistant;

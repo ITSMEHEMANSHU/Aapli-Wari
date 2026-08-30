@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaSpinner } from 'react-icons/fa';
 
 import { api } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
+import { ROUTES } from '../routes';
 import { KnowledgeHero } from '../components/knowledge/KnowledgeHero';
 import { CategoryFilters } from '../components/knowledge/CategoryFilters';
 import { ContentTypeFilter } from '../components/knowledge/ContentTypeFilter';
@@ -32,10 +34,37 @@ const normalizeKnowledgeItem = (item) => ({
 });
 
 export const KnowledgePage = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user, isAuthenticated, loading: authLoading, canContribute } = useAuth();
+
+  const isContributorUser = typeof canContribute === 'function' ? canContribute() : false;
+
   const [activeTab, setActiveTab] = useState(
-    searchParams.get('tab') === 'contribute' ? 'contribute' : 'browse'
+    searchParams.get('tab') === 'contribute' && isContributorUser ? 'contribute' : 'browse'
   );
+
+  const handleContributeClick = () => {
+    if (!isAuthenticated) {
+      navigate(ROUTES.LOGIN, { state: { from: ROUTES.APPLY_CONTRIBUTOR } });
+      return;
+    }
+    if (isContributorUser) {
+      setActiveTab('contribute');
+    } else {
+      navigate(ROUTES.APPLY_CONTRIBUTOR);
+    }
+  };
+
+  useEffect(() => {
+    if (searchParams.get('tab') === 'contribute' && !authLoading) {
+      if (!isAuthenticated) {
+        navigate(ROUTES.LOGIN, { state: { from: ROUTES.APPLY_CONTRIBUTOR } });
+      } else if (!isContributorUser) {
+        navigate(ROUTES.APPLY_CONTRIBUTOR);
+      }
+    }
+  }, [searchParams, isAuthenticated, isContributorUser, authLoading, navigate]);
 
   // Real Data States
   const [items, setItems] = useState([]);
@@ -125,10 +154,10 @@ export const KnowledgePage = () => {
           </button>
         </nav>
         <button
-          onClick={() => setActiveTab('contribute')}
-          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#DD6B35] hover:bg-[#C85A28] text-white rounded-lg text-xs font-bold transition shadow-sm"
+          onClick={handleContributeClick}
+          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#DD6B35] hover:bg-[#C85A28] text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
         >
-          Contribute
+          {isContributorUser ? 'Contribute' : 'Become a Contributor'}
         </button>
       </header>
 
@@ -141,14 +170,6 @@ export const KnowledgePage = () => {
               selectedCategories={selectedCategories}
               toggleCategory={toggleCategory}
               clearCategories={() => setSelectedCategories([])}
-            />
-            <ContentTypeFilter
-              selectedContentType={selectedContentType}
-              setSelectedContentType={setSelectedContentType}
-              reviewFilter={reviewFilter}
-              setReviewFilter={setReviewFilter}
-              sortBy={sortBy}
-              setSortBy={setSortBy}
             />
 
             {loading ? (
