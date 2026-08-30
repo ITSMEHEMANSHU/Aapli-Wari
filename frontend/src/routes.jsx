@@ -2,13 +2,18 @@ import React from 'react';
 
 export const ROUTES = {
   HOME: '/',
+  MAP: '/map',
   EXPLORE: '/explore',
   SEARCH: '/search',
   CHANNELS: '/channels',
+  STORE: '/store',
   CHANNEL_DETAIL: '/channel/:id',
   CONTENT_DETAIL: '/content/:id',
+  CREATE_CHANNEL: '/channel/create',
   AI_ASSISTANT: '/ai-assistant',
   SHORTS: '/shorts',
+  KNOWLEDGE_PAGE: '/knowledgepage',
+  KNOWLEDGE_PAGE_LEGACY: '/KnowledgePage',
   LOGIN: '/login',
   REGISTER: '/register',
   VERIFY_OTP: '/verify-otp',
@@ -16,10 +21,12 @@ export const ROUTES = {
   PROFILE_USER: '/profile/:id',
   SETTINGS: '/settings',
   CONTRIBUTE: '/contribute',
+  APPLY_CONTRIBUTOR: '/apply-contributor',
+  APPLY_PALKHI_PRAMUKH: '/apply-palkhi-pramukh',
   ADMIN: '/admin',
   ADMIN_USERS: '/admin/users',
   ADMIN_CHANNELS: '/admin/channels',
-  ADMIN_MODERATION: '/admin/moderation'
+  ADMIN_MODERATION: '/admin/content'
 };
 
 export const PROTECTED_ROUTES = [

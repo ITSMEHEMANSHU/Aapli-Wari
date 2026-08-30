@@ -1,0 +1,53 @@
+from pydantic import BaseModel, EmailStr
+
+
+class SignupRequest(BaseModel):
+
+    username: str | None = None
+
+    full_name: str
+
+    email: EmailStr
+
+    password: str
+
+
+class LoginRequest(BaseModel):
+
+    email: EmailStr
+
+    password: str
+
+
+class TokenResponse(BaseModel):
+
+    message: str
+
+    access_token: str
+
+    refresh_token: str
+
+    user_id: str
+
+    role: str
+
+class PalkhiPramukhSignupRequest(BaseModel):
+    username: str | None = None
+    full_name: str
+    email: EmailStr
+    password: str
+    palkhi_name: str
+    palkhi_description: str | None = None
+
+
+class ContributorApplyRequest(BaseModel):
+    full_name: str
+    email: EmailStr
+    mobile: str
+    consent: bool = True
+
+
+class PalkhiPramukhApplyRequest(BaseModel):
+    palkhi_name: str
+    palkhi_description: str | None = None
+    consent: bool = True

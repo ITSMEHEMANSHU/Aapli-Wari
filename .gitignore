@@ -1,6 +1,49 @@
+# Dependencies
 node_modules/
-dist/
 .venv/
 venv/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Python cache
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment
 .env
+.env.local
+.env.*.local
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Test files
+backend/test_*.py
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads / media
+uploads/
+media/
+
+# Model cache (NLLB, transformers)
+backend/models/
