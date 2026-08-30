@@ -125,6 +125,18 @@ def upload_content(
     if content_type_value == 'text' and not parsed_categories:
         raise HTTPException(status_code=400, detail=f"At least one category is required for {content_type_value}")
 
+    # ── Content Moderation (Vettly + Wari Theme Guard) ──
+    from backend.app.services.moderation import moderate_content
+    tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
+    moderate_content(
+        title=title,
+        description=description,
+        content_body=content_body,
+        tags=tag_list,
+        content_type=content_type_value,
+        user_id=str(current_user.id)
+    )
+
     allowed_types = {
         "text": [],  # ✅ Text-only requires no file attachments
         "video": ["video/mp4", "video/mpeg", "video/quicktime"],
@@ -149,6 +161,23 @@ def upload_content(
             file_url = ContentService.upload_to_storage(file, folder=f"content/{content_type_value}")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
+
+        # Media safety check with Vettly
+        if file_url and content_type_value in ["image", "video", "short"]:
+            try:
+                moderate_content(
+                    title=title,
+                    content_type=content_type_value,
+                    file_url=file_url,
+                    user_id=str(current_user.id),
+                    skip_theme_check=True
+                )
+            except Exception as mod_err:
+                try:
+                    ContentService.delete_from_storage(file_url)
+                except Exception:
+                    pass
+                raise mod_err
 
     if channel_id:
         channel = db.get(Channel, channel_id)
